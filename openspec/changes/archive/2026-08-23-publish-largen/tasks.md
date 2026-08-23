@@ -31,7 +31,7 @@
 - [x] 4.2 Add `repository`, `homepage`, `bugs`, `keywords`, and `"./package.json"` to `exports`
 - [x] 4.3 Write `LICENSE` (MIT), which `package.json` has been claiming without one present
 - [x] 4.4 Update `README.md` and the `COMMANDS` list in `site/mcp/contract.mjs` — the latter feeds `SKILL.md`, so the advertised commands regenerate from one source
-- [ ] 4.5 First git commit, then the remote
+- [x] 4.5 First git commit, then the remote — five commits pushed to github.com/vikramrojo/largen
 
 ## 6. Remove the build dependency
 

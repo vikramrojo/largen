@@ -49,8 +49,6 @@
       Installed and running. Crash test: SIGKILL to the main pid, service returned on its own (pid 1377 → 1394).
 - [x] 6.2 TLS per the finding from task 1.1
       No proxy installed. `share port largen 8787` + `share set-public largen`. The private-by-default trap was confirmed empirically first: while private, `/health` returned **401** redirecting to `exe.dev/auth`.
-- [ ] 6.3 Point `largen.dev` at the box and confirm HTTPS end to end
-      **The only outstanding task.** Needs a DNS record at the registrar, which is yours to add: point `largen.dev` at `largen.exe.xyz` (ALIAS/CNAME-at-apex), then `ssh exe.dev domain add largen largen.dev`, flip `LARGEN_BASE_URL` to `https://largen.dev`, restart, re-verify. An unregistered hostname answers `421 Misdirected Request`. Live meanwhile at **https://largen.exe.xyz**.
 - [x] 6.4 Confirm the service returns after a reboot
       Verified against the boot id, not just a 200 — `ab9d75e2…` → `c05a52b7…`, `uptime -s` fresh, and `journalctl -u largen -b` shows systemd starting it *at boot*. Polling `/health` immediately after `reboot` returns 200 from the not-yet-dead process and proves nothing.
 
@@ -92,8 +90,13 @@ served stylesheet is byte-identical to `dist/largen.css`, and the pinned
 `/v/0.1.0/` path serves with `immutable`. Crash and reboot both verified, the
 reboot against a changed boot id rather than a 200.
 
-**Outstanding: 6.3 and section 8.** 6.3 is the `largen.dev` DNS record, which needs
-registrar access. Section 8 was added after delivery: reader feedback showed the
+**Task 6.3 was moved out, not dropped.** Pointing `largen.dev` at the box is blocked on
+registrar access — external to this change, which delivered the site and the MCP server.
+Keeping it open held this change unarchived, and with it `openspec/specs/` empty, so three
+later rounds of work had no baseline to write deltas against. It is now
+`openspec/changes/largen-dev-dns`, with its own proposal and a `custom-domain` capability.
+
+**Section 8 was added after delivery.** Section 8 was added after delivery: reader feedback showed the
 `authoring-contract` capability was underspecified — it required the contract to carry
 prose and to name its failure modes, but never required it to *print the mechanism*, so
 a careful reader reconstructed the paint rule and got it wrong in three places. The
