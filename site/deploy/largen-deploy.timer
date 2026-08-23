@@ -1,0 +1,21 @@
+# Poll origin/main every five minutes.
+#
+# A poll rather than a webhook: a webhook needs an inbound route, a shared
+# secret and a listener, which is three more things to keep working for a
+# single-VM project. Five minutes is well inside how quickly anyone needs a
+# documentation change to appear.
+#
+# Persistent=true so a deploy missed while the machine was off runs at boot
+# rather than waiting for the next tick.
+
+[Unit]
+Description=largen.dev — check origin/main for new commits
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+Unit=largen-deploy.service
+
+[Install]
+WantedBy=timers.target

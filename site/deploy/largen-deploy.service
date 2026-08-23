@@ -1,0 +1,22 @@
+# largen.dev — one deploy attempt.
+#
+# Oneshot, driven by largen-deploy.timer. Runs as exedev rather than root so the
+# repository keeps a single owner; the script uses sudo only to restart the
+# service, which exedev may do without a password.
+#
+# Doing nothing is the common case: the script exits early when origin/main has
+# not moved, so the timer is cheap to run often.
+
+[Unit]
+Description=largen.dev — deploy origin/main if it has moved
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=exedev
+ExecStart=/usr/local/bin/largen-deploy
+TimeoutStartSec=600
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=largen-deploy
