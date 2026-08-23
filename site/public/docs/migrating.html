@@ -235,6 +235,69 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 
 <p class="doc-p"><strong>Read the compiled output, not the utility name.</strong> A <span class="tok">marker:</span> utility compiles to two rules, and the descendant one does the work: a bullet belongs to <span class="tok">li::marker</span>, so styling <span class="tok">ul::marker</span> alone changes nothing. That generalises — when a utility does not do what its name suggests, look at what it compiled to before assuming the cascade is at fault.</p>
 
+<h3 class="section-title" id="a-lookup-for-the-mechanical-part">A lookup for the mechanical part</h3>
+
+<p class="doc-p">Utilities, not components. <span class="tok">px-4</span> is <span class="tok">--pad: 0 1rem</span> and there is nothing to decide about it; a variant matrix is the opposite, and porting one is the mistake this guide exists to prevent. <strong>If an entry would need a judgement about naming or structure, it is not in this table</strong> — that is the work you should be doing rather than automating.</p>
+
+<p class="doc-p">Assumes a 4px spacing step. Check yours.</p>
+
+<p class="doc-p"><strong>Spacing</strong> — every scale value is <span class="tok">step ÷ 4</span> rem, so <span class="tok">p-3</span> is <span class="tok">0.75rem</span>.</p>
+
+<table class="doc-table">
+<thead><tr><th>utility</th><th>largen</th></tr></thead>
+<tbody>
+<tr><td><span class="tok">p-4</span></td><td><span class="tok">--pad: 1rem</span></td></tr>
+<tr><td><span class="tok">px-4</span></td><td><span class="tok">--pad: 0 1rem</span></td></tr>
+<tr><td><span class="tok">py-2</span></td><td><span class="tok">--pad: 0.5rem 0</span></td></tr>
+<tr><td><span class="tok">px-4 py-2</span></td><td><span class="tok">--pad: 0.5rem 1rem</span></td></tr>
+<tr><td><span class="tok">gap-4</span></td><td><span class="tok">--gap: 1rem</span></td></tr>
+<tr><td><span class="tok">gap-x-4</span></td><td><span class="tok">column-gap: 1rem</span> — one axis is not a slot</td></tr>
+<tr><td><span class="tok">m-0</span></td><td><span class="tok">margin: 0</span> — margin is not a slot; it is between components, not inside one</td></tr>
+</tbody></table>
+
+<p class="doc-p"><strong>Layout</strong> — largen ships these as utilities, so most convert to a class rather than a slot.</p>
+
+<table class="doc-table">
+<thead><tr><th>utility</th><th>largen</th></tr></thead>
+<tbody>
+<tr><td><span class="tok">flex</span></td><td><span class="tok">display: flex</span>, or the <span class="tok">row</span> utility</td></tr>
+<tr><td><span class="tok">flex flex-col</span></td><td>the <span class="tok">stack</span> utility</td></tr>
+<tr><td><span class="tok">flex flex-wrap items-center</span></td><td>the <span class="tok">cluster</span> utility</td></tr>
+<tr><td><span class="tok">grid grid-cols-*</span></td><td>the <span class="tok">grid</span> utility, with <span class="tok">--min-item</span></td></tr>
+<tr><td><span class="tok">mx-auto max-w-*</span></td><td>the <span class="tok">center</span> utility, with <span class="tok">--measure</span></td></tr>
+<tr><td><span class="tok">items-center</span></td><td><span class="tok">align-items: center</span></td></tr>
+<tr><td><span class="tok">justify-between</span></td><td><span class="tok">justify-content: space-between</span></td></tr>
+</tbody></table>
+
+<p class="doc-p"><strong>Type</strong> — the trap is in the second column of the first row.</p>
+
+<table class="doc-table">
+<thead><tr><th>utility</th><th>largen</th></tr></thead>
+<tbody>
+<tr><td><span class="tok">text-sm</span></td><td><span class="tok">--font-size: calc(0.875rem * var(--scale))</span> <strong>and</strong> <span class="tok">--line-height: 1.43</span></td></tr>
+<tr><td><span class="tok">text-base</span></td><td><span class="tok">--font-size: calc(1rem * var(--scale))</span></td></tr>
+<tr><td><span class="tok">font-medium</span></td><td><span class="tok">--weight: var(--weight-medium)</span></td></tr>
+<tr><td><span class="tok">tracking-tight</span></td><td><span class="tok">--letter-spacing: -0.025em</span></td></tr>
+<tr><td><span class="tok">leading-none</span></td><td><span class="tok">--line-height: 1</span></td></tr>
+<tr><td><span class="tok">text-muted-foreground</span></td><td><span class="tok">--fg: var(--ink-muted)</span></td></tr>
+<tr><td><span class="tok">rounded-md</span></td><td><span class="tok">--radius: var(--radius-md)</span></td></tr>
+</tbody></table>
+
+<p class="doc-p">A Tailwind <span class="tok">text-*</span> utility bundles a line-height; converting only the size leaves the element on the document ratio. That is one line in a table and four components in a real migration.</p>
+
+<p class="doc-p"><strong>Surfaces</strong></p>
+
+<table class="doc-table">
+<thead><tr><th>utility</th><th>largen</th></tr></thead>
+<tbody>
+<tr><td><span class="tok">bg-card</span> / <span class="tok">bg-muted</span></td><td><span class="tok">--bg: var(--surface)</span></td></tr>
+<tr><td><span class="tok">border</span></td><td><span class="tok">--border-width: var(--hairline)</span>, <span class="tok">--border-style: solid</span>, <span class="tok">--border-color: var(--line)</span></td></tr>
+<tr><td><span class="tok">shadow-sm</span></td><td><span class="tok">--shadow: var(--lift-1)</span></td></tr>
+<tr><td><span class="tok">transition-colors</span></td><td><span class="tok">--transition: var(--speed) color</span></td></tr>
+</tbody></table>
+
+<p class="doc-p"><strong>Not in this table, deliberately:</strong> anything with a colour in it beyond the tokens above, anything with a <span class="tok">dark:</span> prefix, and every variant utility. Colours go through tokens or <span class="tok">--tone*</span>; <span class="tok">dark:</span> should evaporate rather than convert; and variants are the matrix you are trying to delete.</p>
+
 <h3 class="section-title" id="three-things-that-do-not-survive-the-conversion">Three things that do not survive the conversion</h3>
 
 <p class="doc-p"><strong>Line height does not come along.</strong> Tailwind's <span class="tok">text-sm</span> bundles a line-height — <span class="tok">1.25rem</span> against a <span class="tok">0.875rem</span> font, a ratio of about 1.43 — and converting only the size leaves the element on largen's document ratio of 1.55. That is 8% taller, which is what made callouts visibly wrong in one conversion after catching badge, button and crumbs the same way.</p>

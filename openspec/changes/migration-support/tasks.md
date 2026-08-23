@@ -22,30 +22,30 @@ Shipped in `cbfabdb`, recorded here because the deltas describe it.
 
 ## 3. The utility mapping table
 
-- [ ] 3.1 Spacing, flex and type utilities only, as equivalences rather than advice
-- [ ] 3.2 State the boundary in the table's own header, so the absence of components reads as a position
-- [ ] 3.3 Spot-check a sample against a browser rather than trusting the arithmetic — a wrong table is worse than none
-- [ ] 3.4 Screenshot the guide in both themes; it is long and the tables are where generated prose breaks
+- [x] 3.1 Spacing, flex and type utilities only, as equivalences rather than advice
+- [x] 3.2 State the boundary in the table's own header, so the absence of components reads as a position
+- [x] 3.3 Spot-check a sample against a browser rather than trusting the arithmetic — a wrong table is worse than none
+- [x] 3.4 Screenshot the guide in both themes; it is long and the tables are where generated prose breaks
 
 ## 4. MCP: the cheap four
 
-- [ ] 4.1 `check_component_css` accepts an array, returning findings per stylesheet, with the single-string form still working
-- [ ] 4.2 Property-to-slot lookup, deriving its answers from the registrations so a new slot needs no edit
-- [ ] 4.3 `get_contract` carries the build identifier
-- [ ] 4.4 Expose the served checksums, so a vendored copy can be checked without hashing by hand
-- [ ] 4.5 Confirm the array form on a real project's worth of files, and that per-file attribution is right — the point is fewer calls, not a merged blob
+- [x] 4.1 `check_component_css` accepts an array, returning findings per stylesheet, with the single-string form still working
+- [x] 4.2 Property-to-slot lookup, deriving its answers from the registrations so a new slot needs no edit
+- [x] 4.3 `get_contract` carries the build identifier
+- [x] 4.4 Expose the served checksums, so a vendored copy can be checked without hashing by hand
+- [x] 4.5 Confirm the array form on a real project's worth of files, and that per-file attribution is right — the point is fewer calls, not a merged blob
 
 ## 5. MCP: the layer check
 
-- [ ] 5.1 Resolve layer order from a set of stylesheets and their `@layer` statements — first mention wins, and a sublayer takes its parent's position
-- [ ] 5.2 Report where the resolved order differs from the declared order, naming the layer and the reason
-- [ ] 5.3 Reproduce both bugs from the report as fixtures: sublayers straddling a third layer, and a framework base sorting after largen
-- [ ] 5.4 Confirm it passes on an order that is actually achievable — a check that only ever fails is not a check
-- [ ] 5.5 Confirm it would have caught the `--weight: 900` computing as `300` case, which is the one whose symptom points elsewhere
+- [x] 5.1 Resolve layer order from a set of stylesheets and their `@layer` statements — first mention wins, and a sublayer takes its parent's position
+- [x] 5.2 Report where the resolved order differs from the declared order, naming the layer and the reason
+- [x] 5.3 Reproduce both bugs from the report as fixtures: sublayers straddling a third layer, and a framework base sorting after largen
+- [x] 5.4 Confirm it passes on an order that is actually achievable — a check that only ever fails is not a check
+- [x] 5.5 Confirm it would have caught the `--weight: 900` computing as `300` case, which is the one whose symptom points elsewhere
 
 ## 6. Verification
 
-- [ ] 6.1 `largen verify`, conformance 9/9 against source and bundle
-- [ ] 6.2 Full suite locally and against the deployed site
-- [ ] 6.3 Screenshot every page in both themes and read them
-- [ ] 6.4 `openspec validate migration-support`
+- [x] 6.1 `largen verify`, conformance 9/9 against source and bundle
+- [x] 6.2 Full suite locally and against the deployed site
+- [x] 6.3 Screenshot every page in both themes and read them
+- [x] 6.4 `openspec validate migration-support`

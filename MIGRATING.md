@@ -297,6 +297,69 @@ rules, and the descendant one does the work: a bullet belongs to `li::marker`, s
 `ul::marker` alone changes nothing. That generalises — when a utility does not do what its
 name suggests, look at what it compiled to before assuming the cascade is at fault.
 
+### A lookup for the mechanical part
+
+Utilities, not components. `px-4` is `--pad: 0 1rem` and there is nothing to decide
+about it; a variant matrix is the opposite, and porting one is the mistake this guide
+exists to prevent. **If an entry would need a judgement about naming or structure, it is
+not in this table** — that is the work you should be doing rather than automating.
+
+Assumes a 4px spacing step. Check yours.
+
+**Spacing** — every scale value is `step ÷ 4` rem, so `p-3` is `0.75rem`.
+
+| utility | largen |
+|---|---|
+| `p-4` | `--pad: 1rem` |
+| `px-4` | `--pad: 0 1rem` |
+| `py-2` | `--pad: 0.5rem 0` |
+| `px-4 py-2` | `--pad: 0.5rem 1rem` |
+| `gap-4` | `--gap: 1rem` |
+| `gap-x-4` | `column-gap: 1rem` — one axis is not a slot |
+| `m-0` | `margin: 0` — margin is not a slot; it is between components, not inside one |
+
+**Layout** — largen ships these as utilities, so most convert to a class rather than a slot.
+
+| utility | largen |
+|---|---|
+| `flex` | `display: flex`, or the `row` utility |
+| `flex flex-col` | the `stack` utility |
+| `flex flex-wrap items-center` | the `cluster` utility |
+| `grid grid-cols-*` | the `grid` utility, with `--min-item` |
+| `mx-auto max-w-*` | the `center` utility, with `--measure` |
+| `items-center` | `align-items: center` |
+| `justify-between` | `justify-content: space-between` |
+
+**Type** — the trap is in the second column of the first row.
+
+| utility | largen |
+|---|---|
+| `text-sm` | `--font-size: calc(0.875rem * var(--scale))` **and** `--line-height: 1.43` |
+| `text-base` | `--font-size: calc(1rem * var(--scale))` |
+| `font-medium` | `--weight: var(--weight-medium)` |
+| `tracking-tight` | `--letter-spacing: -0.025em` |
+| `leading-none` | `--line-height: 1` |
+| `text-muted-foreground` | `--fg: var(--ink-muted)` |
+| `rounded-md` | `--radius: var(--radius-md)` |
+
+A Tailwind `text-*` utility bundles a line-height; converting only the size leaves the
+element on the document ratio. That is one line in a table and four components in a real
+migration.
+
+**Surfaces**
+
+| utility | largen |
+|---|---|
+| `bg-card` / `bg-muted` | `--bg: var(--surface)` |
+| `border` | `--border-width: var(--hairline)`, `--border-style: solid`, `--border-color: var(--line)` |
+| `shadow-sm` | `--shadow: var(--lift-1)` |
+| `transition-colors` | `--transition: var(--speed) color` |
+
+**Not in this table, deliberately:** anything with a colour in it beyond the tokens above,
+anything with a `dark:` prefix, and every variant utility. Colours go through tokens or
+`--tone*`; `dark:` should evaporate rather than convert; and variants are the matrix you
+are trying to delete.
+
 ### Three things that do not survive the conversion
 
 **Line height does not come along.** Tailwind's `text-sm` bundles a line-height —

@@ -11,12 +11,13 @@
  * calling agent has filesystem access; it reads the project's CSS with
  * `largen manifest` and passes the result in.
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 import { createValidator, manifest as referenceManifest } from '../../../genai/validate.js'
 import { lintComponentCss, registeredSlots } from '../../../genai/lint.js'
+import { checkLayerOrder } from '../../../genai/layers.js'
 import { getSection, SECTIONS } from '../contract.mjs'
 import { validateManifest, ManifestError } from '../manifest-schema.mjs'
 import { renderNode, renderDocument } from '../render.mjs'
@@ -55,7 +56,43 @@ const guard = (fn) => (args) => {
 
 /* --- 1. get_contract ------------------------------------------------------ */
 
-export const get_contract = guard(({ section }) => ok(getSection(section)))
+/* Re-read when dist/build.json changes, like the server does. A deploy rebuilds
+   and restarts, so a startup read would nearly always be enough — and "nearly
+   always" is how a tool reports one build's identity for another build's bytes. */
+let buildCache = { mtime: 0, data: null }
+function buildInfo() {
+  const file = join(root, 'dist', 'build.json')
+  try {
+    const { mtimeMs } = statSync(file)
+    if (mtimeMs !== buildCache.mtime) {
+      buildCache = { mtime: mtimeMs, data: JSON.parse(readFileSync(file, 'utf8')) }
+    }
+  } catch { buildCache = { mtime: 0, data: null } }
+  return buildCache.data
+}
+
+export const get_contract = guard(({ section }) => {
+  const info = buildInfo()
+  /* The version alone does not identify a build — the unversioned path and a
+     frozen /v/<version>/ path have shared a version string while serving
+     different bytes. Anyone checking a vendored contract for drift needs this. */
+  return ok({ build: info?.build ?? null, ...getSection(section) })
+})
+
+export const get_build = guard(() => {
+  const info = buildInfo()
+  if (!info) return fail('no build manifest — run `largen build`')
+  return ok({
+    version: info.version,
+    build: info.build,
+    files: info.files,
+    note: '`sha256` and `integrity` are of the served bytes, banner included — what ' +
+      '`curl | shasum -a 256` reproduces and what to record when vendoring. `build` ' +
+      'is the hash of the bundle before the banner was added; it names the build but ' +
+      'is not the file digest. Unversioned paths are not immutable: pin by sha256, ' +
+      'by integrity, or use a /v/<version>/ path.',
+  })
+})
 
 /* --- 2. list_components --------------------------------------------------- */
 
@@ -109,18 +146,108 @@ export const validate_spec = guard(({ spec, components }) => {
 
 /* --- 5. check_component_css ------------------------------------------------ */
 
-export const check_component_css = guard(({ css }) => {
-  if (typeof css !== 'string' || !css.trim()) return fail('css must be a non-empty string')
+const lintOne = (css) => {
   const { ok: clean, findings } = lintComponentCss(css, { slots: SLOTS })
-  return ok({
+  return {
     ok: clean,
-    slots: SLOTS,
     findings,
     summary: clean
       ? 'No contract violations. Static checks cannot see rendering, though — ' +
         'render it in a browser in both themes before believing it.'
       : `${findings.filter((f) => f.severity === 'error').length} error(s), ` +
         `${findings.filter((f) => f.severity === 'warning').length} warning(s).`,
+  }
+}
+
+/* One stylesheet or many. The array form exists because linting a project meant
+   one call per file — 27 of one reporter's 34 calls were that. The single-string
+   form is kept rather than replaced: the server has callers, and one of them is a
+   migration in progress. */
+export const check_component_css = guard(({ css, files }) => {
+  if (files !== undefined) {
+    if (!Array.isArray(files) || !files.length) return fail('files must be a non-empty array')
+    const results = []
+    for (const [i, f] of files.entries()) {
+      if (!f || typeof f.name !== 'string' || typeof f.css !== 'string') {
+        return fail(`files[${i}] must be { name: string, css: string }`)
+      }
+      results.push({ name: f.name, ...lintOne(f.css) })
+    }
+    const bad = results.filter((r) => !r.ok)
+    return ok({
+      ok: bad.length === 0,
+      slots: SLOTS,
+      checked: results.length,
+      results,
+      summary: bad.length
+        ? `${bad.length} of ${results.length} stylesheet(s) have errors: ${bad.map((r) => r.name).join(', ')}`
+        : `${results.length} stylesheet(s) clean. Static checks cannot see rendering.`,
+    })
+  }
+  if (typeof css !== 'string' || !css.trim()) {
+    return fail('pass `css` as a non-empty string, or `files` as [{ name, css }]')
+  }
+  return ok({ slots: SLOTS, ...lintOne(css) })
+})
+
+/* --- property -> slot ------------------------------------------------------
+ *
+ * Parsed from the paint rule, which is the only authoritative statement of which
+ * property each slot drives. Deriving it means adding a slot needs no edit here —
+ * and the question this answers ("is line-height a slot?") is one a reporter got
+ * wrong four times in a row by having nowhere to ask it. */
+const PROPERTY_SLOT = (() => {
+  const map = new Map()
+  const paint = read('src/paint.css').replace(/\/\*[\s\S]*?\*\//g, '')
+  for (const m of paint.matchAll(/([a-z-]+)\s*:\s*var\(\s*(--[\w-]+)\s*,\s*revert-layer\s*\)/g)) {
+    map.set(m[1], m[2])
+  }
+  return map
+})()
+
+export const lookup_property = guard(({ property }) => {
+  if (typeof property !== 'string' || !property.trim()) return fail('property must be a string')
+  const name = property.trim().replace(/^--/, '').toLowerCase()
+  const slot = PROPERTY_SLOT.get(name)
+  if (slot) {
+    return ok({
+      property: name, isSlot: true, slot,
+      note: `Set \`${slot}\` in the component. The universal paint rule reads it, ` +
+        'so tone, variant, size and state all continue to apply.',
+    })
+  }
+  return ok({
+    property: name, isSlot: false, slot: null,
+    note: 'Not driven by a slot — the paint rule does not consult it. Write it as a ' +
+      'plain declaration inside your component rule. That is allowed and normal; a ' +
+      'component is slots plus whatever shape it needs.',
+    slots: Object.fromEntries(PROPERTY_SLOT),
+  })
+})
+
+/* --- check_layer_order -----------------------------------------------------
+ *
+ * The one check here that reads more than one file at a time, and the only kind
+ * that could have caught the two most expensive bugs reported from the field.
+ * Both were cross-file: a linter reading one stylesheet structurally cannot see
+ * that a layer it believes is losing actually sorts later. */
+export const check_layer_order = guard(({ files }) => {
+  if (!Array.isArray(files) || !files.length) {
+    return fail('files must be a non-empty array of { name, css }, in document load order')
+  }
+  for (const [i, f] of files.entries()) {
+    if (!f || typeof f.name !== 'string' || typeof f.css !== 'string') {
+      return fail(`files[${i}] must be { name: string, css: string }`)
+    }
+  }
+  const result = checkLayerOrder(files)
+  return ok({
+    ...result,
+    note: result.ok
+      ? 'The declared order is achievable. Note this reads text: it assumes the ' +
+        'files are given in the order the document loads them, and cannot check that.'
+      : 'Layer order beats specificity, so no selector weight recovers these. Fix ' +
+        'the order rather than the selectors.',
   })
 })
 
@@ -229,10 +356,73 @@ export const TOOL_DEFINITIONS = [
       'check matters most — an unlayered component breaks `data-variant` silently.',
     inputSchema: {
       type: 'object',
-      required: ['css'],
-      properties: { css: { type: 'string', description: 'The component CSS to check.' } },
+      properties: {
+        css: { type: 'string', description: 'One stylesheet to check.' },
+        files: {
+          type: 'array',
+          description: 'Several stylesheets at once. Findings come back per file, ' +
+            'so linting a project is one call rather than one call per file.',
+          items: {
+            type: 'object',
+            required: ['name', 'css'],
+            properties: {
+              name: { type: 'string', description: 'How to refer to this stylesheet in findings.' },
+              css: { type: 'string' },
+            },
+          },
+        },
+      },
     },
     handler: () => check_component_css,
+  },
+  {
+    name: 'lookup_property',
+    title: 'Ask whether a CSS property is driven by a slot',
+    description:
+      'Answers "is this property a slot, and which one?" — derived from the paint ' +
+      'rule, so it follows the library rather than a list kept beside it. A property ' +
+      'that is not a slot is written as a plain declaration in the component.',
+    inputSchema: {
+      type: 'object',
+      required: ['property'],
+      properties: { property: { type: 'string', description: 'A CSS property name, e.g. line-height.' } },
+    },
+    handler: () => lookup_property,
+  },
+  {
+    name: 'check_layer_order',
+    title: 'Resolve cascade layer order across stylesheets',
+    description:
+      'Given several stylesheets in load order, resolves where each @layer actually ' +
+      'sorts and reports where that differs from the order declared. Catches the two ' +
+      'failures a single-file linter cannot see: sublayers of one parent that cannot ' +
+      'straddle a third layer, and a framework base layer sorting after largen.',
+    inputSchema: {
+      type: 'object',
+      required: ['files'],
+      properties: {
+        files: {
+          type: 'array',
+          description: 'Stylesheets in the order the document loads them.',
+          items: {
+            type: 'object',
+            required: ['name', 'css'],
+            properties: { name: { type: 'string' }, css: { type: 'string' } },
+          },
+        },
+      },
+    },
+    handler: () => check_layer_order,
+  },
+  {
+    name: 'get_build',
+    title: 'Get the identity and checksums of the served stylesheets',
+    description:
+      'Version, build id, and per-file byte length, sha256 and SRI integrity string. ' +
+      'Use it to check a vendored copy for drift — the version string alone does not ' +
+      'identify a build.',
+    inputSchema: { type: 'object', properties: {} },
+    handler: () => get_build,
   },
   {
     name: 'render_spec',

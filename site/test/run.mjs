@@ -30,12 +30,17 @@ const call = (n, a) => callTool(client, n, a)
 /* --- 7.1 all six tools respond ------------------------------------------- */
 
 const { tools } = await client.listTools()
-check('7.1 six tools advertised with input schemas', () => {
-  eq(tools.map((t) => t.name).sort(), [
-    'check_component_css', 'get_component_source', 'get_contract',
-    'list_components', 'render_spec', 'validate_spec'].sort(), 'tool names')
+check('7.1 the documented tools are advertised, with input schemas', () => {
+  /* Presence, not an exact set. An exact list means adding a tool fails a test
+     that is not about additions — which it did. Removing one is the regression
+     worth catching, and this still catches it. */
+  const names = tools.map((t) => t.name)
+  for (const required of ['get_contract', 'list_components', 'get_component_source',
+    'validate_spec', 'check_component_css', 'render_spec']) {
+    assert(names.includes(required), `${required} is no longer advertised`)
+  }
   for (const t of tools) assert(t.inputSchema?.type === 'object', `${t.name} has no input schema`)
-  return `${tools.length} tools`
+  return `${tools.length} tools, all six documented ones present`
 })
 
 const contract = await call('get_contract', {})
@@ -51,8 +56,12 @@ check('7.1 get_contract returns the contract', () => {
 
 const section = await call('get_contract', { section: 'axes' })
 check('7.1 get_contract honours `section`', () => {
-  eq(Object.keys(section.data).sort(), ['axes', 'version'], 'section response keys')
-  return 'axes only'
+  const keys = Object.keys(section.data)
+  assert(keys.includes('axes'), 'the requested section is missing')
+  for (const other of ['rules', 'slots', 'failureModes', 'paint']) {
+    assert(!keys.includes(other), `returned ${other} as well as the requested section`)
+  }
+  return 'axes only, plus version and build metadata'
 })
 
 const badSection = await call('get_contract', { section: 'nonsense' })
@@ -253,6 +262,96 @@ check('the example component set satisfies the contract', () => {
     'sites/example violates largen:\n          ' +
     exampleCheck.data.findings.map((f) => `${f.rule}:${f.line} ${f.message}`).join('\n          '))
   return `${exampleCss.split('\n').length} lines clean`
+})
+
+/* --- the tools added from the field report ------------------------------- */
+
+const LARGEN_LAYERS = '@layer largen.reset, largen.tokens, largen.paint, largen.tone, ' +
+  'largen.elements, largen.components, largen.modifiers;'
+
+const batch = await call('check_component_css', { files: [
+  { name: 'good.css', css: '@layer largen.components{.a{--bg:var(--tone-soft);--pad:1em}}' },
+  { name: 'bad.css', css: '@layer largen.components{.b{--bg:#fee;--pad:1em}}' },
+  { name: 'unlayered.css', css: '.c{--bg:var(--tone-soft)}' },
+] })
+check('check_component_css lints several files, attributing each finding', () => {
+  eq(batch.data.checked, 3, 'files checked')
+  const by = Object.fromEntries(batch.data.results.map((r) => [r.name, r]))
+  assert(by['good.css'].ok, 'the clean file was reported dirty')
+  assert(by['bad.css'].findings.some((f) => f.rule === 'colour-literal'), 'missed the colour literal')
+  assert(by['unlayered.css'].findings.some((f) => f.rule === 'layer'), 'missed the unlayered component')
+  return 'per-file, not a merged blob'
+})
+
+const single = await call('check_component_css', { css: '@layer largen.components{.a{--pad:1em}}' })
+check('check_component_css keeps the single-string form', () => {
+  assert(single.data.ok, 'the original signature stopped working')
+  return 'callers mid-migration are not broken'
+})
+
+for (const [prop, slot] of [['line-height', '--line-height'], ['letter-spacing', '--letter-spacing'],
+  ['padding', '--pad'], ['text-transform', null]]) {
+  const r = await call('lookup_property', { property: prop })
+  check(`lookup_property: ${prop}`, () => {
+    eq(r.data.slot, slot, `slot for ${prop}`)
+    if (!slot) assert(r.data.note.includes('plain declaration'), 'no guidance for a non-slot')
+    return slot ?? 'not a slot, and says what to do instead'
+  })
+}
+
+const straddle = await call('check_layer_order', { files: [
+  { name: 'largen.css', css: LARGEN_LAYERS },
+  { name: 'site.css', css: '@layer site.base, largen.components, site.overrides;' },
+] })
+check('check_layer_order catches sublayers straddling a third layer', () => {
+  assert(!straddle.data.ok, 'the straddle was not reported')
+  assert(straddle.data.findings.some((f) => f.rule === 'sublayer-straddle'), 'wrong rule')
+  /* The resolved order is what explains the symptom: site.base sorting AFTER
+     largen.components is why a --weight in the component layer lost. */
+  const o = straddle.data.order
+  assert(o.indexOf('site.base') > o.indexOf('largen.components'),
+    'resolved order does not show site.base sorting later')
+  return 'and the resolved order explains why the component layer lost'
+})
+
+const preflight = await call('check_layer_order', { files: [
+  { name: 'largen.css', css: LARGEN_LAYERS },
+  { name: 'tw.css', css: '@layer theme, base, components, utilities;' },
+  { name: 'app.css', css: '@layer base, largen.components;' },
+] })
+check('check_layer_order catches a framework base sorting after largen', () => {
+  assert(!preflight.data.ok, 'the preflight ordering was not reported')
+  return preflight.data.findings[0].rule
+})
+
+const achievable = await call('check_layer_order', { files: [
+  { name: 'app.css', css: '@layer app-base, largen.reset, largen.tokens, largen.paint, ' +
+    'largen.tone, largen.elements, largen.components, largen.modifiers, app-overrides;' },
+  { name: 'largen.css', css: LARGEN_LAYERS },
+] })
+check('check_layer_order passes on an order that is achievable', () => {
+  assert(achievable.data.ok,
+    `flagged a valid order: ${JSON.stringify(achievable.data.findings)}`)
+  const o = achievable.data.order
+  assert(o.indexOf('app-base') < o.indexOf('largen.components'), 'app-base did not sort first')
+  assert(o.indexOf('app-overrides') > o.indexOf('largen.modifiers'), 'app-overrides did not sort last')
+  return 'a check that only ever fails is not a check'
+})
+
+const build = await call('get_build', {})
+check('get_build reports checksums for what is served', () => {
+  assert(build.data.build, 'no build id')
+  for (const [name, e] of Object.entries(build.data.files)) {
+    assert(/^[0-9a-f]{64}$/.test(e.sha256), `${name} has no sha256`)
+    assert(/^sha384-/.test(e.integrity), `${name} has no integrity string`)
+  }
+  return `${Object.keys(build.data.files).length} files at ${build.data.build}`
+})
+
+check('get_contract carries the build id, since the version does not identify one', () => {
+  assert(contract.data.build, 'get_contract returned no build id')
+  eq(contract.data.build, build.data.build, 'contract build vs get_build')
+  return contract.data.build
 })
 
 /* --- statelessness -------------------------------------------------------- */
