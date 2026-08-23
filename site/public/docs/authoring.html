@@ -129,6 +129,12 @@ This is also where a preflight goes when largen runs alongside another framework
 <span class="tok">largen verify</span> cannot catch this. Layer position is a property of the whole document at load time — which files were seen, in what order — and a linter reading one stylesheet has no way to know. The browser is the only place the answer exists.</p>
   </div>
   <div class="failure" data-tone="warning">
+    <span class="failure-symptom">A fill is the right colour and the text on it is unreadable — the old tone's contrast colour on the new tone's background.</span>
+    <span class="failure-line"><strong>Cause</strong> — The component set <span class="tok">--tone</span> and read <span class="tok">var(--tone-contrast)</span> without setting <span class="tok">--tone-contrast</span> alongside it.</span>
+    <span class="failure-line"><strong>Fix</strong> — Set the pair together: <span class="tok">--tone: var(--danger); --tone-contrast: var(--danger-on)</span>.</span>
+    <p class="failure-line"><span class="tok">--tone-soft</span>, <span class="tok">--tone-ink</span> and <span class="tok">--tone-line</span> are formulas, and largen recomputes them on every element, so setting <span class="tok">--tone</span> anywhere is enough for those. <span class="tok">--tone-contrast</span> is not a formula — it is the paired token (<span class="tok">--danger</span> pairs with <span class="tok">--danger-on</span>) and nothing can derive one from the other, so it keeps whatever value was already in scope. The three that follow <span class="tok">--tone</span> automatically are exactly the three that can be computed from it. <span class="tok">largen verify</span> and <span class="tok">check_component_css</span> both flag this.</p>
+  </div>
+  <div class="failure" data-tone="warning">
     <span class="failure-symptom">A component looks right in one theme and wrong in the other.</span>
     <span class="failure-line"><strong>Cause</strong> — A colour literal, or a value that does not resolve against <span class="tok">--canvas</span>/<span class="tok">--ink</span>.</span>
     <span class="failure-line"><strong>Fix</strong> — Route the colour through a token or a <span class="tok">--tone*</span> derivation.</span>

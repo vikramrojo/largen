@@ -67,6 +67,17 @@ the build, or `largen verify`.
 - [x] 8.5 Document Tailwind coexistence in MIGRATING: where a preflight has to sort, why flat names, and reading compiled output rather than the utility name
 - [x] 8.6 Record that the migration's `!important`s were not load-bearing
 
+## 9. Make --tone work wherever it is set
+
+- [x] 9.1 Derive `--tone-soft/-ink/-line` on `*` rather than `:where([data-tone])` — they are substituted where declared, so a component feeding the axis by any other attribute got a correct border and a neutral label
+- [x] 9.2 Delete the now-unreachable copies in `src/tokens.css`; the formula is written once, which is what algebra.css claims and did not deliver for consumers
+- [x] 9.3 Confirm `.note` and `.field-error` correct themselves with no edit — chroma 0.003 to 0.019 and 0.015 to 0.141, matching the `[data-tone]` control
+- [x] 9.4 Confirm ancestor inheritance, nesting and the default tone are unchanged
+- [x] 9.5 Flag `--tone` set alongside an unpaired `var(--tone-contrast)` — a paired token, not a formula, so nothing derives it. Narrowed from "reading a derivation you did not declare", which the structural fix makes correct code
+- [x] 9.6 Contract failure mode for the pairing, and three migration notes: line-height does not come along, mix ratios do not transfer between shades, and rule 3 occasionally costs parity
+- [x] 9.7 Measure the cost honestly — 2.3ms to 3.8ms at 10,006 elements, unmeasurable at 1,609
+- [x] 9.8 Screenshot every page in both themes; all ten byte-identical, since nothing that already worked changes
+
 ## 5. Verification
 
 - [x] 5.1 `npm pack --dry-run` — the file list is exactly the intended set, with no `pages.mjs`, `contract.mjs`, `markdown.mjs` or `site-example.css`

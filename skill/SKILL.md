@@ -269,6 +269,22 @@ document at load time — which files were seen, in what order — and a linter
 reading one stylesheet has no way to know. The browser is the only place the
 answer exists.
 
+**A fill is the right colour and the text on it is unreadable — the old tone's
+contrast colour on the new tone's background.**
+
+Cause: The component set `--tone` and read `var(--tone-contrast)` without
+setting `--tone-contrast` alongside it.  
+Fix: Set the pair together: `--tone: var(--danger); --tone-contrast:
+var(--danger-on)`.
+
+`--tone-soft`, `--tone-ink` and `--tone-line` are formulas, and largen
+recomputes them on every element, so setting `--tone` anywhere is enough for
+those. `--tone-contrast` is not a formula — it is the paired token (`--danger`
+pairs with `--danger-on`) and nothing can derive one from the other, so it keeps
+whatever value was already in scope. The three that follow `--tone`
+automatically are exactly the three that can be computed from it. `largen
+verify` and `check_component_css` both flag this.
+
 **A component looks right in one theme and wrong in the other.**
 
 Cause: A colour literal, or a value that does not resolve against

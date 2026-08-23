@@ -26,7 +26,28 @@
  * ------------------------------------------------------------------------- */
 
 @layer largen.tone {
-  :where([data-tone]) {
+  /* Derived on every element, not only on [data-tone].
+   *
+   * These are unregistered custom properties, so `var(--tone)` inside them is
+   * substituted where they are DECLARED, not where they are read. Declared only
+   * on [data-tone], a component that feeds the axis through any other channel —
+   * `.note[data-type="danger"] { --tone: var(--danger) }` — inherits derivations
+   * already computed against an ancestor's tone. You get a correctly coloured
+   * border, because that reads --tone directly, and a neutral background and
+   * label, because those read the stale mixes. It reads as a specificity bug and
+   * is not one.
+   *
+   * On `*` each element recomputes from the --tone in its own scope, so setting
+   * --tone anywhere works. Inheritance is unchanged: a descendant of a
+   * [data-tone] container computes the same value it used to inherit.
+   *
+   * This is the one place in largen where a universal rule genuinely evaluates
+   * rather than falling back — the paint rule is cheap because its slots are
+   * usually unset, and these are not. Measured at 2.3ms against 3.8ms for a full
+   * style and layout recalc on a 10,006-element page. That is the cost of the
+   * formula being written once rather than once per component that needs it,
+   * which is the thing this file criticises daisyUI for. */
+  * {
     --tone-soft: color-mix(in oklab, var(--tone) 10%, var(--canvas));
     --tone-ink: color-mix(in oklab, var(--tone) 72%, var(--ink));
     --tone-line: color-mix(in oklab, var(--tone) 30%, var(--canvas));

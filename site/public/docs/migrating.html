@@ -235,6 +235,14 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 
 <p class="doc-p"><strong>Read the compiled output, not the utility name.</strong> A <span class="tok">marker:</span> utility compiles to two rules, and the descendant one does the work: a bullet belongs to <span class="tok">li::marker</span>, so styling <span class="tok">ul::marker</span> alone changes nothing. That generalises — when a utility does not do what its name suggests, look at what it compiled to before assuming the cascade is at fault.</p>
 
+<h3 class="section-title" id="three-things-that-do-not-survive-the-conversion">Three things that do not survive the conversion</h3>
+
+<p class="doc-p"><strong>Line height does not come along.</strong> Tailwind's <span class="tok">text-sm</span> bundles a line-height — <span class="tok">1.25rem</span> against a <span class="tok">0.875rem</span> font — and converting only the size leaves the element inheriting <span class="tok">1.5</span>. That made callouts about 9% taller in one conversion, and it has now caught badge, button, crumbs and callout in the same project. largen has no <span class="tok">line-height</span> slot: the twelve are what the paint rule consults, and a thirteenth would still need remembering. Carry it as ordinary CSS in the component, and check it on every element whose font size you change.</p>
+
+<p class="doc-p"><strong>Mix ratios do not transfer between shades.</strong> <span class="tok">bg-blue-950/5</span> is five percent of a <em>950</em> shade. Mixing a <em>500</em> shade at five percent lands several times too strong; around 1.5% matched the rendered lightness. Convert by comparing the result, not the number.</p>
+
+<p class="doc-p"><strong>Rule 3 sometimes costs parity, and it is worth saying so.</strong> A tint applied only in dark mode cannot be reproduced without a dark-mode rule. Mixing it against <span class="tok">--canvas</span> makes it follow the theme by construction, which is the right answer — and it means light mode gains a faint tint it did not have before. That is a real difference, not a rounding error. Decide it deliberately rather than discovering it in a screenshot diff.</p>
+
 <h3 class="section-title" id="on-important">On <span class="tok">!important</span></h3>
 
 <p class="doc-p">Migrations inherit <span class="tok">!important</span> from whatever came before. In one real conversion none of them were load-bearing: every selector already outweighed what it was beating, and the declarations were there defensively. <span class="tok">largen verify</span> rejects <span class="tok">!important</span> outright, which is a good forcing function — largen is layered and <span class="tok">:where()</span>-wrapped precisely so your CSS wins without it.</p>

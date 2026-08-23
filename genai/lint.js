@@ -139,7 +139,32 @@ export function lintComponentCss(css, { slots = [] } = {}) {
     }
   })
 
-  /* --- 5. !important ------------------------------------------------------ */
+  /* --- 5. --tone-contrast does not follow --tone ---------------------------
+   *
+   * The soft/ink/line derivations recompute on every element, so setting --tone
+   * anywhere works for them. --tone-contrast is different: it is a paired token
+   * (--danger-on for --danger), not a formula, so nothing can derive it. A rule
+   * that sets --tone and reads var(--tone-contrast) gets whichever contrast was
+   * in scope — a fill in the right colour with unreadable text on it. */
+  for (const m of region.matchAll(/\{([^{}]*)\}/g)) {
+    const block = m[1]
+    const setsTone = /(?:^|[;{\s])--tone\s*:/.test(block)
+    const readsContrast = /var\(\s*--tone-contrast\b/.test(block)
+    const setsContrast = /(?:^|[;{\s])--tone-contrast\s*:/.test(block)
+    if (setsTone && readsContrast && !setsContrast) {
+      const line = region.slice(0, m.index).split('\n').length
+      add('tone-contrast-unpaired', 'error', line,
+        'sets `--tone` and reads `var(--tone-contrast)` without setting it',
+        '`--tone-contrast` is a paired token, not a derivation — `--danger` pairs ' +
+        'with `--danger-on`, and no formula produces one from the other. Unlike ' +
+        '`--tone-soft`, `--tone-ink` and `--tone-line`, which recompute on every ' +
+        'element, this one keeps whatever value was already in scope. The result ' +
+        'is a fill in the new colour with the old colour\'s text on it. Set both ' +
+        'together: `--tone: var(--danger); --tone-contrast: var(--danger-on)`.')
+    }
+  }
+
+  /* --- 6. !important ------------------------------------------------------ */
   lines.forEach((line, i) => {
     if (line.includes('!important')) {
       add('important', 'error', at(i),

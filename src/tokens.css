@@ -63,9 +63,10 @@
        mix against an empty --tone and paints transparent. ----------------- */
     --tone: var(--neutral);
     --tone-contrast: var(--neutral-on);
-    --tone-soft: color-mix(in oklab, var(--tone) 10%, var(--canvas));
-    --tone-ink: color-mix(in oklab, var(--tone) 72%, var(--ink));
-    --tone-line: color-mix(in oklab, var(--tone) 30%, var(--canvas));
+    /* The derivations live in algebra.css, on `*`. A second copy here would be
+       unreachable — largen.tone sorts after largen.tokens — and would defeat the
+       point of deriving in one place. --tone and --tone-contrast above are the
+       fallback tone itself, not derivations, so they stay. */
 
     color-scheme: light;
   }

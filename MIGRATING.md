@@ -297,6 +297,26 @@ rules, and the descendant one does the work: a bullet belongs to `li::marker`, s
 `ul::marker` alone changes nothing. That generalises — when a utility does not do what its
 name suggests, look at what it compiled to before assuming the cascade is at fault.
 
+### Three things that do not survive the conversion
+
+**Line height does not come along.** Tailwind's `text-sm` bundles a line-height —
+`1.25rem` against a `0.875rem` font — and converting only the size leaves the element
+inheriting `1.5`. That made callouts about 9% taller in one conversion, and it has now
+caught badge, button, crumbs and callout in the same project. largen has no `line-height`
+slot: the twelve are what the paint rule consults, and a thirteenth would still need
+remembering. Carry it as ordinary CSS in the component, and check it on every element
+whose font size you change.
+
+**Mix ratios do not transfer between shades.** `bg-blue-950/5` is five percent of a *950*
+shade. Mixing a *500* shade at five percent lands several times too strong; around 1.5%
+matched the rendered lightness. Convert by comparing the result, not the number.
+
+**Rule 3 sometimes costs parity, and it is worth saying so.** A tint applied only in dark
+mode cannot be reproduced without a dark-mode rule. Mixing it against `--canvas` makes it
+follow the theme by construction, which is the right answer — and it means light mode
+gains a faint tint it did not have before. That is a real difference, not a rounding
+error. Decide it deliberately rather than discovering it in a screenshot diff.
+
 ### On `!important`
 
 Migrations inherit `!important` from whatever came before. In one real conversion none of
