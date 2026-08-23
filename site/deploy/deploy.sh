@@ -14,9 +14,14 @@
 # This file is the source of truth, but it is NOT what runs. It is installed to
 # /usr/local/bin/largen-deploy and run from there, because bash reads a script
 # lazily by byte offset: `git reset --hard` on the tree containing the running
-# script can change it underneath the interpreter mid-execution. The last step
-# refreshes the installed copy when this one has changed, so updates still
-# propagate — just not into the process already using it.
+# script can change it underneath the interpreter mid-execution.
+#
+# The installed copy is refreshed BEFORE the deploy runs, then re-executed.
+# Refreshing it afterwards — the obvious order — cannot work: a commit that
+# changes what the deploy must do can only land if the old script can already do
+# it. Removing the root `npm ci` was exactly that, and the old copy failed on the
+# very commit that deleted the lockfile it was installing from, rolled back, and
+# would have done so forever.
 set -euo pipefail
 
 REPO=/srv/largen
@@ -39,6 +44,20 @@ fi
 
 log "deploying $(git rev-parse --short "$BEFORE") -> $(git rev-parse --short "$TARGET")"
 git --no-pager log --oneline "$BEFORE..$TARGET" 2>/dev/null | sed 's/^/    /' || true
+
+# Adopt the incoming deploy script before acting on the commit that carries it.
+# The guard stops a re-exec loop if the installed copy somehow never matches.
+if [ "${LARGEN_DEPLOY_REEXEC:-}" != "1" ]; then
+  INCOMING=$(mktemp)
+  if git show "$TARGET:site/deploy/deploy.sh" > "$INCOMING" 2>/dev/null &&
+     ! cmp -s "$INCOMING" /usr/local/bin/largen-deploy; then
+    log "deploy script changed in the incoming commit — adopting it and re-running"
+    sudo install -m 0755 "$INCOMING" /usr/local/bin/largen-deploy
+    rm -f "$INCOMING"
+    LARGEN_DEPLOY_REEXEC=1 exec /usr/local/bin/largen-deploy "$@"
+  fi
+  rm -f "$INCOMING"
+fi
 
 roll_back() {
   log "FAILED — rolling back to $(git rev-parse --short "$BEFORE")"
@@ -71,11 +90,6 @@ for i in $(seq 1 10); do
     trap - ERR
     VERSION=$(curl -fsS "$HEALTH" | sed -n 's/.*"version": "\([^"]*\)".*/\1/p')
     log "healthy — version ${VERSION:-?} at $(git rev-parse --short HEAD)"
-    # Propagate a changed deploy script to the copy that runs next time.
-    if ! cmp -s "$REPO/site/deploy/deploy.sh" /usr/local/bin/largen-deploy; then
-      sudo install -m 0755 "$REPO/site/deploy/deploy.sh" /usr/local/bin/largen-deploy
-      log "deploy script updated for next run"
-    fi
     exit 0
   fi
   sleep 1
