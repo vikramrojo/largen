@@ -46,7 +46,8 @@
   "scripts": {
     "build": "node skill/scripts/cli.mjs build",
     "verify": "node skill/scripts/cli.mjs verify",
-    "gen": "node skill/scripts/cli.mjs gen"
+    "gen": "node skill/scripts/cli.mjs gen",
+    "prepack": "node skill/scripts/cli.mjs build"
   },
   "devDependencies": {
     "lightningcss": "^1.33.0"

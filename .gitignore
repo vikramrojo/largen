@@ -1,3 +1,4 @@
 node_modules/
 site/.previews/
 *.tgz
+dist/
