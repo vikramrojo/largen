@@ -149,10 +149,23 @@ function llmsCompact(c) {
   L.push('## Rules', '')
   c.rules.forEach((r, i) => L.push(`${i + 1}. ${r.title}`, wrap(r.why, 80, '   '), ''))
 
+  /* Symptom and fix only.
+   *
+   * This file's job is to be enough to AUTHOR a component without fetching
+   * anything else. Failure modes are diagnostic rather than instructional: you
+   * reach for them when something has already gone wrong, and at that point you
+   * can fetch the reasoning. Carrying every `why` inline pushed the file past its
+   * own size budget, and it grew per failure mode — the eighth would have cost
+   * another 800 characters to say something the seventh already implied.
+   *
+   * Symptom and fix are what let a model recognise and correct the problem. The
+   * cause and the explanation live in get_contract, SKILL.md and the authoring
+   * page, all generated from the same source, and the pointer below says so. */
   L.push('## How it fails', '')
+  L.push(wrap('Symptom and fix. For why, fetch `get_contract` with section ' +
+    '"failureModes", or read https://largen.dev/docs/authoring.html'), '')
   for (const f of c.failureModes) {
-    L.push(wrap(`SYMPTOM  ${f.symptom}`), wrap(`CAUSE    ${f.cause}`), wrap(`FIX      ${f.fix}`),
-      wrap(`WHY      ${f.why}`), '')
+    L.push(wrap(`SYMPTOM  ${f.symptom}`), wrap(`FIX      ${f.fix}`), '')
   }
 
   L.push('## Generative UI', '', wrap(c.generativeUI), '')

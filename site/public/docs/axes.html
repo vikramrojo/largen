@@ -56,7 +56,9 @@
   <div class="spec-row"><span class="spec-name">inherits</span><span class="spec-note">no</span></div>
   <div class="spec-row"><span class="spec-name">values</span><span class="spec-note"><span class="tok">solid</span> · <span class="tok">soft</span> · <span class="tok">outline</span> · <span class="tok">ghost</span></span></div>
   </div>
-  <p class="spec-note">Derived from the tone, never a separate colour. It deliberately does NOT inherit: with a universal paint rule there is no marker separating a component from a bare <span class="tok">&lt;span&gt;</span>, so a subtree variant would paint every wrapper element it passed through.</p>
+  <p class="spec-note">Derived from the tone, never a separate colour. It deliberately does NOT inherit: with a universal paint rule there is no marker separating a component from a bare <span class="tok">&lt;span&gt;</span>, so a subtree variant would paint every wrapper element it passed through.
+
+This axis is optional, and that is worth saying because the other three are not. The four variants are <em>ways of applying a tone</em>. If a component's variations are a surface treatment rather than a tone — a hairline in <span class="tok">--line</span> over <span class="tok">--canvas</span>, say — routing them through <span class="tok">data-variant</span> will tint the border and the label, and you will spend the afternoon fighting it. Write classes instead. Tone, size and state still apply; only this one has a premise your component can fail to meet.</p>
 </section>
 
 <section class="stack" style="--gap:.6rem">

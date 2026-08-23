@@ -120,6 +120,14 @@ variant — data-variant — does not inherit
   inherit: with a universal paint rule there is no marker separating a component
   from a bare `<span>`, so a subtree variant would paint every wrapper element
   it passed through.
+  
+  This axis is optional, and that is worth saying because the other three are
+  not. The four variants are *ways of applying a tone*. If a component's
+  variations are a surface treatment rather than a tone — a hairline in `--line`
+  over `--canvas`, say — routing them through `data-variant` will tint the
+  border and the label, and you will spend the afternoon fighting it. Write
+  classes instead. Tone, size and state still apply; only this one has a premise
+  your component can fail to meet.
 
 size — data-size — inherits
   values: xs sm md lg xl
@@ -171,6 +179,15 @@ that is not wrapped — a bare `*` is already specificity-free.
    Multiply by `var(--scale)` where you set a size, express the rest in `em`,
    and padding follows type automatically. Five hand-written size variants per
    component is the cost the size axis exists to remove.
+   
+   The rule is about not writing the same component five times. It is not a rule
+   about units, and the distinction matters for the shape it appears to forbid:
+   a control that shrinks its box while holding its type at one size. `em` is
+   what couples padding to type; `rem` is what decouples them. Set `--pad` in
+   `rem` and the box stops following the size axis while the type keeps up with
+   it. Measured at `data-size="lg"`: padding in `em` grows from 16px to 18px,
+   padding in `rem` stays at 12.8px. That is a unit choice inside one component,
+   not a size variant.
 
 5. Reach for HTML first.
    `<dialog>` is the modal, `<details>` is the collapse. Both are already themed
@@ -195,40 +212,24 @@ that is not wrapped — a bare `*` is already specificity-free.
 
 ## How it fails
 
+Symptom and fix. For why, fetch `get_contract` with section "failureModes", or
+read https://largen.dev/docs/authoring.html
+
 SYMPTOM `data-variant` has no effect, but `data-tone` and `data-size` still
 work.
-CAUSE The component is declared outside `@layer largen.components`.
 FIX Wrap the component rule in `@layer largen.components { … }`.
-WHY This is the worst failure mode in the system because it looks like it works.
-An unlayered component outranks `largen.modifiers`, so the variant rules lose —
-but tone and size act through inheriting custom properties rather than by
-overriding slots, so they are unaffected. One dead axis and two live ones reads
-as "variant is buggy" rather than "my component is in the wrong layer".
 
 SYMPTOM A component ignores the `data-tone` on its container.
-CAUSE It reaches past `--tone*` to a raw semantic token, e.g. `--bg:
-var(--danger)`.
 FIX Use `var(--tone)`, `var(--tone-soft)`, `var(--tone-ink)` or
 `var(--tone-line)`.
-WHY Raw semantic tokens are absolute; the `--tone*` family is relative to
-whatever tone is in scope. Naming the absolute one opts the component out of the
-axis entirely, which is invisible until someone sets a tone on an ancestor.
 
 SYMPTOM Every element on the page loses its browser defaults — lists unindent,
 headings shrink.
-CAUSE A slot was given an `initial-value`, or `paint.css` was moved out of its
-layer.
 FIX Remove the `initial-value`; keep the universal rule inside `@layer
 largen.paint`.
-WHY `revert-layer` is only meaningful from inside a layer, and only reached when
-the slot is guaranteed-invalid. Break either condition and the one universal
-rule stops being inert and starts being destructive.
 
 SYMPTOM Your own CSS is inside a cascade layer, and largen still wins — or your
 "base" layer beats largen when you meant it to lose.
-CAUSE A layer's position is fixed the first time it is mentioned, and a sublayer
-inherits its parent's position. Layers largen named first keep theirs; yours are
-appended after them, whatever order your `@layer` statement lists.
 FIX Declare every layer in one statement, before largen loads, with flat names
 on both sides of it:
 
@@ -236,44 +237,23 @@ on both sides of it:
 largen.reset, largen.tokens, largen.paint, largen.tone,
 largen.elements, largen.components, largen.modifiers,
 app-overrides;
-WHY Writing `@layer app.base, largen.components, app.overrides;` reads as
-"app.base lowest, app.overrides highest" and does not do that.
-`largen.components` already exists and keeps its position, while the new `app`
-parent is appended after everything — so `app.base` outranks largen and
-`app.overrides` can never reach past it, because both are children of one parent
-that has one position. Flat names avoid it: `app-base` and `app-overrides` are
-independent, so they can sit on either side.
-
-This is also where a preflight goes when largen runs alongside another framework
-— put its base layer in the statement ahead of largen, or it sorts last and
-flattens everything largen styled. Layer order beats specificity, so no amount
-of selector weight recovers it.
-
-`largen verify` cannot catch this. Layer position is a property of the whole
-document at load time — which files were seen, in what order — and a linter
-reading one stylesheet has no way to know. The browser is the only place the
-answer exists.
 
 SYMPTOM A fill is the right colour and the text on it is unreadable — the old
 tone's contrast colour on the new tone's background.
-CAUSE The component set `--tone` and read `var(--tone-contrast)` without setting
-`--tone-contrast` alongside it.
 FIX Set the pair together: `--tone: var(--danger); --tone-contrast:
 var(--danger-on)`.
-WHY `--tone-soft`, `--tone-ink` and `--tone-line` are formulas, and largen
-recomputes them on every element, so setting `--tone` anywhere is enough for
-those. `--tone-contrast` is not a formula — it is the paired token (`--danger`
-pairs with `--danger-on`) and nothing can derive one from the other, so it keeps
-whatever value was already in scope. The three that follow `--tone`
-automatically are exactly the three that can be computed from it. `largen
-verify` and `check_component_css` both flag this.
+
+SYMPTOM largen is painting something you want it to leave alone — a third-party
+widget, a chart, markup another framework owns.
+FIX Set the slot to `initial`: `--bg: initial; --pad: initial`.
+
+SYMPTOM A link is tinted with the tone when it should take the colour of the
+text around it.
+FIX Set `--fg: currentColor` on the link component. `color: inherit` is
+equivalent.
 
 SYMPTOM A component looks right in one theme and wrong in the other.
-CAUSE A colour literal, or a value that does not resolve against
-`--canvas`/`--ink`.
 FIX Route the colour through a token or a `--tone*` derivation.
-WHY Theme swapping works by changing what the tokens resolve to. Anything that
-bypasses the tokens is simply not part of that mechanism.
 
 ## Generative UI
 

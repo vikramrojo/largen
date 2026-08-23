@@ -13,12 +13,12 @@ Shipped in `cbfabdb`, recorded here because the deltas describe it.
 
 ## 2. Contract material
 
-- [ ] 2.1 The `initial` idiom for returning a slot to guaranteed-invalid — presented as what makes incremental adoption possible, not as an aside
-- [ ] 2.2 The link recipe: `--fg: currentColor`, **with `--fg: inherit` named as the trap** and why it yields the user-agent link colour
-- [ ] 2.3 The variant axis is optional — if your variants are a surface treatment rather than a tone, write classes
-- [ ] 2.4 Rule 4 gains a caveat, not an exception: `em` couples padding to type, `rem` decouples it, so a fixed-size control is a unit choice rather than a size variant
-- [ ] 2.5 Verify each recipe in a browser before writing it down — 2.2 exists because the reported one does not work
-- [ ] 2.6 `largen contract --check`, then confirm the new material reaches `SKILL.md`, `llms-compact.txt` and `get_contract` over MCP
+- [x] 2.1 The `initial` idiom for returning a slot to guaranteed-invalid — presented as what makes incremental adoption possible, not as an aside
+- [x] 2.2 The link recipe: `--fg: currentColor`, **with `--fg: inherit` named as the trap** and why it yields the user-agent link colour
+- [x] 2.3 The variant axis is optional — if your variants are a surface treatment rather than a tone, write classes
+- [x] 2.4 Rule 4 gains a caveat, not an exception: `em` couples padding to type, `rem` decouples it, so a fixed-size control is a unit choice rather than a size variant
+- [x] 2.5 Verify each recipe in a browser before writing it down — 2.2 exists because the reported one does not work
+- [x] 2.6 `largen contract --check`, then confirm the new material reaches `SKILL.md`, `llms-compact.txt` and `get_contract` over MCP
 
 ## 3. The utility mapping table
 

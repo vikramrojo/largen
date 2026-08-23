@@ -104,7 +104,14 @@ const AXIS_PROSE = {
       'Derived from the tone, never a separate colour. It deliberately does NOT ' +
       'inherit: with a universal paint rule there is no marker separating a ' +
       'component from a bare `<span>`, so a subtree variant would paint every ' +
-      'wrapper element it passed through.',
+      'wrapper element it passed through.\n\n' +
+      'This axis is optional, and that is worth saying because the other three ' +
+      'are not. The four variants are *ways of applying a tone*. If a component\'s ' +
+      'variations are a surface treatment rather than a tone — a hairline in ' +
+      '`--line` over `--canvas`, say — routing them through `data-variant` will ' +
+      'tint the border and the label, and you will spend the afternoon fighting ' +
+      'it. Write classes instead. Tone, size and state still apply; only this one ' +
+      'has a premise your component can fail to meet.',
   },
   size: {
     attribute: 'data-size',
@@ -174,7 +181,15 @@ export const RULES = [
     why:
       'Multiply by `var(--scale)` where you set a size, express the rest in `em`, ' +
       'and padding follows type automatically. Five hand-written size variants per ' +
-      'component is the cost the size axis exists to remove.',
+      'component is the cost the size axis exists to remove.\n\n' +
+      'The rule is about not writing the same component five times. It is not a ' +
+      'rule about units, and the distinction matters for the shape it appears to ' +
+      'forbid: a control that shrinks its box while holding its type at one size. ' +
+      '`em` is what couples padding to type; `rem` is what decouples them. Set ' +
+      '`--pad` in `rem` and the box stops following the size axis while the type ' +
+      'keeps up with it. Measured at `data-size="lg"`: padding in `em` grows from ' +
+      '16px to 18px, padding in `rem` stays at 12.8px. That is a unit choice ' +
+      'inside one component, not a size variant.',
   },
   {
     id: 'html-first',
@@ -285,6 +300,47 @@ export const FAILURE_MODES = [
       'other, so it keeps whatever value was already in scope. The three that ' +
       'follow `--tone` automatically are exactly the three that can be computed ' +
       'from it. `largen verify` and `check_component_css` both flag this.',
+  },
+  {
+    symptom:
+      'largen is painting something you want it to leave alone — a third-party ' +
+      'widget, a chart, markup another framework owns.',
+    cause:
+      'The universal paint rule claims a property as soon as any rule sets its ' +
+      'slot, and nothing "unsets" a custom property by writing an empty value.',
+    fix: 'Set the slot to `initial`: `--bg: initial; --pad: initial`.',
+    why:
+      'A slot is registered with universal syntax and no `initial-value`, so ' +
+      '`initial` returns it to the *guaranteed-invalid* value — the state it has ' +
+      'when nothing has set it. `var(--bg, revert-layer)` then fires and hands the ' +
+      'property back to the user-agent stylesheet untouched. Measured: a claimed ' +
+      'element computes `rgb(244,245,247)` and `16px` of padding; the same element ' +
+      'with the slots set to `initial` computes `rgba(0,0,0,0)` and `0px`.\n\n' +
+      'This is the mechanism that makes incremental adoption possible. It is how ' +
+      'largen can run beside another framework for as long as a migration takes, ' +
+      'releasing whatever the other one still owns, rather than requiring a ' +
+      'cutover. Treat it as a first-class part of the contract, not a trick.',
+  },
+  {
+    symptom:
+      'A link is tinted with the tone when it should take the colour of the text ' +
+      'around it.',
+    cause:
+      '`largen.elements` sets `--fg: var(--tone-ink)` on every `a`, which is right ' +
+      'for prose links and wrong for links that are navigation or UI.',
+    fix: 'Set `--fg: currentColor` on the link component. `color: inherit` is equivalent.',
+    why:
+      'The spelling that looks right is `--fg: inherit`, and it does something ' +
+      'else. `inherit` takes the parent\'s computed `--fg`, and because the slot ' +
+      'does not inherit and the parent never set it, that value is ' +
+      'guaranteed-invalid — so `var(--fg, revert-layer)` fires and reverts to the ' +
+      '**user-agent** stylesheet, which colours links blue. Measured against a ' +
+      'parent at `rgb(3,4,5)`: `inherit` gives `rgb(0,0,238)`, `currentColor` ' +
+      'gives `rgb(3,4,5)`.\n\n' +
+      'The general lesson is worth more than the recipe: returning a slot to ' +
+      'guaranteed-invalid gets you the user-agent value, never the ambient one. ' +
+      'If you want what the surroundings have, name it — `currentColor` — rather ' +
+      'than trying to get there by removal.',
   },
   {
     symptom: 'A component looks right in one theme and wrong in the other.',

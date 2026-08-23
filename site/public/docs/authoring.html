@@ -77,7 +77,9 @@
   </div>
   <div class="rule">
     <span class="rule-title">4. Never write a size variant.</span>
-    <p class="rule-why">Multiply by <span class="tok">var(--scale)</span> where you set a size, express the rest in <span class="tok">em</span>, and padding follows type automatically. Five hand-written size variants per component is the cost the size axis exists to remove.</p>
+    <p class="rule-why">Multiply by <span class="tok">var(--scale)</span> where you set a size, express the rest in <span class="tok">em</span>, and padding follows type automatically. Five hand-written size variants per component is the cost the size axis exists to remove.
+
+The rule is about not writing the same component five times. It is not a rule about units, and the distinction matters for the shape it appears to forbid: a control that shrinks its box while holding its type at one size. <span class="tok">em</span> is what couples padding to type; <span class="tok">rem</span> is what decouples them. Set <span class="tok">--pad</span> in <span class="tok">rem</span> and the box stops following the size axis while the type keeps up with it. Measured at <span class="tok">data-size="lg"</span>: padding in <span class="tok">em</span> grows from 16px to 18px, padding in <span class="tok">rem</span> stays at 12.8px. That is a unit choice inside one component, not a size variant.</p>
   </div>
   <div class="rule">
     <span class="rule-title">5. Reach for HTML first.</span>
@@ -133,6 +135,22 @@ This is also where a preflight goes when largen runs alongside another framework
     <span class="failure-line"><strong>Cause</strong> — The component set <span class="tok">--tone</span> and read <span class="tok">var(--tone-contrast)</span> without setting <span class="tok">--tone-contrast</span> alongside it.</span>
     <span class="failure-line"><strong>Fix</strong> — Set the pair together: <span class="tok">--tone: var(--danger); --tone-contrast: var(--danger-on)</span>.</span>
     <p class="failure-line"><span class="tok">--tone-soft</span>, <span class="tok">--tone-ink</span> and <span class="tok">--tone-line</span> are formulas, and largen recomputes them on every element, so setting <span class="tok">--tone</span> anywhere is enough for those. <span class="tok">--tone-contrast</span> is not a formula — it is the paired token (<span class="tok">--danger</span> pairs with <span class="tok">--danger-on</span>) and nothing can derive one from the other, so it keeps whatever value was already in scope. The three that follow <span class="tok">--tone</span> automatically are exactly the three that can be computed from it. <span class="tok">largen verify</span> and <span class="tok">check_component_css</span> both flag this.</p>
+  </div>
+  <div class="failure" data-tone="warning">
+    <span class="failure-symptom">largen is painting something you want it to leave alone — a third-party widget, a chart, markup another framework owns.</span>
+    <span class="failure-line"><strong>Cause</strong> — The universal paint rule claims a property as soon as any rule sets its slot, and nothing "unsets" a custom property by writing an empty value.</span>
+    <span class="failure-line"><strong>Fix</strong> — Set the slot to <span class="tok">initial</span>: <span class="tok">--bg: initial; --pad: initial</span>.</span>
+    <p class="failure-line">A slot is registered with universal syntax and no <span class="tok">initial-value</span>, so <span class="tok">initial</span> returns it to the <em>guaranteed-invalid</em> value — the state it has when nothing has set it. <span class="tok">var(--bg, revert-layer)</span> then fires and hands the property back to the user-agent stylesheet untouched. Measured: a claimed element computes <span class="tok">rgb(244,245,247)</span> and <span class="tok">16px</span> of padding; the same element with the slots set to <span class="tok">initial</span> computes <span class="tok">rgba(0,0,0,0)</span> and <span class="tok">0px</span>.
+
+This is the mechanism that makes incremental adoption possible. It is how largen can run beside another framework for as long as a migration takes, releasing whatever the other one still owns, rather than requiring a cutover. Treat it as a first-class part of the contract, not a trick.</p>
+  </div>
+  <div class="failure" data-tone="warning">
+    <span class="failure-symptom">A link is tinted with the tone when it should take the colour of the text around it.</span>
+    <span class="failure-line"><strong>Cause</strong> — <span class="tok">largen.elements</span> sets <span class="tok">--fg: var(--tone-ink)</span> on every <span class="tok">a</span>, which is right for prose links and wrong for links that are navigation or UI.</span>
+    <span class="failure-line"><strong>Fix</strong> — Set <span class="tok">--fg: currentColor</span> on the link component. <span class="tok">color: inherit</span> is equivalent.</span>
+    <p class="failure-line">The spelling that looks right is <span class="tok">--fg: inherit</span>, and it does something else. <span class="tok">inherit</span> takes the parent's computed <span class="tok">--fg</span>, and because the slot does not inherit and the parent never set it, that value is guaranteed-invalid — so <span class="tok">var(--fg, revert-layer)</span> fires and reverts to the *<em>user-agent</em>* stylesheet, which colours links blue. Measured against a parent at <span class="tok">rgb(3,4,5)</span>: <span class="tok">inherit</span> gives <span class="tok">rgb(0,0,238)</span>, <span class="tok">currentColor</span> gives <span class="tok">rgb(3,4,5)</span>.
+
+The general lesson is worth more than the recipe: returning a slot to guaranteed-invalid gets you the user-agent value, never the ambient one. If you want what the surroundings have, name it — <span class="tok">currentColor</span> — rather than trying to get there by removal.</p>
   </div>
   <div class="failure" data-tone="warning">
     <span class="failure-symptom">A component looks right in one theme and wrong in the other.</span>
