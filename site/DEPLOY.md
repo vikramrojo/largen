@@ -345,6 +345,23 @@ That refusal is the mechanism behind "a published versioned path always returns
 the same bytes". If a version needs different bytes, it needs a different version
 number — the unversioned `/largen.css` is the path that moves.
 
+**And the banner version does not identify the path that moves.** `/largen.css`
+is a live read of `dist/`, changing on every deploy that changes the build while
+still printing whatever `package.json` says. `/largen.css` and
+`/v/<same-version>/largen.css` can — and currently do — differ.
+
+What identifies a build:
+
+```sh
+curl -s  https://largen.exe.xyz/build.json     # sha256 + SRI for every file
+curl -sI https://largen.exe.xyz/largen.css     # ETag, without downloading
+curl -s  https://largen.exe.xyz/health         # version, build id, what is served
+```
+
+`build.json` travels into each new frozen path, so `/v/<version>/build.json`
+states that release's own hashes. `/v/0.1.0/` and `/v/0.2.0/` predate it and are
+left alone — adding a file to a frozen release is what the guard exists to stop.
+
 ## Rollback
 
 ```sh

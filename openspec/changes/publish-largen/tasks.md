@@ -78,6 +78,20 @@ the build, or `largen verify`.
 - [x] 9.7 Measure the cost honestly — 2.3ms to 3.8ms at 10,006 elements, unmeasurable at 1,609
 - [x] 9.8 Screenshot every page in both themes; all ten byte-identical, since nothing that already worked changes
 
+## 10. Make the served build identifiable
+
+The version string is not a stable identifier: `/largen.css` and `/v/0.2.0/largen.css`
+both call themselves 0.2.0 and serve different bytes.
+
+- [x] 10.1 Stamp a build id in the banner — the hash of the bundle *before* the banner, since a file's own hash cannot be inside it
+- [x] 10.2 Emit `dist/build.json` with byte length, sha256 of the served bytes, and an SRI `sha384-` string per file, labelling which hash answers which question
+- [x] 10.3 Serve it at `/build.json`, and add a content-derived `ETag` with `If-None-Match` on the unversioned paths
+- [x] 10.4 Send `access-control-allow-origin` on the CDN surfaces — SRI on a cross-origin link needs `crossorigin`, which needs CORS, so publishing integrity strings without it publishes something nobody can use
+- [x] 10.5 Fix `/health`, which named `/v/<version>/largen.css` as though that were the running build; it now reports the build id and the sha256 of what it actually serves
+- [x] 10.6 Carry `build.json` into new frozen paths; do not retrofit 0.1.0 or 0.2.0
+- [x] 10.7 Correct README, the landing page and DEPLOY.md — the root path is unversioned and its banner version does not identify it
+- [x] 10.8 Verify: build id stable across rebuilds, manifest sha256 reproduced by `curl | shasum`, SRI accepts the published string and rejects a corrupted one, 304 on revalidation
+
 ## 5. Verification
 
 - [x] 5.1 `npm pack --dry-run` — the file list is exactly the intended set, with no `pages.mjs`, `contract.mjs`, `markdown.mjs` or `site-example.css`

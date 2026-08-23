@@ -27,7 +27,11 @@ export async function release(args = []) {
   }
 
   mkdirSync(dir, { recursive: true })
-  const files = readdirSync(at('dist')).filter((f) => f.endsWith('.css'))
+  /* build.json travels with the snapshot, so a frozen path can state its own
+     hashes. The already-published 0.1.0 and 0.2.0 do not get one retrofitted:
+     adding a file to a frozen directory is the thing this guard exists to
+     prevent, and a version that gained a file would not be the same release. */
+  const files = readdirSync(at('dist')).filter((f) => f.endsWith('.css') || f === 'build.json')
   for (const f of files) copyFileSync(at('dist', f), at('site/public/v', pkg.version, f))
 
   console.log(`\n  frozen ${files.length} file(s) at /v/${pkg.version}/\n`)

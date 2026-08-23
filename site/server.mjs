@@ -12,7 +12,7 @@
  */
 import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, extname, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
@@ -31,6 +31,22 @@ const BASE_URL = process.env.LARGEN_BASE_URL ?? `http://127.0.0.1:${PORT}`
 
 const previews = new Previews(join(here, '.previews'))
 
+/* The build manifest, re-read when dist/build.json changes on disk. A deploy
+   rebuilds and restarts, so a startup read would nearly always be enough — but
+   "nearly always" is how a server ends up serving one file's bytes under another
+   file's ETag. */
+let manifestCache = { mtime: 0, data: null }
+function buildManifest() {
+  const file = join(DIST, 'build.json')
+  try {
+    const { mtimeMs } = statSync(file)
+    if (mtimeMs !== manifestCache.mtime) {
+      manifestCache = { mtime: mtimeMs, data: JSON.parse(readFileSync(file, 'utf8')) }
+    }
+  } catch { manifestCache = { mtime: 0, data: null } }
+  return manifestCache.data
+}
+
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -47,6 +63,13 @@ const send = (res, status, body, headers = {}) => {
   res.writeHead(status, { 'content-length': Buffer.byteLength(body), ...headers })
   res.end(body)
 }
+
+/* A subresource-integrity check on a cross-origin <link> requires `crossorigin`,
+   and `crossorigin` requires the server to allow it — without this the browser
+   cannot read the response to hash it, so it blocks the stylesheet no matter how
+   correct the integrity string is. Publishing SRI without CORS would be
+   publishing something nobody can use. Everything here is public static CSS. */
+const CDN = { 'access-control-allow-origin': '*' }
 
 /* Directories the site is allowed to serve from the repository. All of it is
    plain CSS and dependency-free ESM that is already public.
@@ -66,12 +89,26 @@ function safeJoin(base, urlPath) {
   return full
 }
 
-async function serveFile(res, file, { immutable = false, status = 200 } = {}) {
+async function serveFile(res, file, { immutable = false, status = 200, etag = null, req = null, headers = {} } = {}) {
   try {
     const info = await stat(file)
     if (!info.isFile()) return false
+
+    /* Content-derived when the manifest knows the file, size+mtime otherwise.
+       A content ETag survives a redeploy that rebuilds identical bytes; a
+       stat-derived one does not, which is the weaker but always-available
+       fallback. */
+    const tag = etag ?? `W/"${info.size.toString(16)}-${Math.round(info.mtimeMs).toString(16)}"`
+    if (req && req.headers['if-none-match'] === tag) {
+      res.writeHead(304, { etag: tag, ...headers })
+      res.end()
+      return true
+    }
+
     const body = await readFile(file)
     send(res, status, body, {
+      etag: tag,
+      ...headers,
       'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
       'cache-control': immutable
         ? 'public, max-age=31536000, immutable'
@@ -145,7 +182,16 @@ const server = createServer(async (req, res) => {
         ok: true,
         service: 'largen.dev',
         version: pkg.version,
-        stylesheet: existsSync(join(DIST, 'largen.css')) ? `/v/${pkg.version}/largen.css` : null,
+        /* What this server actually serves, not a pinned path it does not.
+           The previous field named /v/<version>/largen.css, whose bytes differ
+           from the /largen.css this same process returns. */
+        build: buildManifest()?.build ?? null,
+        serving: buildManifest()
+          ? Object.fromEntries(Object.entries(buildManifest().files)
+              .map(([f, e]) => [`/${f}`, { sha256: e.sha256, bytes: e.bytes }]))
+          : null,
+        note: 'Unversioned paths are not immutable. Pin by sha256, by the integrity ' +
+          'string in /build.json, or use a /v/<version>/ path.',
         uptimeSeconds: Math.round(process.uptime()),
       }, null, 2) + '\n', { 'content-type': TYPES['.json'], 'cache-control': 'no-store' })
     }
@@ -161,8 +207,16 @@ const server = createServer(async (req, res) => {
     }
 
     /* --- Stylesheet, current ---------------------------------------------- */
+    if (path === '/build.json') {
+      if (await serveFile(res, join(DIST, 'build.json'), { req, headers: CDN })) return
+      return send(res, 503, 'not built — run `largen build`\n', { 'content-type': TYPES['.txt'] })
+    }
+
     if (/^\/(largen|largen\.components|theme-dark|site-example)\.css$/.test(path)) {
-      if (await serveFile(res, join(DIST, path.slice(1)))) return
+      const name = path.slice(1)
+      const entry = buildManifest()?.files?.[name]
+      if (await serveFile(res, join(DIST, name),
+        { req, etag: entry && `"${entry.sha256}"`, headers: CDN })) return
       return send(res, 503, 'stylesheet not built — run `largen build`\n',
         { 'content-type': TYPES['.txt'] })
     }
@@ -170,7 +224,7 @@ const server = createServer(async (req, res) => {
     /* --- Stylesheet, pinned. Snapshots, so these never change. ------------- */
     if (path.startsWith('/v/')) {
       const file = safeJoin(PUBLIC, path)
-      if (file && await serveFile(res, file, { immutable: true })) return
+      if (file && await serveFile(res, file, { immutable: true, req, headers: CDN })) return
       return send(res, 404, 'no such version\n', { 'content-type': TYPES['.txt'] })
     }
 

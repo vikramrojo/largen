@@ -117,8 +117,32 @@ No install needed — it is a stylesheet:
 
 ```html
 <link rel="stylesheet" href="https://largen.dev/largen.css">
-<link rel="stylesheet" href="https://largen.dev/v/0.2.0/largen.css">  <!-- pinned, immutable -->
 ```
+
+**That path is not versioned, and the version in its banner does not identify it.**
+`/largen.css` is a live read of the current build; it changes whenever the library does,
+while still printing whatever `version` says. Two builds can call themselves the same
+version and have different bytes — they currently do.
+
+To pin, use one of the three things that actually identify bytes:
+
+```html
+<!-- a frozen path: these bytes, forever -->
+<link rel="stylesheet" href="https://largen.dev/v/0.2.0/largen.css">
+
+<!-- or the live path with an integrity check, which fails loudly if it moves -->
+<link rel="stylesheet" href="https://largen.dev/largen.css"
+      integrity="sha384-…" crossorigin="anonymous">
+```
+
+`https://largen.dev/build.json` publishes, for every stylesheet: byte length, `sha256` of
+the served bytes, and an `integrity` string to paste above. That is what to record when
+vendoring — `curl -s https://largen.dev/largen.css | shasum -a 256` reproduces the
+`sha256` exactly. The `+abcd1234` suffix in the banner is the *build id*, a hash of the
+bundle before the banner was added; it names the build but is not the file's digest.
+
+`ETag` is served on the unversioned paths, so `curl -I` answers "has it moved?" without
+downloading.
 
 Or through a bundler:
 
