@@ -52,8 +52,8 @@
 - [x] 7.4 `npm pack` after `rm -rf dist` still ships all three dist files via `prepack`
 - [x] 7.5 Screenshot the site in both themes and compare against the lightningcss build
 - [x] 7.6 `largen verify` no longer reports `--lightningcss-*` as unregistered slots
-- [ ] 7.7 Full suite locally and against the deployed site
-- [ ] 7.8 A VM deploy with no root install in the path
+- [x] 7.7 Full suite locally and against the deployed site
+- [x] 7.8 A VM deploy with no root install in the path
 
 ## 5. Verification
 
