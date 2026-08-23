@@ -220,6 +220,36 @@ WHY `revert-layer` is only meaningful from inside a layer, and only reached when
 the slot is guaranteed-invalid. Break either condition and the one universal
 rule stops being inert and starts being destructive.
 
+SYMPTOM Your own CSS is inside a cascade layer, and largen still wins — or your
+"base" layer beats largen when you meant it to lose.
+CAUSE A layer's position is fixed the first time it is mentioned, and a sublayer
+inherits its parent's position. Layers largen named first keep theirs; yours are
+appended after them, whatever order your `@layer` statement lists.
+FIX Declare every layer in one statement, before largen loads, with flat names
+on both sides of it:
+
+@layer app-base,
+largen.reset, largen.tokens, largen.paint, largen.tone,
+largen.elements, largen.components, largen.modifiers,
+app-overrides;
+WHY Writing `@layer app.base, largen.components, app.overrides;` reads as
+"app.base lowest, app.overrides highest" and does not do that.
+`largen.components` already exists and keeps its position, while the new `app`
+parent is appended after everything — so `app.base` outranks largen and
+`app.overrides` can never reach past it, because both are children of one parent
+that has one position. Flat names avoid it: `app-base` and `app-overrides` are
+independent, so they can sit on either side.
+
+This is also where a preflight goes when largen runs alongside another framework
+— put its base layer in the statement ahead of largen, or it sorts last and
+flattens everything largen styled. Layer order beats specificity, so no amount
+of selector weight recovers it.
+
+`largen verify` cannot catch this. Layer position is a property of the whole
+document at load time — which files were seen, in what order — and a linter
+reading one stylesheet has no way to know. The browser is the only place the
+answer exists.
+
 SYMPTOM A component looks right in one theme and wrong in the other.
 CAUSE A colour literal, or a value that does not resolve against
 `--canvas`/`--ink`.

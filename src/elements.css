@@ -76,6 +76,20 @@
     border-block-end: var(--hairline) solid var(--line);
   }
 
+  /* Lines BETWEEN rows, not under the table.
+   *
+   * A trailing line on the final row doubles against anything that encloses the
+   * table — a bordered wrapper, a card, `.table-wrap` from the reference set —
+   * because border-collapse puts the two hairlines flush. The result is a 2px
+   * rule where 1px was meant, and everything below shifts by a pixel. Measured
+   * at 107px against 106px on a wrapped three-row table.
+   *
+   * Written as a second rule rather than :not(:last-child) on the one above, so
+   * a consumer who wants the trailing line back overrides one declaration. */
+  :where(tbody:last-of-type tr:last-child) :where(th, td) {
+    border-block-end: 0;
+  }
+
   :where(code, kbd, samp, pre) {
     font-family: var(--font-mono);
   }

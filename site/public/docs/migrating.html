@@ -220,6 +220,25 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 
 <hr class="doc-rule">
 
+<h2 class="section-title" id="running-both-at-once">Running both at once</h2>
+
+<p class="doc-p">A migration is not atomic, and largen alongside Tailwind is where the sharp edges are. Three came out of a real Astro integration.</p>
+
+<p class="doc-p"><strong>Declare every layer in one statement, before largen loads.</strong> A layer's position is fixed the first time it is mentioned, so whatever order your <span class="tok">@layer</span> statement lists, layers largen named first keep theirs and yours are appended after. Put a preflight ahead of largen explicitly or it sorts last and flattens every heading, list and border largen styled — and because layer order beats specificity, no selector weight recovers it.</p>
+
+<pre class="code" data-lang="css">@layer app-base,
+       largen.reset, largen.tokens, largen.paint, largen.tone,
+       largen.elements, largen.components, largen.modifiers,
+       app-overrides;</pre>
+
+<p class="doc-p"><strong>Use flat names, not sublayers, for your own halves.</strong> <span class="tok">app.base</span> and <span class="tok">app.overrides</span> are children of one <span class="tok">app</span> layer with one position, so they cannot straddle largen: once <span class="tok">app</span> is placed, <span class="tok">app.overrides</span> is stuck wherever its sibling put it. <span class="tok">app-base</span> and <span class="tok">app-overrides</span> are independent and can sit on either side. This fails silently — the statement reads correctly and does something else.</p>
+
+<p class="doc-p"><strong>Read the compiled output, not the utility name.</strong> A <span class="tok">marker:</span> utility compiles to two rules, and the descendant one does the work: a bullet belongs to <span class="tok">li::marker</span>, so styling <span class="tok">ul::marker</span> alone changes nothing. That generalises — when a utility does not do what its name suggests, look at what it compiled to before assuming the cascade is at fault.</p>
+
+<h3 class="section-title" id="on-important">On <span class="tok">!important</span></h3>
+
+<p class="doc-p">Migrations inherit <span class="tok">!important</span> from whatever came before. In one real conversion none of them were load-bearing: every selector already outweighed what it was beating, and the declarations were there defensively. <span class="tok">largen verify</span> rejects <span class="tok">!important</span> outright, which is a good forcing function — largen is layered and <span class="tok">:where()</span>-wrapped precisely so your CSS wins without it.</p>
+
 <h2 class="section-title" id="phase-5-verify-including-with-your-eyes">Phase 5 — Verify, including with your eyes</h2>
 
 <pre class="code" data-lang="sh">npx largen verify        # static: layers, colour literals, tone bypass, slots

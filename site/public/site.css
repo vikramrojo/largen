@@ -331,6 +331,9 @@
 
   .doc-table th { --weight: var(--weight-medium); --fg: var(--ink-muted) }
 
+  /* Same trailing-line problem the library had; the guide has two real tables. */
+  .doc-table tbody tr:last-child :is(th, td) { --border-width: 0 }
+
   /* The guide's `---` breaks sit immediately before an `##`, so the heading is
      already doing structural work. Left at 1.25rem the rule floated in the
      middle of ~3.4rem of combined flex gap and margin and read as an accidental

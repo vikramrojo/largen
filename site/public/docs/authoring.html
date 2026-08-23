@@ -114,6 +114,21 @@ One registered property does carry an initial value, deliberately: <span class="
     <p class="failure-line"><span class="tok">revert-layer</span> is only meaningful from inside a layer, and only reached when the slot is guaranteed-invalid. Break either condition and the one universal rule stops being inert and starts being destructive.</p>
   </div>
   <div class="failure" data-tone="warning">
+    <span class="failure-symptom">Your own CSS is inside a cascade layer, and largen still wins — or your "base" layer beats largen when you meant it to lose.</span>
+    <span class="failure-line"><strong>Cause</strong> — A layer's position is fixed the first time it is mentioned, and a sublayer inherits its parent's position. Layers largen named first keep theirs; yours are appended after them, whatever order your <span class="tok">@layer</span> statement lists.</span>
+    <span class="failure-line"><strong>Fix</strong> — Declare every layer in one statement, before largen loads, with flat names on both sides of it:
+
+    @layer app-base,
+           largen.reset, largen.tokens, largen.paint, largen.tone,
+           largen.elements, largen.components, largen.modifiers,
+           app-overrides;</span>
+    <p class="failure-line">Writing <span class="tok">@layer app.base, largen.components, app.overrides;</span> reads as "app.base lowest, app.overrides highest" and does not do that. <span class="tok">largen.components</span> already exists and keeps its position, while the new <span class="tok">app</span> parent is appended after everything — so <span class="tok">app.base</span> outranks largen and <span class="tok">app.overrides</span> can never reach past it, because both are children of one parent that has one position. Flat names avoid it: <span class="tok">app-base</span> and <span class="tok">app-overrides</span> are independent, so they can sit on either side.
+
+This is also where a preflight goes when largen runs alongside another framework — put its base layer in the statement ahead of largen, or it sorts last and flattens everything largen styled. Layer order beats specificity, so no amount of selector weight recovers it.
+
+<span class="tok">largen verify</span> cannot catch this. Layer position is a property of the whole document at load time — which files were seen, in what order — and a linter reading one stylesheet has no way to know. The browser is the only place the answer exists.</p>
+  </div>
+  <div class="failure" data-tone="warning">
     <span class="failure-symptom">A component looks right in one theme and wrong in the other.</span>
     <span class="failure-line"><strong>Cause</strong> — A colour literal, or a value that does not resolve against <span class="tok">--canvas</span>/<span class="tok">--ink</span>.</span>
     <span class="failure-line"><strong>Fix</strong> — Route the colour through a token or a <span class="tok">--tone*</span> derivation.</span>

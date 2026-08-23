@@ -55,6 +55,18 @@
 - [x] 7.7 Full suite locally and against the deployed site
 - [x] 7.8 A VM deploy with no root install in the path
 
+## 8. Integration findings from the field
+
+Reported from an Astro + Tailwind integration; none of it caught by astro check,
+the build, or `largen verify`.
+
+- [x] 8.1 Stop `largen.elements` bordering the last table row — it doubled against any enclosing border and shifted everything below by 1px. Measured 127px to 126px on a wrapped table
+- [x] 8.2 Same fix for `.doc-table` on the site, which had the identical trailing line
+- [x] 8.3 Add a failure mode for layer position: a layer is fixed at first mention, a sublayer inherits its parent's, so a consumer's layers land after largen whatever their `@layer` statement says
+- [x] 8.4 Give it the actionable form — one statement before largen, flat names on both sides — and verify the published snippet actually interleaves before shipping it
+- [x] 8.5 Document Tailwind coexistence in MIGRATING: where a preflight has to sort, why flat names, and reading compiled output rather than the utility name
+- [x] 8.6 Record that the migration's `!important`s were not load-bearing
+
 ## 5. Verification
 
 - [x] 5.1 `npm pack --dry-run` — the file list is exactly the intended set, with no `pages.mjs`, `contract.mjs`, `markdown.mjs` or `site-example.css`

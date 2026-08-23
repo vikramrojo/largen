@@ -237,6 +237,39 @@ export const FAILURE_MODES = [
       'stops being inert and starts being destructive.',
   },
   {
+    symptom:
+      'Your own CSS is inside a cascade layer, and largen still wins — or your ' +
+      '"base" layer beats largen when you meant it to lose.',
+    cause:
+      'A layer\'s position is fixed the first time it is mentioned, and a ' +
+      'sublayer inherits its parent\'s position. Layers largen named first keep ' +
+      'theirs; yours are appended after them, whatever order your `@layer` ' +
+      'statement lists.',
+    fix:
+      'Declare every layer in one statement, before largen loads, with flat ' +
+      'names on both sides of it:\n\n' +
+      '    @layer app-base,\n' +
+      '           largen.reset, largen.tokens, largen.paint, largen.tone,\n' +
+      '           largen.elements, largen.components, largen.modifiers,\n' +
+      '           app-overrides;',
+    why:
+      'Writing `@layer app.base, largen.components, app.overrides;` reads as ' +
+      '"app.base lowest, app.overrides highest" and does not do that. ' +
+      '`largen.components` already exists and keeps its position, while the new ' +
+      '`app` parent is appended after everything — so `app.base` outranks largen ' +
+      'and `app.overrides` can never reach past it, because both are children of ' +
+      'one parent that has one position. Flat names avoid it: `app-base` and ' +
+      '`app-overrides` are independent, so they can sit on either side.\n\n' +
+      'This is also where a preflight goes when largen runs alongside another ' +
+      'framework — put its base layer in the statement ahead of largen, or it ' +
+      'sorts last and flattens everything largen styled. Layer order beats ' +
+      'specificity, so no amount of selector weight recovers it.\n\n' +
+      '`largen verify` cannot catch this. Layer position is a property of the ' +
+      'whole document at load time — which files were seen, in what order — and ' +
+      'a linter reading one stylesheet has no way to know. The browser is the ' +
+      'only place the answer exists.',
+  },
+  {
     symptom: 'A component looks right in one theme and wrong in the other.',
     cause: 'A colour literal, or a value that does not resolve against `--canvas`/`--ink`.',
     fix: 'Route the colour through a token or a `--tone*` derivation.',

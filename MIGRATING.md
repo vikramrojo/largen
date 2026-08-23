@@ -268,6 +268,43 @@ name and a `data-tone` do not conflict, which is the point.
 
 ---
 
+## Running both at once
+
+A migration is not atomic, and largen alongside Tailwind is where the sharp edges are.
+Three came out of a real Astro integration.
+
+**Declare every layer in one statement, before largen loads.** A layer's position is
+fixed the first time it is mentioned, so whatever order your `@layer` statement lists,
+layers largen named first keep theirs and yours are appended after. Put a preflight ahead
+of largen explicitly or it sorts last and flattens every heading, list and border largen
+styled — and because layer order beats specificity, no selector weight recovers it.
+
+```css
+@layer app-base,
+       largen.reset, largen.tokens, largen.paint, largen.tone,
+       largen.elements, largen.components, largen.modifiers,
+       app-overrides;
+```
+
+**Use flat names, not sublayers, for your own halves.** `app.base` and `app.overrides`
+are children of one `app` layer with one position, so they cannot straddle largen: once
+`app` is placed, `app.overrides` is stuck wherever its sibling put it. `app-base` and
+`app-overrides` are independent and can sit on either side. This fails silently — the
+statement reads correctly and does something else.
+
+**Read the compiled output, not the utility name.** A `marker:` utility compiles to two
+rules, and the descendant one does the work: a bullet belongs to `li::marker`, so styling
+`ul::marker` alone changes nothing. That generalises — when a utility does not do what its
+name suggests, look at what it compiled to before assuming the cascade is at fault.
+
+### On `!important`
+
+Migrations inherit `!important` from whatever came before. In one real conversion none of
+them were load-bearing: every selector already outweighed what it was beating, and the
+declarations were there defensively. `largen verify` rejects `!important` outright, which
+is a good forcing function — largen is layered and `:where()`-wrapped precisely so your CSS
+wins without it.
+
 ## Phase 5 — Verify, including with your eyes
 
 ```sh
