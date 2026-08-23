@@ -103,7 +103,34 @@ of this.
 `ProtectHome=true`, drop `SupplementaryGroups`, and point `ExecStart` at
 `/usr/bin/node`. The unit comments say so too.
 
-## 2. Build the artifacts locally, then ship
+## 2. Deploying — the VM pulls, it is not pushed to
+
+The VM is a clone of `origin/main` and deploys itself. Nothing is copied from a
+developer machine, so there is no step at which the running site and the
+repository can quietly disagree.
+
+```sh
+ssh largen.exe.xyz /usr/local/bin/largen-deploy          # deploy now
+ssh largen.exe.xyz /usr/local/bin/largen-deploy --force  # redeploy the same commit
+```
+
+`largen-deploy.timer` runs the same script every five minutes and exits in about
+0.3s when `origin/main` has not moved, so pushing to `main` is a deploy.
+
+The script fetches, resets, installs, builds `dist/`, restarts, and polls
+`/health`. **If the health check fails it returns to the previous commit,
+reinstalls, rebuilds and restarts.** A deploy that leaves the site down is worse
+than one that does not happen.
+
+`dist/` is not committed — the VM builds it, and `prepack` builds it before
+`npm publish`. `site/public/v/` *is* committed, because a versioned path
+promises the same bytes forever and rebuilding those would defeat it.
+
+Watch a deploy: `ssh largen.exe.xyz 'journalctl -u largen-deploy -n 40 --no-pager'`
+
+### The old way, for reference
+
+## 2b. Build the artifacts locally, then ship
 
 The server serves `dist/` directly and returns 503 for the stylesheet if it is
 missing, so build before you copy.
