@@ -123,15 +123,15 @@ It is also on npm, which gives you the same bytes from a registry CDN with no
 dependency on largen.dev staying up:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.3.0/dist/largen.css">
-<link rel="stylesheet" href="https://unpkg.com/largen@0.3.0/dist/largen.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.3.1/dist/largen.css">
+<link rel="stylesheet" href="https://unpkg.com/largen@0.3.1/dist/largen.css">
 ```
 
 ```
 npm install largen        # for the CSS, the linter and the importable modules
 ```
 
-`largen.dev/v/0.3.0/largen.css`, `largen@0.3.0/dist/largen.css` on either CDN, and
+`largen.dev/v/0.3.1/largen.css`, `largen@0.3.1/dist/largen.css` on either CDN, and
 `node_modules/largen/dist/largen.css` are byte-identical, so **one `integrity`
 string validates all of them** — the release check enforces that rather than
 assuming it. Nothing here is a dependency in the build sense: installing gets you a
@@ -147,11 +147,11 @@ To pin, use one of the three things that actually identify bytes:
 
 ```html
 <!-- a frozen path: these bytes, forever -->
-<link rel="stylesheet" href="https://largen.dev/v/0.3.0/largen.css">
+<link rel="stylesheet" href="https://largen.dev/v/0.3.1/largen.css">
 
 <!-- or the live path with an integrity check, which fails loudly if it moves -->
 <link rel="stylesheet" href="https://largen.dev/largen.css"
-      integrity="sha384-eSa+rgcEcoLY5nN7vr5TEn9JE/M8OKlhAfpPVVdRtSkP45bbgaUBIQpb+IUJhRc3" crossorigin="anonymous">
+      integrity="sha384-AwFgalGCwsGMVWxOC83gxil5ucVnwYMQJgmuNFDYRqQDYzOoNyMrSOPkjr2aWsus" crossorigin="anonymous">
 ```
 
 `https://largen.dev/build.json` publishes, for every stylesheet: byte length, `sha256` of

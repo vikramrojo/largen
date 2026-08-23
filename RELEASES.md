@@ -9,6 +9,20 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.3.1 — 2026-08-23
+
+A probe that could report the wrong theme's numbers under the right theme's label. No CSS change: the stylesheets carry build id `b9fc348c`, the same as 0.3.0, so the only difference in the served bytes is the version in the banner. Nothing needs re-pinning for this — upgrade for the tooling.
+
+### Added
+
+- `emit_probe` takes `themeAttribute` and `themeClass`, for pages that theme by an attribute other than `data-theme` or by a class on `<html>` as Tailwind does. `largen probe --theme-class` and `--theme-attribute` on the command line.
+
+### Fixed
+
+- The probe's theme override is now held for the duration of the reading, and verified before any value is reported.
+  It set the attribute and then awaited a settle, and a page that manages its own theme re-applies it in exactly that window — Astro fires astro:page-load, any deferred module can do the same. Every value then came back as the page's theme wearing the requested theme's label. It presented as a per-element inconsistency rather than a broken override, because elements whose colour does not depend on the theme still read correctly: one report had two selectors near-white under a light theme and a third correct, and the third was correct by coincidence. A MutationObserver now re-applies the override whenever the page changes it, and the probe refuses to report values if a competing theme signal on the root element contradicts what was asked for.
+- Each row records the theme actually in effect when it was read, so a reading describes its own conditions instead of trusting its label.
+
 ## 0.3.0 — 2026-08-23
 
 Two more slots, themes that no longer outrank you, and tools that answer why a rule lost.

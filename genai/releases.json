@@ -2,6 +2,27 @@
  "$comment": "The release log, as data rather than prose, for two reasons. RELEASES.md is generated from it by `largen contract`, so the published log cannot drift from this file. And every entry carries `signals` — strings that must be present in, or absent from, the frozen bytes at site/public/v/<version>/ — so a claim about a release is checked against the artifact that release actually shipped rather than believed. `largen releases --check` runs that. `signals` is also the machine-readable delta list a per-project upgrade check needs: given a project's CSS and the version it vendored, the `present` strings of every later release are exactly what to grep for.",
  "releases": [
   {
+   "version": "0.3.1",
+   "date": "2026-08-23",
+   "summary": "A probe that could report the wrong theme's numbers under the right theme's label. No CSS change: the stylesheets carry build id `b9fc348c`, the same as 0.3.0, so the only difference in the served bytes is the version in the banner. Nothing needs re-pinning for this — upgrade for the tooling.",
+   "breaking": [],
+   "added": [
+    "`emit_probe` takes `themeAttribute` and `themeClass`, for pages that theme by an attribute other than `data-theme` or by a class on `<html>` as Tailwind does. `largen probe --theme-class` and `--theme-attribute` on the command line."
+   ],
+   "fixed": [
+    {
+     "change": "The probe's theme override is now held for the duration of the reading, and verified before any value is reported.",
+     "why": "It set the attribute and then awaited a settle, and a page that manages its own theme re-applies it in exactly that window — Astro fires astro:page-load, any deferred module can do the same. Every value then came back as the page's theme wearing the requested theme's label. It presented as a per-element inconsistency rather than a broken override, because elements whose colour does not depend on the theme still read correctly: one report had two selectors near-white under a light theme and a third correct, and the third was correct by coincidence. A MutationObserver now re-applies the override whenever the page changes it, and the probe refuses to report values if a competing theme signal on the root element contradicts what was asked for."
+    },
+    "Each row records the theme actually in effect when it was read, so a reading describes its own conditions instead of trusting its label."
+   ],
+   "tooling": [],
+   "signals": {
+    "present": ["--line-height", "--letter-spacing"],
+    "absent": ["--leading"]
+   }
+  },
+  {
    "version": "0.3.0",
    "date": "2026-08-23",
    "summary": "Two more slots, themes that no longer outrank you, and tools that answer why a rule lost.",

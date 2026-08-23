@@ -309,10 +309,12 @@ export const explain_slot = guard(({ files, entry, path, slot }) => {
  * case, because the markup a migration needs to ask about already exists. Moving
  * the execution rather than restricting the input keeps both. */
 export const emit_probe = guard((args = {}) => {
-  const { kind = 'computed', pages, html, selectors, properties, steps, assertions, themes, viewport, timeout } = args
+  const { kind = 'computed', pages, html, selectors, properties, steps, assertions, themes,
+    themeAttribute, themeClass, viewport, timeout } = args
   try {
     const document = buildProbe({
-      kind, pages, html, selectors, properties, steps, assertions, themes, viewport, timeout,
+      kind, pages, html, selectors, properties, steps, assertions, themes,
+      themeAttribute, themeClass, viewport, timeout,
     })
     return ok({
       kind,
@@ -331,6 +333,12 @@ export const emit_probe = guard((args = {}) => {
           'driver that moves a real pointer, or assert on a class the code sets instead.',
         'A selector that matches nothing is reported as a failure, not skipped. A ' +
           'harness whose targets never rendered passes everything.',
+        'If the page themes itself by class rather than by attribute — Tailwind does — ' +
+          'pass `themeClass: true`, or `themeAttribute` if it uses a different attribute. ' +
+          'The probe detects a competing theme signal on the root element and fails rather ' +
+          'than returning the page\'s theme under the label of the one you asked for.',
+        'Each row records the theme actually in effect when it was read, so a reading ' +
+          'describes its own conditions rather than trusting the label.',
       ],
     })
   } catch (error) {
@@ -700,7 +708,9 @@ export const TOOL_DEFINITIONS = [
             },
           },
         },
-        themes: { type: 'array', items: { type: 'string' }, description: '`data-theme` values to run each page under.' },
+        themes: { type: 'array', items: { type: 'string' }, description: 'Theme names to run each page under, e.g. ["light","dark"].' },
+        themeAttribute: { type: 'string', description: 'The attribute the page themes by. Default `data-theme`.' },
+        themeClass: { type: 'boolean', description: 'Set when the page themes by a class on <html> rather than an attribute, as Tailwind does. The theme name is applied as a class and the others removed.' },
         viewport: {
           type: 'object',
           properties: { width: { type: 'number' }, height: { type: 'number' } },

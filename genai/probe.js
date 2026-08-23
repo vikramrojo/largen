@@ -127,6 +127,95 @@ function load(url) {
  * So: whichever arrives first. Under a virtual clock the timeout fires
  * immediately; in a real browser the rAF pair wins and is the more accurate of
  * the two. Neither can hang. */
+/* Apply the requested theme, and hold it.
+ *
+ * Setting the attribute once is not enough, and the failure is nasty because it
+ * looks like data. A page that manages its own theme re-applies it after load --
+ * Astro fires astro:page-load, any deferred module can do the same -- and the
+ * probe's own settle() await is precisely the window such a script runs in. The
+ * override lands, the page undoes it, and the numbers that come back are the
+ * page's theme wearing the label of the one that was asked for.
+ *
+ * It reads as a per-element inconsistency rather than a theme failure, because
+ * elements whose colour does not depend on the theme still look right. One
+ * reporter saw exactly that: two selectors near-white under a light theme,
+ * a third correct, and the third was correct by coincidence.
+ *
+ * So pin it. The observer re-applies the override every time the page changes it,
+ * for as long as we are reading, and is disconnected afterwards. */
+function applyTheme(doc, theme) {
+  if (!theme) return null
+  const attr = CFG.themeAttribute
+  const root = doc.documentElement
+
+  /* Some projects theme by class rather than by attribute -- Tailwind's dark
+     mode is the common one. Setting the attribute on such a page succeeds and
+     changes nothing, which is the quiet half of this same bug: the guard below
+     sees the attribute it asked for sitting there and has no way to know the page
+     never read it. Say which mechanism to drive. */
+  const set = () => {
+    root.setAttribute(attr, theme)
+    if (CFG.themeClass) {
+      for (const other of CFG.themes) if (other && other !== theme) root.classList.remove(other)
+      root.classList.add(theme)
+    }
+  }
+  set()
+
+  const observer = new MutationObserver(() => {
+    const attrWrong = root.getAttribute(attr) !== theme
+    const classWrong = CFG.themeClass && !root.classList.contains(theme)
+    if (attrWrong || classWrong) set()
+  })
+  observer.observe(root, { attributes: true, attributeFilter: [attr, 'class'] })
+  return observer
+}
+
+/* Is some OTHER theme signal on the root element contradicting what we set?
+ *
+ * The read-back guard below verifies that our own override stuck, which it always
+ * does -- and proves nothing if the page never reads the lever we pulled. A
+ * Tailwind project themes by class; another might use data-color-mode. Setting
+ * data-theme on either succeeds, changes nothing, and returns the page's own
+ * theme under our label. That is the same bug as the race, with the attribute
+ * sitting there looking correct.
+ *
+ * So look for a competing signal: any class or attribute on <html> whose value is
+ * a theme name other than the one requested. Theme vocabularies are small and
+ * overwhelmingly light/dark, so those are checked even when only one theme was
+ * asked for -- which is the case a single --theme run presents.
+ *
+ * This can over-report where a page carries an unrelated attribute reading
+ * exactly "dark". That trade is deliberate: a spurious failure costs a glance,
+ * and a silently mis-themed number costs whatever gets built on top of it. */
+function conflictingSignal(root, theme) {
+  const vocabulary = {}
+  for (const t of CFG.themes) if (t) vocabulary[t] = true
+  vocabulary.light = true
+  vocabulary.dark = true
+
+  for (const other of Object.keys(vocabulary)) {
+    if (other === theme) continue
+    if (!CFG.themeClass && root.classList.contains(other)) return { where: 'class', value: other }
+    for (const a of root.attributes) {
+      if (a.name === CFG.themeAttribute || a.name === 'class') continue
+      if (a.value === other) return { where: a.name, value: other }
+    }
+  }
+  return null
+}
+
+/* What the document actually had in effect when it was read. Recorded per row so
+   a reading describes its own conditions instead of relying on the label. */
+function themeState(doc) {
+  const root = doc.documentElement
+  return {
+    [CFG.themeAttribute]: root.getAttribute(CFG.themeAttribute),
+    class: root.className || null,
+    colorScheme: getComputedStyle(root).colorScheme || null,
+  }
+}
+
 const settle = () => new Promise((resolve) => {
   let done = false
   const fin = () => { if (!done) { done = true; resolve() } }
@@ -156,14 +245,14 @@ function measure(doc, sel, props, label) {
   if (!nodes.length) {
     /* Absent is a result, not a gap. The reporter's worst case was a harness
        that passed because the elements it asserted on had never rendered. */
-    out.rows.push({ label, selector: sel, found: 0, missing: true, values: {} })
+    out.rows.push({ label, selector: sel, found: 0, missing: true, values: {}, theme: themeState(doc) })
     out.failures++
     return
   }
   const cs = getComputedStyle(nodes[0])
   const values = {}
   for (const p of props) values[p] = cs.getPropertyValue(p).trim()
-  out.rows.push({ label, selector: sel, found: nodes.length, missing: false, values })
+  out.rows.push({ label, selector: sel, found: nodes.length, missing: false, values, theme: themeState(doc) })
 }
 
 function assertOne(doc, a, label) {
@@ -198,12 +287,60 @@ async function run() {
       for (const theme of CFG.themes) {
         const frame = await load(page)
         const doc = frame.contentDocument
-        if (theme) doc.documentElement.setAttribute('data-theme', theme)
+        const pin = applyTheme(doc, theme)
         await settle()
         const label = (CFG.html ? '(inline)' : page) + (theme ? ' · ' + theme : '')
+
+        /* Verify the override survived, and refuse to report numbers if it did
+           not. The observer above should make this impossible for a page that
+           themes by attribute; it stays because a page that themes some other way
+           -- a class, a stylesheet swap -- leaves the attribute sitting there
+           correct and unread, and silently wrong numbers are the one output this
+           harness must never produce. */
+        const root = doc.documentElement
+        const held = theme ? root.getAttribute(CFG.themeAttribute) : null
+        const classHeld = !theme || !CFG.themeClass || root.classList.contains(theme)
+        const conflict = theme ? conflictingSignal(root, theme) : null
+
+        if (theme && conflict) {
+          out.rows.push({
+            label, selector: '(theme)', themeUnstable: true, missing: true, values: {},
+            theme: themeState(doc),
+            why: 'asked for ' + theme + ', but the root element carries ' + conflict.where +
+              '="' + conflict.value + '". This page themes by ' + conflict.where +
+              ', so setting ' + CFG.themeAttribute + ' changed nothing and these readings ' +
+              'would be whatever theme the page chose. ' +
+              (conflict.where === 'class'
+                ? 'Pass themeClass: true (largen probe --theme-class).'
+                : 'Pass themeAttribute: "' + conflict.where + '".'),
+          })
+          out.failures++
+          if (pin) pin.disconnect()
+          frame.remove()
+          continue
+        }
+
+        if (theme && (held !== theme || !classHeld)) {
+          out.rows.push({
+            label, selector: '(theme)', themeUnstable: true, missing: true, values: {},
+            theme: themeState(doc),
+            why: 'asked for theme ' + theme + ', but at read time the ' +
+              (held !== theme
+                ? CFG.themeAttribute + ' attribute was "' + held + '"'
+                : 'root element did not carry the class "' + theme + '"') +
+              '. The page re-applied its own theme and the override did not hold, so these ' +
+              'readings would be that theme rather than the one requested.',
+          })
+          out.failures++
+          if (pin) pin.disconnect()
+          frame.remove()
+          continue
+        }
+
         for (const s of CFG.steps) await step(doc, s)
         for (const sel of CFG.selectors) measure(doc, sel, CFG.properties, label)
         for (const a of CFG.assertions) assertOne(doc, a, label)
+        if (pin) pin.disconnect()
         frame.remove()
       }
     }
@@ -269,8 +406,8 @@ const KINDS = new Set(['computed', 'interaction'])
 export function buildProbe(options = {}) {
   const {
     kind = 'computed', pages = [], html = null, selectors = [], properties = [],
-    steps = [], assertions = [], themes = [null],
-    viewport = { width: 1280, height: 900 }, timeout = 10000,
+    steps = [], assertions = [], themes = [null], themeAttribute = 'data-theme',
+    themeClass = false, viewport = { width: 1280, height: 900 }, timeout = 10000,
   } = options
 
   if (!KINDS.has(kind)) throw new Error(`kind must be one of ${[...KINDS].join(', ')}`)
@@ -290,6 +427,8 @@ export function buildProbe(options = {}) {
     steps,
     assertions,
     themes: themes.length ? themes : [null],
+    themeAttribute,
+    themeClass,
     viewport,
     timeout,
   }

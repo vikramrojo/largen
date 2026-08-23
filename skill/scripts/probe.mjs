@@ -24,9 +24,16 @@ const USAGE = `
     --select SELECTOR             repeatable
     --prop PROPERTY               repeatable
     --theme NAME                  repeatable; sets data-theme
+    --theme-class                 the page themes by a class on <html>, not an
+                                  attribute (Tailwind does this)
+    --theme-attribute NAME        the attribute the page themes by
     --config FILE                 a JSON file with any of the above, for
                                   interaction steps and assertions
     --out FILE                    default: largen-probe.html
+
+  A page that manages its own theme will re-apply it after load. The probe pins
+  its override against that, and fails rather than reporting numbers if some other
+  theme signal on <html> contradicts the one you asked for.
 
   For "which rule set this property, and why", you do not need this. That is
   cascade arithmetic and \`largen cascade\` answers it without a browser.
@@ -47,6 +54,8 @@ export async function probe(argv = []) {
     else if (a === '--prop') opts.properties.push(next())
     else if (a === '--theme') opts.themes.push(next())
     else if (a === '--themes') opts.themes.push(...list(next()))
+    else if (a === '--theme-class') opts.themeClass = true
+    else if (a === '--theme-attribute') opts.themeAttribute = next()
     else if (a === '--html') opts.html = (await import('node:fs')).readFileSync(next(), 'utf8')
     else if (a === '--config') config = next()
     else if (a === '--out' || a === '-o') out = next()
