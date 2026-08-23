@@ -49,9 +49,6 @@
     "gen": "node skill/scripts/cli.mjs gen",
     "prepack": "node skill/scripts/cli.mjs build"
   },
-  "devDependencies": {
-    "lightningcss": "^1.33.0"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vikramrojo/largen.git"

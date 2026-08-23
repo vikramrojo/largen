@@ -5,10 +5,10 @@
  * this command overwrites it. That is the whole point: the contract was
  * previously restated in three places and would have been in five.
  *
- * Note this reaches into site/, which is NOT part of the published package. That
- * is deliberate and matches `largen build`, which needs the lightningcss
- * devDependency: both are repository-development commands, not things an npm
- * consumer runs. The error below says so rather than letting the import blow up.
+ * Note this reaches into site/, which is NOT part of the published package.
+ * That is deliberate: this is a repository-development command, not something an
+ * npm consumer runs. The error below says so rather than letting the import blow
+ * up.
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname } from 'node:path'

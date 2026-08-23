@@ -172,6 +172,27 @@ npx largen manifest <css...>   # derive a component manifest from your CSS
 `verify` is static only. It has passed clean on visibly broken components before;
 render the demo pages in a browser too.
 
+### Bringing your own minifier
+
+`largen build` uses no third-party code — it inlines `@import`s, strips comments
+and squeezes whitespace, which is all largen's own stylesheet needs. Measured
+against [lightningcss](https://lightningcss.dev), the difference is 46 gzipped
+bytes, and largen has nothing to transpile: its browser floor is set by
+`@property`, `color-mix()`, `@layer` and `revert-layer`, so there is nothing
+below it to lower to.
+
+Your stylesheet is a different question. A real minifier earns its keep when you
+have a large theme or component set of your own, and it is the answer if you need
+syntax lowering for targets below largen's floor, or CSS-module-style scoping.
+Point it at your own build output — largen's own does not need one:
+
+```sh
+npx lightningcss --minify --bundle --targets '>= 0.25%' src/site.css -o dist/site.css
+```
+
+Nothing about that changes how largen works. It is packaging, the same as
+`largen build` is.
+
 ## For agents
 
 `skill/SKILL.md` is the build-time interface — the slot vocabulary, the axis

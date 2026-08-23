@@ -296,7 +296,7 @@ export const OVERVIEW = {
 
 export const COMMANDS = [
   { command: 'npx largen verify [css...]', does: "check your components against the contract above" },
-  { command: 'npx largen build', does: 'bundle + minify to dist/ — optional, for CDN' },
+  { command: 'npx largen build', does: 'bundle + minify to dist/ — optional, for CDN, no dependencies' },
   { command: 'npx largen gen', does: 'regenerate genai artifacts from genai/manifest.json' },
   { command: 'npx largen manifest <css...>', does: "derive a component manifest from a project's CSS" },
 ]
@@ -307,7 +307,11 @@ export const COMMANDS_CAVEAT =
   'inside `@layer largen.components`. Run inside a clone of largen it additionally ' +
   'checks the library\'s own invariants.\n\n' +
   'All of it is static. It has passed clean on visibly broken components before; ' +
-  'render the result in a browser, in both themes.'
+  'render the result in a browser, in both themes.\n\n' +
+  '`build` needs nothing installed — it inlines imports, strips comments and ' +
+  'squeezes whitespace, which is all this stylesheet requires. If your own CSS ' +
+  'wants a real minifier, bring one and point it at your build; largen does not ' +
+  'need one and does not ship one.'
 
 export const GENERATIVE_UI =
   '`genai/manifest.json` is the approved-component allowlist; `schema.json` and ' +

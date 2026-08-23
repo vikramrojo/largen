@@ -64,3 +64,44 @@ location.
 #### Scenario: A reader arrives from the registry
 - **WHEN** a reader finds the package on a registry
 - **THEN** it SHALL link to the source repository and to the documentation site
+
+### Requirement: The library builds with no third-party code
+Producing the distribution artifacts SHALL require nothing beyond the library's own
+source and a JavaScript runtime.
+
+#### Scenario: Building from a clean checkout
+- **WHEN** the build command is run in a checkout with no packages installed
+- **THEN** it SHALL produce the distribution artifacts
+- **AND** SHALL NOT require an install step first
+
+#### Scenario: A transform would need a third-party toolchain
+- **WHEN** a proposed build transform can only be done by a third-party CSS toolchain
+- **THEN** it SHALL be rejected, or the artifact SHALL do without it
+- **AND** the reasoning SHALL be recorded with the measurement that justified it
+
+#### Scenario: A project wants more than the library's own bundler does
+- **WHEN** a project needs minification, syntax lowering or scoping beyond inlining
+  imports and squeezing whitespace
+- **THEN** the documentation SHALL point it at an external tool for its own stylesheet
+- **AND** SHALL NOT make that tool a dependency of largen
+
+### Requirement: The bundler does not change what the CSS means
+Bundling SHALL be limited to operations that cannot alter which elements a rule
+matches or what it computes to.
+
+#### Scenario: A selector contains a descendant combinator before a pseudo-class
+- **WHEN** a selector such as `.prose :is(h1, h2)` is bundled
+- **THEN** the combinator SHALL be preserved
+- **AND** the selector SHALL NOT become a compound selector
+
+#### Scenario: A declaration value contains comment or block delimiters
+- **WHEN** a string value contains `/*`, `{`, `}` or `;`
+- **THEN** it SHALL be emitted unchanged
+
+#### Scenario: A rule sets a shorthand and then a longhand
+- **WHEN** a rule sets `border` and then `border-block-start`
+- **THEN** source order SHALL be preserved
+
+#### Scenario: The bundled stylesheet is checked
+- **WHEN** the built stylesheet is tested in a browser
+- **THEN** it SHALL pass the same conformance assertions the source passes

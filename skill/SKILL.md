@@ -250,7 +250,7 @@ bypasses the tokens is simply not part of that mechanism.
 
 ```
 npx largen verify [css...]     # check your components against the contract above
-npx largen build               # bundle + minify to dist/ — optional, for CDN
+npx largen build               # bundle + minify to dist/ — optional, for CDN, no dependencies
 npx largen gen                 # regenerate genai artifacts from genai/manifest.json
 npx largen manifest <css...>   # derive a component manifest from a project's CSS
 ```
@@ -262,6 +262,11 @@ checks the library's own invariants.
 
 All of it is static. It has passed clean on visibly broken components before;
 render the result in a browser, in both themes.
+
+`build` needs nothing installed — it inlines imports, strips comments and
+squeezes whitespace, which is all this stylesheet requires. If your own CSS
+wants a real minifier, bring one and point it at your build; largen does not
+need one and does not ship one.
 
 ## Layer order
 

@@ -52,9 +52,9 @@ trap roll_back ERR
 
 git reset -q --hard "$TARGET"
 
-# Root devDependencies: lightningcss, for the build. site/: the MCP SDK.
+# Only site/ has dependencies — the MCP SDK. The build needs nothing installed:
+# the bundler is part of the library.
 log "installing dependencies"
-npm ci --silent
 npm --prefix "$REPO/site" ci --omit=dev --silent
 
 # dist/ is gitignored, so it must be produced here or the server has no

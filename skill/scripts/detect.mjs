@@ -15,8 +15,8 @@
  * `.nav-link`, `.nav-link:hover` and `.nav-link[aria-current]` are one component
  * reported once, with the union of the slots they set.
  *
- * Hand-rolled rather than run through lightningcss because the annotations this
- * reads live in comments, and a CSS parser throws comments away.
+ * Hand-rolled rather than run through a CSS parser, because the annotations this
+ * reads live in comments and a parser throws comments away.
  */
 
 const COMBINATOR = /[ >+~]/

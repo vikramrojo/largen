@@ -33,6 +33,28 @@
 - [x] 4.4 Update `README.md` and the `COMMANDS` list in `site/mcp/contract.mjs` — the latter feeds `SKILL.md`, so the advertised commands regenerate from one source
 - [ ] 4.5 First git commit, then the remote
 
+## 6. Remove the build dependency
+
+- [x] 6.1 Write `skill/scripts/bundle.mjs` — inline imports, strip comments, collapse whitespace, no dependencies
+- [x] 6.2 Handle comments and strings in one ordered pass; largen's comments are prose full of apostrophes, and a string-first scanner leaves every comment in place
+- [x] 6.3 Never trim whitespace around `:` or a combinator — `.prose :is(h1,h2)` must not become `.prose:is(h1,h2)`
+- [x] 6.4 Drop `lightningcss` from `package.json`; the root package now has no dependencies of any kind
+- [x] 6.5 Delete both root lockfiles — `package-lock.json` and `pnpm-lock.yaml` were both tracked, for one package
+- [x] 6.6 Drop the root `npm ci` from `deploy.sh`; the VM no longer downloads a native binary per deploy
+- [x] 6.7 Document lightningcss as an optional tool for a project's own stylesheet, in README and the contract's commands caveat
+- [x] 6.8 Record the measured cost and confirm the mechanism survives — see §7
+
+## 7. Verification of the bundler
+
+- [x] 7.1 `demo/conformance.html` against the built bundle, not just the source — the mechanism has no fallback and nothing else would catch a mangled selector
+- [x] 7.2 Diff old against new `dist/` and account for every difference
+- [x] 7.3 Build from a checkout with no `node_modules` present
+- [x] 7.4 `npm pack` after `rm -rf dist` still ships all three dist files via `prepack`
+- [x] 7.5 Screenshot the site in both themes and compare against the lightningcss build
+- [x] 7.6 `largen verify` no longer reports `--lightningcss-*` as unregistered slots
+- [ ] 7.7 Full suite locally and against the deployed site
+- [ ] 7.8 A VM deploy with no root install in the path
+
 ## 5. Verification
 
 - [x] 5.1 `npm pack --dry-run` — the file list is exactly the intended set, with no `pages.mjs`, `contract.mjs`, `markdown.mjs` or `site-example.css`
