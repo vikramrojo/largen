@@ -55,8 +55,15 @@ function skillMarkdown(c) {
   L.push('## The rules', '')
   c.rules.forEach((r, i) => L.push(wrap(`**${i + 1}. ${r.title}**`), wrap(r.why), ''))
 
+  L.push('## The paint rule', '', '```css', c.paint.rule, '```', '', wrap(c.paint.why), '')
+
   L.push('## The slots', '', wrap('`' + c.slots.fixed.join(' ') + '`'), '', wrap(c.slots.why), '',
-    wrap('Inheriting, by design: ' + c.slots.inheriting.map((s) => '`' + s + '`').join(', ') + '.'), '')
+    'Registered exactly as follows:', '', '```css', c.slots.registrations.join('\n'), '```', '',
+    wrap('**Inheriting, registered:** ' +
+      c.slots.inheriting.registered.map((s) => '`' + s + '`').join(', ') + '.'), '',
+    wrap('**Inheriting, unregistered:** ' +
+      c.slots.inheriting.ambient.map((s) => '`' + s + '`').join(', ') + '.'), '',
+    wrap(c.slots.inheriting.why), '')
 
   L.push('## The axes', '', '| axis | attribute | values | inherits |', '|---|---|---|---|')
   for (const [name, a] of Object.entries(c.axes)) {
@@ -121,8 +128,13 @@ function llmsCompact(c) {
   L.push('## Writing a component', '', c.overview.example.css, '',
     c.overview.example.html, '', wrap(c.overview.example.why), '')
 
+  L.push('## The paint rule', '', c.paint.rule, '', wrap(c.paint.why), '')
+
   L.push('## Slots', '', wrap(c.slots.fixed.join(' ')), '', wrap(c.slots.why), '',
-    wrap('Inheriting, by design: ' + c.slots.inheriting.join(' ')), '')
+    c.slots.registrations.join('\n'), '',
+    wrap('Inheriting, registered: ' + c.slots.inheriting.registered.join(' ')),
+    wrap('Inheriting, unregistered: ' + c.slots.inheriting.ambient.join(' ')), '',
+    wrap(c.slots.inheriting.why), '')
 
   L.push('## Axes', '')
   for (const [name, a] of Object.entries(c.axes)) {
@@ -189,15 +201,27 @@ function contractPages(c, page, inline, esc) {
     `  <p class="spec-note">${inline(c.overview.why)}</p>`,
     '</section>',
     '',
+    '<section class="stack" style="--gap:.75rem">',
+    '  <h2 class="section-title">The paint rule</h2>',
+    `  <pre class="code">${esc(c.paint.rule)}</pre>`,
+    `  <p class="spec-note">${inline(c.paint.why)}</p>`,
+    '</section>',
+    '',
     '<section class="stack" style="--gap:.5rem">',
     '  <h2 class="section-title">The slots</h2>',
     `  <p class="spec-note">${inline(c.slots.why)}</p>`,
     '  <div class="stack" style="--gap:0">',
     ...c.slots.fixed.map((s) => specRow(s, 'registered `inherits: false`, no `initial-value`')),
     '  </div>',
-    '  <h2 class="section-title">Inheriting, by design</h2>',
+    `  <pre class="code">${esc(c.slots.registrations.join('\n'))}</pre>`,
+    '</section>',
+    '',
+    '<section class="stack" style="--gap:.5rem">',
+    '  <h2 class="section-title">What inherits, and how</h2>',
+    `  <p class="spec-note">${inline(c.slots.inheriting.why)}</p>`,
     '  <div class="stack" style="--gap:0">',
-    ...c.slots.inheriting.map((s) => specRow(s, 're-tones or rescales a whole subtree')),
+    ...c.slots.inheriting.registered.map((s) => specRow(s, 'registered `inherits: true` — type-checked, animatable')),
+    ...c.slots.inheriting.ambient.map((s) => specRow(s, 'not registered — inherits because that is the default')),
     '  </div>',
     '</section>',
     '',

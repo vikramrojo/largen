@@ -39,6 +39,31 @@ themes are supplied by the rows it never mentions.
 That is a complete component: seven tones, four variants, five sizes, every
 state, both themes — none of which it mentions.
 
+## The paint rule
+
+* {
+  color: var(--fg, revert-layer);
+  background-color: var(--bg, revert-layer);
+  border-width: var(--border-width, revert-layer);
+  border-style: var(--border-style, revert-layer);
+  border-color: var(--border-color, revert-layer);
+  border-radius: var(--radius, revert-layer);
+  padding: var(--pad, revert-layer);
+  gap: var(--gap, revert-layer);
+  font-size: var(--font-size, revert-layer);
+  font-weight: var(--weight, revert-layer);
+  box-shadow: var(--shadow, revert-layer);
+  transition: var(--transition, revert-layer);
+}
+
+One rule, applied to every element. It is safe universally only because an unset
+slot is guaranteed-invalid, so `var(…, revert-layer)` fires and hands the
+property straight back to the UA stylesheet — a `<ul>` keeps its indent, an
+`<h1>` its size. The selector is a bare `*`, not `:where(*)`: the universal
+selector already contributes no specificity, so there is nothing to wrap. Note
+`background-color`, not the `background` shorthand, which would also reset
+`background-image` and the rest of the family.
+
 ## Slots
 
 --bg --fg --border-color --border-width --border-style --radius --pad --gap
@@ -46,12 +71,35 @@ state, both themes — none of which it mentions.
 
 Every component is painted from these and only these. All are registered
 `inherits: false` with no `initial-value`, so a component's background cannot
-cascade onto its children and an unset slot stays guaranteed-invalid. The
-inheriting list is the deliberate exception: `--tone` and its derivations
-re-tone a whole subtree, and `--scale` resizes one.
+cascade onto its children and an unset slot stays guaranteed-invalid — which is
+what makes `var(--pad, revert-layer)` hand the property back to the UA
+stylesheet.
 
-Inheriting, by design: --scale --tone --tone-contrast --tone-ink --tone-line
+@property --bg { syntax: "*"; inherits: false; }
+@property --fg { syntax: "*"; inherits: false; }
+@property --border-color { syntax: "*"; inherits: false; }
+@property --border-width { syntax: "*"; inherits: false; }
+@property --border-style { syntax: "*"; inherits: false; }
+@property --radius { syntax: "*"; inherits: false; }
+@property --pad { syntax: "*"; inherits: false; }
+@property --gap { syntax: "*"; inherits: false; }
+@property --font-size { syntax: "*"; inherits: false; }
+@property --weight { syntax: "*"; inherits: false; }
+@property --shadow { syntax: "*"; inherits: false; }
+@property --transition { syntax: "*"; inherits: false; }
+@property --scale { syntax: "<number>"; inherits: true; initial-value: 1; }
+
+Inheriting, registered: --scale
+Inheriting, unregistered: --tone --tone-contrast --tone-ink --tone-line
 --tone-soft
+
+`--scale` is the only *registered* inheriting property: it is declared
+`@property --scale { syntax: "<number>"; inherits: true; initial-value: 1 }`, so
+it is type-checked and animatable. `--tone` and its derivations are not
+registered at all — they inherit because inheritance is the default for a custom
+property. The distinction matters: only a registered property is checked against
+a syntax, only a registered property can be transitioned, and only a registered
+universal property with no initial value becomes guaranteed-invalid when unset.
 
 ## Axes
 
@@ -88,8 +136,10 @@ largen.reset < largen.tokens < largen.paint < largen.tone < largen.elements < la
 
 `elements` sits before `components` so a component class beats a bare-element
 default; `modifiers` sits last so an explicit variant beats a component's own
-default fill. Everything is layered and every selector is `:where()`-wrapped, so
-consumer CSS always wins without `!important`.
+default fill. Consumer CSS always wins without `!important` because unlayered
+author CSS outranks every layer, and because the element and component selectors
+are `:where()`-wrapped to contribute no specificity. The paint rule is the one
+that is not wrapped — a bare `*` is already specificity-free.
 
 ## Rules
 
@@ -131,6 +181,13 @@ consumer CSS always wins without `!important`.
    paint rule resets every element's UA defaults — every `<ul>` loses its indent
    and every `<h1>` its size. This descriptor is the reason largen needs no
    build step.
+   
+   One registered property does carry an initial value, deliberately: `--scale`
+   is declared `initial-value: 1`. It is not a paint slot — nothing reads it
+   through `var(--scale, revert-layer)` — but a multiplier that every size
+   calculation depends on, so it must always resolve to a number. `largen
+   verify` exempts it by name for exactly this reason. The rule holds for the
+   twelve paint slots without exception.
 
 ## How it fails
 

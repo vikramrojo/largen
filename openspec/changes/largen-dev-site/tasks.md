@@ -73,13 +73,13 @@ Reader feedback reconstructed the paint rule from the contract page and got thre
 things wrong. Each is traceable to something the contract states imprecisely, and two
 were introduced by the generator rather than inherited from the library.
 
-- [ ] 8.1 Add `readPaintRule()` and `readPropertyBlocks()` to `site/mcp/contract.mjs`, reading `src/paint.css` and `src/properties.css` at generation time — the same anti-drift discipline `readSlots()` already uses
-- [ ] 8.2 Print both verbatim in `contract.html`, `llms-compact.txt`, `SKILL.md` and `get_contract`, so the mechanism is never only described
-- [ ] 8.3 Split `slots.inheriting` into registered (`--scale`) and ambient (`--tone` and its four derivations, which are not registered at all), and explain why the distinction matters
-- [ ] 8.4 State the `--scale` exception to the initial-value rule, with its reason — it is a multiplier, not a paint slot, so it must always resolve
-- [ ] 8.5 Correct the blanket ":where()-wrapped" claim: the paint rule uses a bare `*`, which is specificity-free without wrapping
-- [ ] 8.6 Diff the printed rule against `src/paint.css` byte-for-byte, and the printed registrations against `src/properties.css`
-- [ ] 8.7 Re-read the page against the four reported errors and confirm each is answerable from the page alone — `*` not `:where(*)`, `background-color` not `background`, `--scale` registered where the tone family is not, and the exception stated
+- [x] 8.1 Add `readPaintRule()` and `readPropertyBlocks()` to `site/mcp/contract.mjs`, reading `src/paint.css` and `src/properties.css` at generation time — the same anti-drift discipline `readSlots()` already uses
+- [x] 8.2 Print both verbatim in `contract.html`, `llms-compact.txt`, `SKILL.md` and `get_contract`, so the mechanism is never only described
+- [x] 8.3 Split `slots.inheriting` into registered (`--scale`) and ambient (`--tone` and its four derivations, which are not registered at all), and explain why the distinction matters
+- [x] 8.4 State the `--scale` exception to the initial-value rule, with its reason — it is a multiplier, not a paint slot, so it must always resolve
+- [x] 8.5 Correct the blanket ":where()-wrapped" claim: the paint rule uses a bare `*`, which is specificity-free without wrapping
+- [x] 8.6 Diff the printed rule against `src/paint.css` byte-for-byte, and the printed registrations against `src/properties.css`
+- [x] 8.7 Re-read the page against the four reported errors and confirm each is answerable from the page alone — `*` not `:where(*)`, `background-color` not `background`, `--scale` registered where the tone family is not, and the exception stated
 
 ## Status
 

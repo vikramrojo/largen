@@ -45,6 +45,28 @@ export function readSlots() {
   return { fixed, inheriting }
 }
 
+/** The universal paint rule, verbatim.
+ *
+ *  Printed rather than described because describing it is not enough: a reader
+ *  working from the prose alone reconstructed it as `:where(*)` with a
+ *  `background` shorthand, when it is a bare `*` setting `background-color`. Both
+ *  differences matter — the shorthand would reset background-image, and the
+ *  `:where()` is unnecessary because `*` contributes no specificity anyway. */
+export function readPaintRule() {
+  const paint = strip(read('src/paint.css'))
+  const m = paint.match(/@layer\s+largen\.paint\s*\{([\s\S]*)\}/)
+  if (!m) throw new Error('could not find the paint layer in src/paint.css')
+  return m[1].replace(/^\n+|\s+$/g, '').replace(/^ {2}/gm, '')
+}
+
+/** The @property registrations, verbatim. */
+export function readPropertyBlocks() {
+  const props = strip(read('src/properties.css'))
+  const lines = [...props.matchAll(/@property[^{]*\{[^}]*\}/g)].map((m) => m[0].replace(/\s+/g, ' '))
+  if (!lines.length) throw new Error('no @property declarations in src/properties.css')
+  return lines
+}
+
 /** The tone derivations are computed in src/algebra.css rather than registered,
  *  so they are not @property declarations and must be read from there. */
 export function readToneDerivations() {
@@ -172,7 +194,13 @@ export const RULES = [
       'value and the slot is never unset, the fallback never fires, and the ' +
       "universal paint rule resets every element's UA defaults — every `<ul>` " +
       'loses its indent and every `<h1>` its size. This descriptor is the reason ' +
-      'largen needs no build step.',
+      'largen needs no build step.\n\n' +
+      'One registered property does carry an initial value, deliberately: ' +
+      '`--scale` is declared `initial-value: 1`. It is not a paint slot — nothing ' +
+      'reads it through `var(--scale, revert-layer)` — but a multiplier that every ' +
+      'size calculation depends on, so it must always resolve to a number. ' +
+      '`largen verify` exempts it by name for exactly this reason. The rule holds ' +
+      'for the twelve paint slots without exception.',
   },
 ]
 
@@ -315,13 +343,41 @@ export function buildContract() {
     overview: OVERVIEW,
     slots: {
       fixed: slots.fixed,
-      inheriting: [...slots.inheriting, '--tone', ...readToneDerivations()],
+      registrations: readPropertyBlocks(),
       why:
         'Every component is painted from these and only these. All are registered ' +
         "`inherits: false` with no `initial-value`, so a component's background " +
-        'cannot cascade onto its children and an unset slot stays guaranteed-invalid. ' +
-        'The inheriting list is the deliberate exception: `--tone` and its derivations ' +
-        're-tone a whole subtree, and `--scale` resizes one.',
+        'cannot cascade onto its children and an unset slot stays guaranteed-invalid — ' +
+        'which is what makes `var(--pad, revert-layer)` hand the property back to the ' +
+        'UA stylesheet.',
+      /* Two different mechanisms, reported separately. Presenting them as one
+         list is what led a reader to conclude the tone family is registered with
+         `inherits: true`. It is not registered at all — it inherits because that
+         is simply the default for a custom property. */
+      inheriting: {
+        registered: slots.inheriting,
+        ambient: ['--tone', ...readToneDerivations()],
+        why:
+          '`--scale` is the only *registered* inheriting property: it is declared ' +
+          '`@property --scale { syntax: "<number>"; inherits: true; initial-value: 1 }`, ' +
+          'so it is type-checked and animatable. `--tone` and its derivations are not ' +
+          'registered at all — they inherit because inheritance is the default for a ' +
+          'custom property. The distinction matters: only a registered property is ' +
+          'checked against a syntax, only a registered property can be transitioned, ' +
+          'and only a registered universal property with no initial value becomes ' +
+          'guaranteed-invalid when unset.',
+      },
+    },
+    paint: {
+      rule: readPaintRule(),
+      why:
+        'One rule, applied to every element. It is safe universally only because an ' +
+        'unset slot is guaranteed-invalid, so `var(…, revert-layer)` fires and hands ' +
+        'the property straight back to the UA stylesheet — a `<ul>` keeps its indent, ' +
+        'an `<h1>` its size. The selector is a bare `*`, not `:where(*)`: the universal ' +
+        'selector already contributes no specificity, so there is nothing to wrap. ' +
+        'Note `background-color`, not the `background` shorthand, which would also ' +
+        'reset `background-image` and the rest of the family.',
     },
     axes,
     layers: {
@@ -329,8 +385,10 @@ export function buildContract() {
       why:
         '`elements` sits before `components` so a component class beats a bare-element ' +
         "default; `modifiers` sits last so an explicit variant beats a component's own " +
-        'default fill. Everything is layered and every selector is `:where()`-wrapped, ' +
-        'so consumer CSS always wins without `!important`.',
+        'default fill. Consumer CSS always wins without `!important` because unlayered ' +
+        'author CSS outranks every layer, and because the element and component ' +
+        'selectors are `:where()`-wrapped to contribute no specificity. The paint rule ' +
+        'is the one that is not wrapped — a bare `*` is already specificity-free.',
     },
     rules: RULES,
     failureModes: FAILURE_MODES,
@@ -362,7 +420,7 @@ export function assertAxesAgree() {
   }
 }
 
-export const SECTIONS = ['overview', 'slots', 'axes', 'layers', 'rules', 'failureModes',
+export const SECTIONS = ['overview', 'slots', 'paint', 'axes', 'layers', 'rules', 'failureModes',
   'commands', 'generativeUI', 'notes']
 
 /** One section of the contract, for `get_contract`'s `section` argument. */

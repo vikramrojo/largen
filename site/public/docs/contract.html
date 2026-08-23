@@ -52,9 +52,28 @@ COMPONENTS  whatever this project needs                                 ← YOU 
   <p class="spec-note">Only the last row grows. A component is about six lines because everything above it is already solved — the tones, the variants, the sizes, the states and both themes are supplied by the rows it never mentions.</p>
 </section>
 
+<section class="stack" style="--gap:.75rem">
+  <h2 class="section-title">The paint rule</h2>
+  <pre class="code">* {
+  color: var(--fg, revert-layer);
+  background-color: var(--bg, revert-layer);
+  border-width: var(--border-width, revert-layer);
+  border-style: var(--border-style, revert-layer);
+  border-color: var(--border-color, revert-layer);
+  border-radius: var(--radius, revert-layer);
+  padding: var(--pad, revert-layer);
+  gap: var(--gap, revert-layer);
+  font-size: var(--font-size, revert-layer);
+  font-weight: var(--weight, revert-layer);
+  box-shadow: var(--shadow, revert-layer);
+  transition: var(--transition, revert-layer);
+}</pre>
+  <p class="spec-note">One rule, applied to every element. It is safe universally only because an unset slot is guaranteed-invalid, so <span class="tok">var(…, revert-layer)</span> fires and hands the property straight back to the UA stylesheet — a <span class="tok">&lt;ul&gt;</span> keeps its indent, an <span class="tok">&lt;h1&gt;</span> its size. The selector is a bare <span class="tok">*</span>, not <span class="tok">:where(*)</span>: the universal selector already contributes no specificity, so there is nothing to wrap. Note <span class="tok">background-color</span>, not the <span class="tok">background</span> shorthand, which would also reset <span class="tok">background-image</span> and the rest of the family.</p>
+</section>
+
 <section class="stack" style="--gap:.5rem">
   <h2 class="section-title">The slots</h2>
-  <p class="spec-note">Every component is painted from these and only these. All are registered <span class="tok">inherits: false</span> with no <span class="tok">initial-value</span>, so a component's background cannot cascade onto its children and an unset slot stays guaranteed-invalid. The inheriting list is the deliberate exception: <span class="tok">--tone</span> and its derivations re-tone a whole subtree, and <span class="tok">--scale</span> resizes one.</p>
+  <p class="spec-note">Every component is painted from these and only these. All are registered <span class="tok">inherits: false</span> with no <span class="tok">initial-value</span>, so a component's background cannot cascade onto its children and an unset slot stays guaranteed-invalid — which is what makes <span class="tok">var(--pad, revert-layer)</span> hand the property back to the UA stylesheet.</p>
   <div class="stack" style="--gap:0">
   <div class="spec-row"><span class="spec-name">--bg</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
   <div class="spec-row"><span class="spec-name">--fg</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
@@ -69,14 +88,31 @@ COMPONENTS  whatever this project needs                                 ← YOU 
   <div class="spec-row"><span class="spec-name">--shadow</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
   <div class="spec-row"><span class="spec-name">--transition</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
   </div>
-  <h2 class="section-title">Inheriting, by design</h2>
+  <pre class="code">@property --bg { syntax: "*"; inherits: false; }
+@property --fg { syntax: "*"; inherits: false; }
+@property --border-color { syntax: "*"; inherits: false; }
+@property --border-width { syntax: "*"; inherits: false; }
+@property --border-style { syntax: "*"; inherits: false; }
+@property --radius { syntax: "*"; inherits: false; }
+@property --pad { syntax: "*"; inherits: false; }
+@property --gap { syntax: "*"; inherits: false; }
+@property --font-size { syntax: "*"; inherits: false; }
+@property --weight { syntax: "*"; inherits: false; }
+@property --shadow { syntax: "*"; inherits: false; }
+@property --transition { syntax: "*"; inherits: false; }
+@property --scale { syntax: "&lt;number&gt;"; inherits: true; initial-value: 1; }</pre>
+</section>
+
+<section class="stack" style="--gap:.5rem">
+  <h2 class="section-title">What inherits, and how</h2>
+  <p class="spec-note"><span class="tok">--scale</span> is the only <em>registered</em> inheriting property: it is declared <span class="tok">@property --scale { syntax: "&lt;number&gt;"; inherits: true; initial-value: 1 }</span>, so it is type-checked and animatable. <span class="tok">--tone</span> and its derivations are not registered at all — they inherit because inheritance is the default for a custom property. The distinction matters: only a registered property is checked against a syntax, only a registered property can be transitioned, and only a registered universal property with no initial value becomes guaranteed-invalid when unset.</p>
   <div class="stack" style="--gap:0">
-  <div class="spec-row"><span class="spec-name">--scale</span><span class="spec-note">re-tones or rescales a whole subtree</span></div>
-  <div class="spec-row"><span class="spec-name">--tone</span><span class="spec-note">re-tones or rescales a whole subtree</span></div>
-  <div class="spec-row"><span class="spec-name">--tone-contrast</span><span class="spec-note">re-tones or rescales a whole subtree</span></div>
-  <div class="spec-row"><span class="spec-name">--tone-ink</span><span class="spec-note">re-tones or rescales a whole subtree</span></div>
-  <div class="spec-row"><span class="spec-name">--tone-line</span><span class="spec-note">re-tones or rescales a whole subtree</span></div>
-  <div class="spec-row"><span class="spec-name">--tone-soft</span><span class="spec-note">re-tones or rescales a whole subtree</span></div>
+  <div class="spec-row"><span class="spec-name">--scale</span><span class="spec-note">registered <span class="tok">inherits: true</span> — type-checked, animatable</span></div>
+  <div class="spec-row"><span class="spec-name">--tone</span><span class="spec-note">not registered — inherits because that is the default</span></div>
+  <div class="spec-row"><span class="spec-name">--tone-contrast</span><span class="spec-note">not registered — inherits because that is the default</span></div>
+  <div class="spec-row"><span class="spec-name">--tone-ink</span><span class="spec-note">not registered — inherits because that is the default</span></div>
+  <div class="spec-row"><span class="spec-name">--tone-line</span><span class="spec-note">not registered — inherits because that is the default</span></div>
+  <div class="spec-row"><span class="spec-name">--tone-soft</span><span class="spec-note">not registered — inherits because that is the default</span></div>
   </div>
 </section>
 
@@ -89,7 +125,7 @@ COMPONENTS  whatever this project needs                                 ← YOU 
   &lt; largen.elements
   &lt; largen.components
   &lt; largen.modifiers</pre>
-  <p class="spec-note"><span class="tok">elements</span> sits before <span class="tok">components</span> so a component class beats a bare-element default; <span class="tok">modifiers</span> sits last so an explicit variant beats a component's own default fill. Everything is layered and every selector is <span class="tok">:where()</span>-wrapped, so consumer CSS always wins without <span class="tok">!important</span>.</p>
+  <p class="spec-note"><span class="tok">elements</span> sits before <span class="tok">components</span> so a component class beats a bare-element default; <span class="tok">modifiers</span> sits last so an explicit variant beats a component's own default fill. Consumer CSS always wins without <span class="tok">!important</span> because unlayered author CSS outranks every layer, and because the element and component selectors are <span class="tok">:where()</span>-wrapped to contribute no specificity. The paint rule is the one that is not wrapped — a bare <span class="tok">*</span> is already specificity-free.</p>
 </section>
 </main>
 

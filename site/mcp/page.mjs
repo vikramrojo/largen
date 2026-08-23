@@ -12,11 +12,27 @@ export const esc = (s) => String(s)
 
 /* Markdown-ish inline conversion, limited on purpose to the two forms the
    contract prose actually uses: `code` and *emphasis*. Anything richer would be
-   a Markdown renderer, which is a dependency the site does not want. */
+   a Markdown renderer, which is a dependency the site does not want.
+
+   Code spans are lifted out before emphasis is applied, and only put back at the
+   end. Doing emphasis first — or over the already-built spans — lets an asterisk
+   inside a code span pair with a later one, which is how the contract's own
+   sentence about the paint rule using a bare `*` rather than `:where(*)` lost
+   both asterisks and italicised the text between them. Technical prose is full
+   of punctuation that looks like markup. */
+const OPEN = '\u0011'
+const CLOSE = '\u0012'
+
 export function inline(text) {
-  return esc(text)
-    .replace(/`([^`]+)`/g, '<span class="tok">$1</span>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+  const code = []
+  let t = String(text).replace(/`([^`]+)`/g, (_, c) => {
+    code.push(c)
+    return `${OPEN}${code.length - 1}${CLOSE}`
+  })
+  t = esc(t)
+  t = t.replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+  return t.replace(new RegExp(`${OPEN}(\\d+)${CLOSE}`, 'g'),
+    (_, i) => `<span class="tok">${esc(code[Number(i)])}</span>`)
 }
 
 const NAV = [
