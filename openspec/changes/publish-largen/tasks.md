@@ -36,11 +36,11 @@
 ## 5. Verification
 
 - [x] 5.1 `npm pack --dry-run` — the file list is exactly the intended set, with no `pages.mjs`, `contract.mjs`, `markdown.mjs` or `site-example.css`
-- [ ] 5.2 **Install the tarball into a scratch project and run it there.** This is the check that would have caught every packaging defect, and no existing assertion touches it
-- [ ] 5.3 In that project: `npx largen verify ./their.css` reports on their file and not on largen's
-- [ ] 5.4 In that project: import every published entry point — `largen/validate`, `largen/lint`, `largen`, `largen/components` — so a missing `files[]` entry fails loudly
-- [ ] 5.5 In that project: a repository-only command reports its message rather than a stack trace
-- [ ] 5.6 `largen verify` in-repo still runs the invariants and passes
-- [ ] 5.7 `largen contract --check`, `largen pages`, `largen release` still work in-repo
-- [ ] 5.8 Full suite locally and against the deployed site; the `list_components` fallback assertion checks names rather than a count, so it survives the additions
-- [ ] 5.9 `openspec validate publish-largen`
+- [x] 5.2 **Install the tarball into a scratch project and run it there.** This is the check that would have caught every packaging defect, and no existing assertion touches it
+- [x] 5.3 In that project: `npx largen verify ./their.css` reports on their file and not on largen's
+- [x] 5.4 In that project: import every published entry point — `largen/validate`, `largen/lint`, `largen`, `largen/components` — so a missing `files[]` entry fails loudly
+- [x] 5.5 In that project: a repository-only command reports its message rather than a stack trace
+- [x] 5.6 `largen verify` in-repo still runs the invariants and passes
+- [x] 5.7 `largen contract --check`, `largen pages`, `largen release` still work in-repo
+- [x] 5.8 Full suite locally and against the deployed site; the `list_components` fallback assertion checks names rather than a count, so it survives the additions
+- [x] 5.9 `openspec validate publish-largen`

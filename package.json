@@ -32,9 +32,10 @@
     ".": "./src/largen.css",
     "./dist": "./dist/largen.css",
     "./components": "./components/index.css",
-    "./components/*": "./components/*.css",
-    "./themes/*": "./themes/*.css",
-    "./manifest": "./genai/manifest.json",
+    "./components/*": "./components/*",
+    "./themes/*": "./themes/*",
+    "./manifest": "./genai/manifest.js",
+    "./manifest.json": "./genai/manifest.json",
     "./validate": "./genai/validate.js",
     "./lint": "./genai/lint.js",
     "./package.json": "./package.json"

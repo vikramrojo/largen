@@ -1,19 +1,19 @@
 /* Bundle and minify for CDN. This is packaging, not compilation — src/largen.css
  * is valid CSS and works as-is. Anything that made this step mandatory would be
  * a design failure, so the sizes below are informational, not a gate. */
-let bundle
-try {
-  ({ bundle } = await import('lightningcss'))
-} catch {
-  /* lightningcss is a devDependency, so an installed copy will not have it. Say
-     which package is missing rather than surfacing a resolution error — and say
-     that not having it costs nothing, because the unbuilt stylesheet is the same
-     stylesheet. */
-  throw new Error(
-    'largen build needs lightningcss, which is a development dependency:\n' +
-    '    npm install --save-dev lightningcss\n' +
-    '  It is only for producing dist/. largen works unbuilt — linking src/largen.css\n' +
-    '  gives you exactly the same stylesheet.')
+/* lightningcss is loaded inside build(), not at module load. A top-level throw
+ * happens while the CLI is resolving the command and escapes as a stack trace;
+ * thrown from inside, the CLI catches it and prints the message. */
+async function loadBundler() {
+  try {
+    return (await import('lightningcss')).bundle
+  } catch {
+    throw new Error(
+      'largen build needs lightningcss, which is a development dependency:\n' +
+      '    npm install --save-dev lightningcss\n' +
+      '  It is only for producing dist/. largen works unbuilt — linking src/largen.css\n' +
+      '  gives you exactly the same stylesheet.')
+  }
 }
 import { gzipSync } from 'node:zlib'
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -32,6 +32,7 @@ const PROFILES = [
 ]
 
 export async function build() {
+  const bundle = await loadBundler()
   mkdirSync(join(root, 'dist'), { recursive: true })
   console.log('\n  largen build — concatenation and minification, not compilation\n')
   for (const [out, entry, note] of PROFILES) {
