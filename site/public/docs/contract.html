@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The contract — largen</title>
-<meta name="description" content="largen's twelve slots, the layer rule, and the universal paint rule.">
+<meta name="description" content="largen's 14 slots, the layer rule, and the universal paint rule.">
 <link rel="stylesheet" href="/largen.css">
 <link rel="stylesheet" href="/largen.components.css">
 <link rel="stylesheet" href="/theme-dark.css">
@@ -35,7 +35,7 @@
 <main class="page">
 <div class="stack" style="--gap:.4rem">
   <h1 class="page-title">The contract</h1>
-  <p class="page-desc">Twelve slots, one universal paint rule, and one rule about
+  <p class="page-desc">14 slots, one universal paint rule, and one rule about
   layers that explains most of what goes wrong.</p>
 </div>
 
@@ -65,6 +65,8 @@ COMPONENTS  whatever this project needs                                 ← YOU 
   gap: var(--gap, revert-layer);
   font-size: var(--font-size, revert-layer);
   font-weight: var(--weight, revert-layer);
+  line-height: var(--line-height, revert-layer);
+  letter-spacing: var(--letter-spacing, revert-layer);
   box-shadow: var(--shadow, revert-layer);
   transition: var(--transition, revert-layer);
 }</pre>
@@ -85,6 +87,8 @@ COMPONENTS  whatever this project needs                                 ← YOU 
   <div class="spec-row"><span class="spec-name">--gap</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
   <div class="spec-row"><span class="spec-name">--font-size</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
   <div class="spec-row"><span class="spec-name">--weight</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
+  <div class="spec-row"><span class="spec-name">--line-height</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
+  <div class="spec-row"><span class="spec-name">--letter-spacing</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
   <div class="spec-row"><span class="spec-name">--shadow</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
   <div class="spec-row"><span class="spec-name">--transition</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
   </div>
@@ -98,6 +102,8 @@ COMPONENTS  whatever this project needs                                 ← YOU 
 @property --gap { syntax: "*"; inherits: false; }
 @property --font-size { syntax: "*"; inherits: false; }
 @property --weight { syntax: "*"; inherits: false; }
+@property --line-height { syntax: "*"; inherits: false; }
+@property --letter-spacing { syntax: "*"; inherits: false; }
 @property --shadow { syntax: "*"; inherits: false; }
 @property --transition { syntax: "*"; inherits: false; }
 @property --scale { syntax: "&lt;number&gt;"; inherits: true; initial-value: 1; }</pre>

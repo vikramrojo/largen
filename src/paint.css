@@ -26,6 +26,8 @@
     gap: var(--gap, revert-layer);
     font-size: var(--font-size, revert-layer);
     font-weight: var(--weight, revert-layer);
+    line-height: var(--line-height, revert-layer);
+    letter-spacing: var(--letter-spacing, revert-layer);
     box-shadow: var(--shadow, revert-layer);
     transition: var(--transition, revert-layer);
   }

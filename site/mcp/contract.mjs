@@ -200,7 +200,7 @@ export const RULES = [
       'reads it through `var(--scale, revert-layer)` — but a multiplier that every ' +
       'size calculation depends on, so it must always resolve to a number. ' +
       '`largen verify` exempts it by name for exactly this reason. The rule holds ' +
-      'for the twelve paint slots without exception.',
+      'for the paint slots without exception.',
   },
 ]
 

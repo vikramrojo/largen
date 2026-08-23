@@ -87,7 +87,7 @@
     <span class="rule-title">6. Never add an <span class="tok">initial-value</span> to a slot.</span>
     <p class="rule-why">With universal syntax, omitting <span class="tok">initial-value</span> makes an unset slot the <em>guaranteed-invalid</em> value, so <span class="tok">var(--pad, revert-layer)</span> falls back and hands the property back to the UA stylesheet untouched. Add an initial value and the slot is never unset, the fallback never fires, and the universal paint rule resets every element's UA defaults — every <span class="tok">&lt;ul&gt;</span> loses its indent and every <span class="tok">&lt;h1&gt;</span> its size. This descriptor is the reason largen needs no build step.
 
-One registered property does carry an initial value, deliberately: <span class="tok">--scale</span> is declared <span class="tok">initial-value: 1</span>. It is not a paint slot — nothing reads it through <span class="tok">var(--scale, revert-layer)</span> — but a multiplier that every size calculation depends on, so it must always resolve to a number. <span class="tok">largen verify</span> exempts it by name for exactly this reason. The rule holds for the twelve paint slots without exception.</p>
+One registered property does carry an initial value, deliberately: <span class="tok">--scale</span> is declared <span class="tok">initial-value: 1</span>. It is not a paint slot — nothing reads it through <span class="tok">var(--scale, revert-layer)</span> — but a multiplier that every size calculation depends on, so it must always resolve to a number. <span class="tok">largen verify</span> exempts it by name for exactly this reason. The rule holds for the paint slots without exception.</p>
   </div>
 </section>
 

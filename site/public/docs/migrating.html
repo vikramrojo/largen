@@ -237,7 +237,9 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 
 <h3 class="section-title" id="three-things-that-do-not-survive-the-conversion">Three things that do not survive the conversion</h3>
 
-<p class="doc-p"><strong>Line height does not come along.</strong> Tailwind's <span class="tok">text-sm</span> bundles a line-height — <span class="tok">1.25rem</span> against a <span class="tok">0.875rem</span> font — and converting only the size leaves the element inheriting <span class="tok">1.5</span>. That made callouts about 9% taller in one conversion, and it has now caught badge, button, crumbs and callout in the same project. largen has no <span class="tok">line-height</span> slot: the twelve are what the paint rule consults, and a thirteenth would still need remembering. Carry it as ordinary CSS in the component, and check it on every element whose font size you change.</p>
+<p class="doc-p"><strong>Line height does not come along.</strong> Tailwind's <span class="tok">text-sm</span> bundles a line-height — <span class="tok">1.25rem</span> against a <span class="tok">0.875rem</span> font, a ratio of about 1.43 — and converting only the size leaves the element on largen's document ratio of 1.55. That is 8% taller, which is what made callouts visibly wrong in one conversion after catching badge, button and crumbs the same way.</p>
+
+<p class="doc-p">largen's leading is <em>not</em> broken: <span class="tok">--line-height-base</span> is unitless, so it inherits as a ratio and recomputes correctly at any font size. The ratio is simply not your component's ratio. Set <span class="tok">--line-height</span> alongside <span class="tok">--font-size</span> whenever the two should differ — it is a slot, like <span class="tok">--letter-spacing</span>, so it belongs in the bundle rather than beside it.</p>
 
 <p class="doc-p"><strong>Mix ratios do not transfer between shades.</strong> <span class="tok">bg-blue-950/5</span> is five percent of a <em>950</em> shade. Mixing a <em>500</em> shade at five percent lands several times too strong; around 1.5% matched the rendered lightness. Convert by comparing the result, not the number.</p>
 

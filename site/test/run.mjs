@@ -11,6 +11,7 @@
 import { readFileSync } from 'node:fs'
 import { connect, callTool } from './mcp-client.mjs'
 import { safeValidateNode } from '../../genai/validate.js'
+import { registeredSlots } from '../../genai/lint.js'
 
 let pass = 0, fail = 0
 const results = []
@@ -39,7 +40,10 @@ check('7.1 six tools advertised with input schemas', () => {
 
 const contract = await call('get_contract', {})
 check('7.1 get_contract returns the contract', () => {
-  assert(contract.data.slots.fixed.length === 12, 'expected 12 slots')
+  /* Against the registrations, not a number written here. Hardcoding 12 meant
+     adding a slot failed this test instead of the change that broke something. */
+  const registered = registeredSlots(readFileSync(new URL('../../src/properties.css', import.meta.url), 'utf8'))
+  eq(contract.data.slots.fixed, registered, 'contract slots vs @property registrations')
   assert(contract.data.layers.order.includes('largen.components'), 'no components layer')
   assert(contract.data.rules.every((r) => r.why), 'a rule carries no prose')
   return `${contract.data.rules.length} rules, ${contract.data.failureModes.length} failure modes`

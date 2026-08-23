@@ -97,7 +97,7 @@ function llmsTxt(c) {
   const L = []
   L.push('# largen', '', `> ${c.overview.tagline}`, '')
   L.push('largen is a property algebra rather than a component catalog. The library',
-    'supplies twelve slots, four axes and one universal paint rule; each project',
+    `supplies ${c.slots.fixed.length} slots, four axes and one universal paint rule; each project`,
     'authors its own components on top of them. There is no build step.', '')
   L.push('## Start here', '')
   L.push('- [The whole contract, inline](https://largen.dev/llms-compact.txt): everything below in one file, sized for a prompt.')
@@ -191,7 +191,7 @@ function contractPages(c, page, inline, esc) {
   const contractBody = [
     '<div class="stack" style="--gap:.4rem">',
     '  <h1 class="page-title">The contract</h1>',
-    '  <p class="page-desc">Twelve slots, one universal paint rule, and one rule about',
+    `  <p class="page-desc">${c.slots.fixed.length} slots, one universal paint rule, and one rule about`,
     '  layers that explains most of what goes wrong.</p>',
     '</div>',
     '',
@@ -304,7 +304,7 @@ function contractPages(c, page, inline, esc) {
   return {
     'site/public/docs/contract.html': page({
       title: 'The contract — largen', current: 'contract', version: v,
-      description: 'largen\'s twelve slots, the layer rule, and the universal paint rule.',
+      description: `largen's ${c.slots.fixed.length} slots, the layer rule, and the universal paint rule.`,
       body: contractBody }),
     'site/public/docs/axes.html': page({
       title: 'The axes — largen', current: 'axes', version: v,

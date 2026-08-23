@@ -23,6 +23,9 @@ export async function pages() {
   const { page, esc } = await import('../../site/mcp/page.mjs')
   const { manifest } = await import('../../genai/validate.js')
   const v = JSON.parse(readFileSync(at('package.json'), 'utf8')).version
+  /* Derived, not spelled. A slot count written as a word goes stale silently. */
+  const { registeredSlots } = await import('../../genai/lint.js')
+  const SLOTS = registeredSlots(readFileSync(at('src/properties.css'), 'utf8')).length
   const written = []
   const record = (rel, html) => { w(at(rel), html); written.push(rel) }
 
@@ -36,10 +39,10 @@ export async function pages() {
   
   record('site/public/index.html', page({
     title: 'largen — a property algebra for CSS', current: null, version: v,
-    description: 'A property algebra for CSS. Twelve slots, four axes, one paint rule, and components you write yourself. No build step.',
+    description: `A property algebra for CSS. ${SLOTS} slots, four axes, one paint rule, and components you write yourself. No build step.`,
     body: `<section class="hero">
     <h1 class="hero-title">A property algebra for CSS.</h1>
-    <p class="hero-lede">Twelve custom-property slots, four axes, one universal paint
+    <p class="hero-lede">${SLOTS} custom-property slots, four axes, one universal paint
     rule — and the components are yours. Plain CSS: no build step, no preprocessor,
     no plugin.</p>
     <div class="cluster" style="--gap:.6rem">
@@ -85,7 +88,7 @@ export async function pages() {
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">Start here</h2>
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
-  ${card('/docs/contract.html', 'The contract', 'Twelve slots, the layer rule, the paint rule. What the library guarantees.')}
+  ${card('/docs/contract.html', 'The contract', `${SLOTS} slots, the layer rule, the paint rule. What the library guarantees.`)}
   ${card('/docs/axes.html', 'The axes', 'tone, variant, size, state — and why only two of them inherit.')}
   ${card('/docs/authoring.html', 'Authoring', 'Six rules for writing a component, and the four ways it goes wrong.')}
   ${card('/docs/components.html', 'Reference components', 'Twenty-three optional components. Copy them or ignore them.')}

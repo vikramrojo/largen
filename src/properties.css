@@ -29,6 +29,19 @@
 @property --gap           { syntax: "*"; inherits: false; }
 @property --font-size     { syntax: "*"; inherits: false; }
 @property --weight        { syntax: "*"; inherits: false; }
+
+/* Typography's third and fourth members. --font-size and --weight were slots
+   from the start; leading and tracking were not, so a component that changed its
+   size had nowhere in the algebra to say what leading it wanted and wrote plain
+   CSS instead — invisible to the contract, to get_contract, and to anyone asking
+   "is line-height a slot?". It caught four components in one migration.
+
+   Both are inherited CSS properties, which is fine and already proven: color,
+   font-size and font-weight are inherited and have been in the paint rule all
+   along. An unset slot stays guaranteed-invalid, `revert-layer` fires, and the
+   inherited value survives untouched. */
+@property --line-height   { syntax: "*"; inherits: false; }
+@property --letter-spacing { syntax: "*"; inherits: false; }
 @property --shadow        { syntax: "*"; inherits: false; }
 
 /* Opt-in. A transition on every element would animate the whole page on any

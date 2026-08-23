@@ -138,7 +138,7 @@
   .stat-label, l-stat-label {
     --fg: var(--ink-muted);
     --font-size: calc(0.72rem * var(--scale));
-    letter-spacing: 0.06em;
+    --letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 

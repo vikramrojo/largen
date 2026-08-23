@@ -101,7 +101,7 @@ One registered property does carry an initial value, deliberately: `--scale` is
 declared `initial-value: 1`. It is not a paint slot — nothing reads it through
 `var(--scale, revert-layer)` — but a multiplier that every size calculation
 depends on, so it must always resolve to a number. `largen verify` exempts it by
-name for exactly this reason. The rule holds for the twelve paint slots without
+name for exactly this reason. The rule holds for the paint slots without
 exception.
 
 ## The paint rule
@@ -118,6 +118,8 @@ exception.
   gap: var(--gap, revert-layer);
   font-size: var(--font-size, revert-layer);
   font-weight: var(--weight, revert-layer);
+  line-height: var(--line-height, revert-layer);
+  letter-spacing: var(--letter-spacing, revert-layer);
   box-shadow: var(--shadow, revert-layer);
   transition: var(--transition, revert-layer);
 }
@@ -134,7 +136,7 @@ selector already contributes no specificity, so there is nothing to wrap. Note
 ## The slots
 
 `--bg --fg --border-color --border-width --border-style --radius --pad --gap
---font-size --weight --shadow --transition`
+--font-size --weight --line-height --letter-spacing --shadow --transition`
 
 Every component is painted from these and only these. All are registered
 `inherits: false` with no `initial-value`, so a component's background cannot
@@ -155,6 +157,8 @@ Registered exactly as follows:
 @property --gap { syntax: "*"; inherits: false; }
 @property --font-size { syntax: "*"; inherits: false; }
 @property --weight { syntax: "*"; inherits: false; }
+@property --line-height { syntax: "*"; inherits: false; }
+@property --letter-spacing { syntax: "*"; inherits: false; }
 @property --shadow { syntax: "*"; inherits: false; }
 @property --transition { syntax: "*"; inherits: false; }
 @property --scale { syntax: "<number>"; inherits: true; initial-value: 1; }

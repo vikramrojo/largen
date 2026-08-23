@@ -143,7 +143,7 @@
     --weight: var(--weight-medium);
     display: block;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    --letter-spacing: 0.06em;
   }
 
   /* ══ Note — the pattern that collapses a colour matrix ════════════════

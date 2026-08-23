@@ -300,12 +300,15 @@ name suggests, look at what it compiled to before assuming the cascade is at fau
 ### Three things that do not survive the conversion
 
 **Line height does not come along.** Tailwind's `text-sm` bundles a line-height —
-`1.25rem` against a `0.875rem` font — and converting only the size leaves the element
-inheriting `1.5`. That made callouts about 9% taller in one conversion, and it has now
-caught badge, button, crumbs and callout in the same project. largen has no `line-height`
-slot: the twelve are what the paint rule consults, and a thirteenth would still need
-remembering. Carry it as ordinary CSS in the component, and check it on every element
-whose font size you change.
+`1.25rem` against a `0.875rem` font, a ratio of about 1.43 — and converting only the size
+leaves the element on largen's document ratio of 1.55. That is 8% taller, which is what
+made callouts visibly wrong in one conversion after catching badge, button and crumbs the
+same way.
+
+largen's leading is *not* broken: `--line-height-base` is unitless, so it inherits as a
+ratio and recomputes correctly at any font size. The ratio is simply not your component's
+ratio. Set `--line-height` alongside `--font-size` whenever the two should differ —
+it is a slot, like `--letter-spacing`, so it belongs in the bundle rather than beside it.
 
 **Mix ratios do not transfer between shades.** `bg-blue-950/5` is five percent of a *950*
 shade. Mixing a *500* shade at five percent lands several times too strong; around 1.5%

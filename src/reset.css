@@ -14,7 +14,7 @@
     color: var(--ink);
     font-family: var(--font-ui);
     font-size: var(--text-base);
-    line-height: var(--leading);
+    line-height: var(--line-height-base);
     -webkit-font-smoothing: antialiased;
   }
 

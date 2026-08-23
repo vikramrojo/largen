@@ -76,7 +76,7 @@
     --font-size: calc(2rem * var(--scale));
     --weight: var(--weight-bold);
     line-height: 1.1;
-    letter-spacing: -0.02em;
+    --letter-spacing: -0.02em;
   }
 
   /** @largen The line under a page title. */
@@ -109,7 +109,7 @@
     --font-size: calc(2.75rem * var(--scale));
     --weight: var(--weight-bold);
     line-height: 1.05;
-    letter-spacing: -0.03em;
+    --letter-spacing: -0.03em;
     max-inline-size: 18ch;
   }
 
@@ -417,7 +417,7 @@
     content: "fragment";
     color: var(--ink-muted);
     font-size: 0.65rem;
-    letter-spacing: 0.06em;
+    --letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 

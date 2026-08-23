@@ -3,7 +3,7 @@
 > A property algebra for CSS. Plain CSS — no build step, no preprocessor, no plugin.
 
 largen is a property algebra rather than a component catalog. The library
-supplies twelve slots, four axes and one universal paint rule; each project
+supplies 14 slots, four axes and one universal paint rule; each project
 authors its own components on top of them. There is no build step.
 
 ## Start here
