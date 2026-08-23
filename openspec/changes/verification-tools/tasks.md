@@ -128,8 +128,10 @@ in the result:
       `llms.txt` and `llms-compact.txt`, and that compact stays inside 16kb.
 - [x] 9.2 Extend the assertion suite and run it locally — 70 assertions, plus an
       11-fixture differential suite against headless Chrome.
-- [ ] 9.4 Run the suite against the deployed site. Needs a deploy first; the VM is
-      still serving the build from before this change.
+- [x] 9.4 Run the suite against the deployed site — 77/77 against
+      `https://largen.exe.xyz`. Note the site is not yet on `largen.dev`: that
+      needs the DNS record in `largen-dev-dns`, which is blocked on registrar
+      access.
 - [x] 9.3 `largen verify` and the conformance page still pass.
 
 ## 10. A release log by version
@@ -158,9 +160,17 @@ and the log can be checked instead of trusted.
       bytes match the `sha256` and `integrity` their own `build.json` claims.
 - [x] 10.7 Point the README's pin example at 0.3.0 with the real integrity string,
       and document the three new CLI verbs.
-- [ ] 10.8 Publish: deploy the site so `/v/0.3.0/` and the updated docs are live.
-- [ ] 10.9 `npm publish` — the user's call, and the package now carries `dist/` and
-      `RELEASES.md` so a CDN can serve the same bytes from the registry.
+- [x] 10.8 Publish: deployed at 6b1e9d0. `/v/0.1.0/`, `/v/0.2.0/` and `/v/0.3.0/`
+      all serve, and 0.3.0's served bytes reproduce the `sha256` its own
+      `build.json` publishes.
+- [ ] 10.9 `npm publish` — blocked, not declined. The registry now requires
+      interactive browser authentication for a publish; the cached token in
+      `~/.npmrc` is read-only, which is why `npm whoami` succeeds and `npm publish`
+      does not. The package is otherwise ready: `npm publish --dry-run` is clean at
+      45 files / 86.6 kB, the name `largen` is unregistered, and `dist/largen.css`
+      in the tarball is byte-identical to the pinned `/v/0.3.0/largen.css`, so a
+      registry CDN and largen.dev will serve the same bytes under the same SRI.
+      Run `npm login` then `npm publish --access public`.
 
 **This unblocks T5.** `check_upgrade` was deferred because it needed a
 machine-readable list of behavioural deltas keyed by version, which `build.json`
