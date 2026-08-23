@@ -1,0 +1,35 @@
+/* largen — a property algebra for CSS.
+ *
+ * Plain CSS. No build step, no preprocessor, no plugin. Link this file and it
+ * works; everything below is a plain @import.
+ *
+ * Layer order is the load-bearing detail:
+ *
+ *   reset < tokens < paint < tone < elements < components < modifiers
+ *                                        ^          ^           ^
+ *                                        |          |           `-- an explicit
+ *                                        |          |    variant must BEAT both
+ *                                        |          `-- a component class beats
+ *                                        |              the bare-element default
+ *                                        `-- bare HTML defaults are the floor
+ *
+ * Everything is layered and every selector is :where()-wrapped, so consumer CSS
+ * always wins without !important.
+ *
+ * ONE RULE TO KNOW: author components inside @layer largen.components; override
+ * them from outside it. Unlayered CSS beats every layer — which is what makes
+ * overriding work, and what breaks an unlayered *component*: it outranks
+ * largen.modifiers, so data-variant silently stops working while tone and size
+ * keep going.
+ */
+
+@layer largen.reset, largen.tokens, largen.paint, largen.tone,
+  largen.elements, largen.components, largen.modifiers;
+
+@import url("./properties.css");   /* the slots — registration, not a layer */
+@import url("./reset.css");
+@import url("./tokens.css");
+@import url("./paint.css");        /* the one universal rule */
+@import url("./algebra.css");      /* tone · variant · size · state */
+@import url("./layout.css");       /* the handful of layout utilities */
+@import url("./elements.css");     /* themed bare HTML */

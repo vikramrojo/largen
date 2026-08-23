@@ -1,0 +1,449 @@
+/* largen.dev — the site's own components.
+ *
+ * Authored the same way the documentation tells you to author yours: slots only,
+ * no colour literals, nothing reaching past --tone* to a raw semantic token, and
+ * everything inside @layer largen.components. `check_component_css` is run
+ * against this file in the test suite, because a documentation site that broke
+ * its own contract would be the least persuasive thing on the internet.
+ */
+
+@layer largen.components {
+
+  /* ══ Chrome ═══════════════════════════════════════════════════════════ */
+
+  /** @largen The site header: wordmark on the left, navigation on the right. */
+  .site-header {
+    --pad: 1rem 1.25rem;
+    --gap: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    inline-size: 100%;
+    max-inline-size: var(--measure);
+    margin-inline: auto;
+  }
+
+  /** @largen The largen wordmark, linking home. */
+  .wordmark {
+    --font-size: calc(1.1rem * var(--scale));
+    --weight: var(--weight-medium);
+    line-height: 1;
+    text-decoration: none;
+    font-family: var(--font-mono);
+  }
+
+  /** @largen One item in the header navigation. Muted until hovered. */
+  .nav-link {
+    --fg: var(--ink-muted);
+    --transition: var(--speed) color;
+    --font-size: calc(0.9rem * var(--scale));
+    text-decoration: none;
+  }
+
+  .nav-link:hover,
+  .nav-link[aria-current] { --fg: var(--ink) }
+
+  /** @largen The site footer. */
+  .site-footer {
+    --pad: 3rem 1.25rem 4rem;
+    --gap: 0.5rem;
+    --fg: var(--ink-muted);
+    --font-size: calc(0.85rem * var(--scale));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    inline-size: 100%;
+    max-inline-size: var(--measure);
+    margin-inline: auto;
+  }
+
+  /* ══ Page furniture ═══════════════════════════════════════════════════ */
+
+  /** @largen The page wrapper: a constrained measure, centred. */
+  .page {
+    --pad: 0 1.25rem;
+    --gap: 2rem;
+    display: flex;
+    flex-direction: column;
+    inline-size: 100%;
+    max-inline-size: var(--measure);
+    margin-inline: auto;
+  }
+
+  /** @largen The h1 of a page, with its standfirst underneath. */
+  .page-title {
+    --font-size: calc(2rem * var(--scale));
+    --weight: var(--weight-bold);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  /** @largen The line under a page title. */
+  .page-desc {
+    --fg: var(--ink-muted);
+    --font-size: calc(1.05rem * var(--scale));
+    max-inline-size: 60ch;
+  }
+
+  /** @largen A section heading inside a document. */
+  .section-title {
+    --font-size: calc(1.25rem * var(--scale));
+    --weight: var(--weight-medium);
+    line-height: 1.2;
+  }
+
+  /* ══ The landing page ═════════════════════════════════════════════════ */
+
+  /** @largen The hero claim on the landing page. */
+  .hero {
+    --gap: 1rem;
+    --pad: 3rem 0 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /** @largen The one-line statement of what largen is. */
+  .hero-title {
+    --font-size: calc(2.75rem * var(--scale));
+    --weight: var(--weight-bold);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    max-inline-size: 18ch;
+  }
+
+  /** @largen The paragraph under the hero title. */
+  .hero-lede {
+    --fg: var(--ink-muted);
+    --font-size: calc(1.15rem * var(--scale));
+    max-inline-size: 58ch;
+    line-height: 1.6;
+  }
+
+  /* ══ Navigation cards ═════════════════════════════════════════════════ */
+
+  /** @largen A large link presented as a card. Used for docs and demo indexes. */
+  .doc-card {
+    --bg: var(--surface);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: 1rem 1.15rem;
+    --gap: 0.3rem;
+    --transition: var(--speed) border-color;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    block-size: 100%;
+  }
+
+  .doc-card:hover { --border-color: var(--tone-line) }
+
+  /** @largen The title line of a doc card. */
+  .doc-card-title {
+    --weight: var(--weight-medium);
+    --font-size: calc(1rem * var(--scale));
+  }
+
+  /** @largen The description line of a doc card. */
+  .doc-card-desc {
+    --fg: var(--ink-muted);
+    --font-size: calc(0.875rem * var(--scale));
+    line-height: 1.5;
+  }
+
+  /** @largen A pill-shaped link. Same shape as a badge, but it is a link, so it
+    * declares its own slots rather than inheriting a badge's text decoration. */
+  .pill {
+    --bg: var(--tone-soft);
+    --fg: var(--tone-ink);
+    --border-color: var(--tone-line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: 2em;
+    --pad: 0.35em 0.85em;
+    --font-size: calc(0.9rem * var(--scale));
+    --transition: var(--speed) border-color;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  .pill:hover { --border-color: var(--tone) }
+
+  /* ══ Documentation ════════════════════════════════════════════════════ */
+
+  /** @largen A named rule in the contract, numbered and explained. */
+  .rule {
+    --bg: var(--surface);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: 1rem 1.15rem;
+    --gap: 0.5rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /** @largen The statement of a rule — the part to remember. */
+  .rule-title {
+    --weight: var(--weight-medium);
+    --font-size: calc(1rem * var(--scale));
+  }
+
+  /** @largen The reasoning under a rule. */
+  .rule-why {
+    --fg: var(--ink-muted);
+    --font-size: calc(0.9rem * var(--scale));
+    line-height: 1.65;
+  }
+
+  /** @largen A described failure mode: symptom, cause, fix, and why it is missed. */
+  .failure {
+    --bg: var(--tone-soft);
+    --fg: var(--tone-ink);
+    --border-color: var(--tone);
+    --border-width: 0 0 0 3px;
+    --border-style: solid;
+    --radius: var(--radius-sm);
+    --pad: 0.9rem 1.1rem;
+    --gap: 0.45rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /** @largen The observable symptom of a failure mode. */
+  .failure-symptom {
+    --weight: var(--weight-medium);
+    --font-size: calc(0.95rem * var(--scale));
+  }
+
+  /** @largen A cause/fix line inside a failure mode. */
+  .failure-line {
+    --font-size: calc(0.875rem * var(--scale));
+    line-height: 1.55;
+  }
+
+  /** @largen A key/value row, used for slots and axis values. */
+  .spec-row {
+    --gap: 0.75rem;
+    --pad: 0.5rem 0;
+    --border-color: var(--line);
+    --border-width: 0 0 var(--hairline);
+    --border-style: solid;
+    display: grid;
+    grid-template-columns: minmax(8rem, 12rem) 1fr;
+    align-items: baseline;
+  }
+
+  /** @largen The name in a spec row. Monospaced. */
+  .spec-name {
+    --font-size: calc(0.875rem * var(--scale));
+    --weight: var(--weight-medium);
+    font-family: var(--font-mono);
+  }
+
+  /** @largen The explanation in a spec row. */
+  .spec-note {
+    --fg: var(--ink-muted);
+    --font-size: calc(0.875rem * var(--scale));
+    line-height: 1.6;
+  }
+
+  /** @largen An inline code token. */
+  .tok {
+    --bg: var(--shade);
+    --radius: var(--radius-sm);
+    --pad: 0.1em 0.4em;
+    --font-size: 0.875em;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  /** @largen A block of code. Scrolls rather than wrapping. */
+  .code {
+    --bg: var(--surface);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: 0.9rem 1.1rem;
+    --font-size: calc(0.85rem * var(--scale));
+    font-family: var(--font-mono);
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+    tab-size: 2;
+  }
+
+  /* ══ Long-form documentation ══════════════════════════════════════════
+   *
+   * The migration guide is generated from MIGRATING.md, so unlike the other
+   * pages its shape is whatever the Markdown was. These are the elements that
+   * shows up: flowing paragraphs, lists, and tables of measurements.
+   */
+
+  /** @largen A long-form generated document. Sets the reading measure. */
+  .doc {
+    --gap: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    max-inline-size: 70ch;
+  }
+
+  /** @largen A paragraph inside a long-form document. */
+  .doc-p {
+    --font-size: calc(0.95rem * var(--scale));
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  /** @largen A list inside a long-form document. */
+  .doc-list {
+    --font-size: calc(0.95rem * var(--scale));
+    --gap: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.65;
+    margin: 0;
+    padding-inline-start: 1.3em;
+  }
+
+  /** @largen A table of measurements inside a long-form document. */
+  .doc-table {
+    --font-size: calc(0.875rem * var(--scale));
+    border-collapse: collapse;
+    inline-size: 100%;
+    text-align: start;
+  }
+
+  .doc-table th, .doc-table td {
+    --border-color: var(--line);
+    --border-width: 0 0 var(--hairline);
+    --border-style: solid;
+    --pad: 0.5rem 0.75rem 0.5rem 0;
+    vertical-align: baseline;
+    line-height: 1.55;
+  }
+
+  .doc-table th { --weight: var(--weight-medium); --fg: var(--ink-muted) }
+
+  /* The guide's `---` breaks sit immediately before an `##`, so the heading is
+     already doing structural work. Left at 1.25rem the rule floated in the
+     middle of ~3.4rem of combined flex gap and margin and read as an accidental
+     void rather than a divider. Tight to the heading it follows, it reads. */
+  /** @largen A section break inside a long-form document. */
+  .doc-rule {
+    --bg: var(--line);
+    display: block;
+    border: none;
+    block-size: 1px;
+    inline-size: 4rem;
+    margin-block: 1rem 0.25rem;
+  }
+
+  /* ══ MCP tool reference ═══════════════════════════════════════════════ */
+
+  /** @largen One MCP tool: its name, what it is for, and its parameters. */
+  .tool {
+    --bg: var(--surface);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: 1rem 1.15rem;
+    --gap: 0.5rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /** @largen The name of an MCP tool. Monospaced. */
+  .tool-name {
+    --weight: var(--weight-medium);
+    --font-size: calc(0.95rem * var(--scale));
+    font-family: var(--font-mono);
+  }
+
+  /** @largen What an MCP tool does. */
+  .tool-desc {
+    --fg: var(--ink-muted);
+    --font-size: calc(0.9rem * var(--scale));
+    line-height: 1.6;
+  }
+
+  /* ══ Playground ═══════════════════════════════════════════════════════ */
+
+  /** @largen The playground's two-pane editor and result area. */
+  .play-grid {
+    --gap: 1rem;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 60rem) {
+    .play-grid { grid-template-columns: 1fr 1fr }
+  }
+
+  /** @largen The spec editor textarea. */
+  .play-editor {
+    --bg: var(--surface);
+    --fg: var(--ink);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: 0.9rem;
+    --font-size: calc(0.85rem * var(--scale));
+    font-family: var(--font-mono);
+    line-height: 1.6;
+    min-block-size: 22rem;
+    resize: vertical;
+    inline-size: 100%;
+  }
+
+  /** @largen Where the playground renders the spec. */
+  .play-stage {
+    --bg: var(--canvas);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: 1rem;
+    --gap: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    min-block-size: 22rem;
+  }
+
+  /** @largen The playground's validation verdict line. */
+  .play-verdict {
+    --font-size: calc(0.85rem * var(--scale));
+    --fg: var(--tone-ink);
+    --bg: var(--tone-soft);
+    --border-color: var(--tone-line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-sm);
+    --pad: 0.5rem 0.75rem;
+    font-family: var(--font-mono);
+    white-space: pre-wrap;
+  }
+
+  /* ══ Theme toggle ═════════════════════════════════════════════════════ */
+
+  /** @largen The light/dark switch in the header. */
+  .theme-toggle {
+    --pad: 0.25em 0.55em;
+    --radius: var(--radius-sm);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --font-size: calc(0.85rem * var(--scale));
+    cursor: pointer;
+    user-select: none;
+    line-height: 1;
+  }
+}

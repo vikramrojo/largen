@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Playground — largen</title>
+<meta name="description" content="Render a largen spec in the browser. Shareable through the URL fragment, with nothing stored server-side.">
+<link rel="stylesheet" href="/largen.css">
+<link rel="stylesheet" href="/largen.components.css">
+<link rel="stylesheet" href="/theme-dark.css">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="/">largen</a>
+  <nav class="cluster" style="--gap:1rem">
+        <a class="nav-link" href="/docs/contract.html">contract</a>
+        <a class="nav-link" href="/docs/axes.html">axes</a>
+        <a class="nav-link" href="/docs/authoring.html">authoring</a>
+        <a class="nav-link" href="/docs/components.html">components</a>
+        <a class="nav-link" href="/docs/mcp.html">mcp</a>
+        <a class="nav-link" href="/docs/migrating.html">migrating</a>
+        <a class="nav-link" href="/play" aria-current="page">play</a>
+        <a class="nav-link" href="/demo/">demos</a>
+    <label class="theme-toggle">
+      <input type="checkbox" hidden onchange="
+        document.documentElement.dataset.theme = this.checked ? 'dark' : 'light';
+        try { localStorage.setItem('largen-theme', document.documentElement.dataset.theme) } catch (e) {}
+      "><span data-swap="off">☀</span><span data-swap="on">☾</span>
+    </label>
+  </nav>
+</header>
+
+<main class="page">
+<div class="stack" style="--gap:.4rem">
+    <h1 class="page-title">Playground</h1>
+    <p class="page-desc">Edit a spec and watch it validate and render. The validator and
+    the renderer here are the same modules the MCP server imports — not a reimplementation
+    of them — so this page cannot disagree with <span class="tok">validate_spec</span>.</p>
+  </div>
+  
+  <div class="play-grid">
+    <div class="stack" style="--gap:.5rem">
+      <label class="spec-note" for="spec">Spec</label>
+      <textarea class="play-editor" id="spec" spellcheck="false">{
+  "component": "card",
+  "tone": "info",
+  "children": [
+    {
+      "component": "stat",
+      "children": [
+        {
+          "component": "stat-label",
+          "text": "Revenue"
+        },
+        {
+          "component": "stat-value",
+          "text": "$4,201"
+        }
+      ]
+    },
+    {
+      "component": "badge",
+      "tone": "success",
+      "variant": "soft",
+      "text": "up 12%"
+    },
+    {
+      "component": "alert",
+      "tone": "warning",
+      "text": "Two accounts need review."
+    }
+  ]
+}</textarea>
+      <div class="cluster" style="--gap:.6rem">
+        <button id="share" data-tone="primary" data-variant="soft">Copy share link</button>
+        <span class="spec-note" id="shared"></span>
+      </div>
+      <p class="spec-note">The share link carries the spec in the URL fragment, so it
+      never reaches the server and needs nothing stored to work.</p>
+    </div>
+  
+    <div class="stack" style="--gap:.5rem">
+      <span class="spec-note">Result</span>
+      <div class="play-verdict" id="verdict" data-tone="neutral">…</div>
+      <div class="play-stage" id="stage"></div>
+    </div>
+  </div>
+  
+  <script type="module">
+  import { createValidator, manifest } from '/genai/validate.js'
+  import { renderNode } from '/site-render.mjs'
+  
+  const $ = (id) => document.getElementById(id)
+  const editor = $('spec'), verdict = $('verdict'), stage = $('stage')
+  const { safeValidateNode } = createValidator(manifest)
+  
+  function run() {
+    let spec
+    try { spec = JSON.parse(editor.value) }
+    catch (e) {
+      verdict.dataset.tone = 'danger'
+      verdict.textContent = 'Not JSON — ' + e.message
+      stage.innerHTML = ''
+      return
+    }
+  
+    const result = safeValidateNode(spec)
+    if (!result.ok) {
+      /* An invalid spec shows its errors and renders nothing. Partial output would
+         be a picture of something the validator just refused to allow. */
+      verdict.dataset.tone = 'danger'
+      verdict.textContent = 'Rejected — ' + result.error
+      stage.innerHTML = ''
+      return
+    }
+  
+    verdict.dataset.tone = 'success'
+    verdict.textContent = 'Valid.'
+    stage.innerHTML = renderNode(result.value)
+  }
+  
+  /* A spec in the fragment renders with no server round-trip, which is what makes a
+     preview shareable without anything being stored anywhere. */
+  function fromFragment() {
+    const raw = location.hash.slice(1)
+    if (!raw) return false
+    try {
+      editor.value = JSON.stringify(JSON.parse(decodeURIComponent(escape(atob(raw)))), null, 2)
+      return true
+    } catch (e) { return false }
+  }
+  
+  $('share').addEventListener('click', () => {
+    try {
+      const packed = btoa(unescape(encodeURIComponent(JSON.stringify(JSON.parse(editor.value)))))
+      const url = location.origin + location.pathname + '#' + packed
+      history.replaceState(null, '', '#' + packed)
+      navigator.clipboard?.writeText(url)
+      $('shared').textContent = 'copied'
+      setTimeout(() => { $('shared').textContent = '' }, 2000)
+    } catch (e) { $('shared').textContent = 'fix the JSON first' }
+  })
+  
+  editor.addEventListener('input', run)
+  window.addEventListener('hashchange', () => { fromFragment(); run() })
+  fromFragment()
+  run()
+  </script>
+</main>
+
+<footer class="site-footer">
+  <span>largen 0.2.0 — a property algebra for CSS. MIT.</span>
+  <span class="cluster" style="--gap:.75rem">
+    <a class="nav-link" href="/llms.txt">llms.txt</a>
+    <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>
+    <a class="nav-link" href="/largen.css">largen.css</a>
+    <a class="nav-link" href="/health">health</a>
+  </span>
+</footer>
+
+<script>
+  /* Decide which theme is on. Not a component concern — largen carries the theme
+     itself; this only picks one. ?theme= wins over the stored preference so a
+     link can pin a theme, which is also what makes both themes screenshottable
+     in verification. */
+  (function () {
+    var t = null
+    try { t = new URLSearchParams(location.search).get('theme') } catch (e) {}
+    if (t !== 'dark' && t !== 'light') {
+      try { t = localStorage.getItem('largen-theme') } catch (e) { t = null }
+    }
+    if (t !== 'dark' && t !== 'light') return
+    document.documentElement.dataset.theme = t
+    var box = document.querySelector('.theme-toggle input')
+    if (box) box.checked = t === 'dark'
+  })()
+</script>
+</body>
+</html>

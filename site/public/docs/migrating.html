@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Migrating to largen</title>
+<meta name="description" content="A runbook for moving a site off Tailwind, daisyUI, CVA and a component registry onto largen.">
+<link rel="stylesheet" href="/largen.css">
+<link rel="stylesheet" href="/largen.components.css">
+<link rel="stylesheet" href="/theme-dark.css">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="/">largen</a>
+  <nav class="cluster" style="--gap:1rem">
+        <a class="nav-link" href="/docs/contract.html">contract</a>
+        <a class="nav-link" href="/docs/axes.html">axes</a>
+        <a class="nav-link" href="/docs/authoring.html">authoring</a>
+        <a class="nav-link" href="/docs/components.html">components</a>
+        <a class="nav-link" href="/docs/mcp.html">mcp</a>
+        <a class="nav-link" href="/docs/migrating.html" aria-current="page">migrating</a>
+        <a class="nav-link" href="/play">play</a>
+        <a class="nav-link" href="/demo/">demos</a>
+    <label class="theme-toggle">
+      <input type="checkbox" hidden onchange="
+        document.documentElement.dataset.theme = this.checked ? 'dark' : 'light';
+        try { localStorage.setItem('largen-theme', document.documentElement.dataset.theme) } catch (e) {}
+      "><span data-swap="off">☀</span><span data-swap="on">☾</span>
+    </label>
+  </nav>
+</header>
+
+<main class="page">
+<article class="doc">
+<h1 class="page-title" id="migrating-a-site-to-largen">Migrating a site to largen</h1>
+
+<p class="doc-p">A runbook, written against a migration that actually happened: a personal site with a blog, a project list and 24 mathematical callout types. It finished at <strong>556 lines of CSS</strong> — 488 of components, 57 of theme, 11 of imports — replacing <span class="tok">tailwindcss</span>, <span class="tok">daisyui</span>, a <span class="tok">shadcn</span>/<span class="tok">radix</span> <span class="tok">ui/*.tsx</span> registry, <span class="tok">class-variance-authority</span>, <span class="tok">clsx</span>, <span class="tok">tailwind-merge</span> and a hand-written <span class="tok">typography.css</span>. Built, it was <strong>20.1kb, 4.8kb gzipped</strong>, and it needed no build step to work at all.</p>
+
+<p class="doc-p">Every figure below is measured from that migration. They are reported so the shape is concrete, not because you can re-run them — that site is not in this repository. What <em>is</em> here is <span class="tok">sites/example/</span>, a smaller worked component set that demonstrates the patterns; it is a different artifact and not the source of these numbers.</p>
+
+<p class="doc-p">Read that as a shape rather than a promise. Your site is not that site. But the sequence below is the one that produced it, and the mistakes flagged are the ones that are expensive to make.</p>
+
+<hr class="doc-rule">
+
+<h2 class="section-title" id="the-idea-you-have-to-accept-first">The idea you have to accept first</h2>
+
+<p class="doc-p">largen is not a component library you adopt. It is an algebra, and <strong>you write the components</strong>. A migration is therefore not "swap <span class="tok">.btn</span> for <span class="tok">.button</span>" — it is <em>deleting</em> a component catalog and replacing it with about six lines per component of your own, named in your own domain language.</p>
+
+<p class="doc-p">That component set contained no <span class="tok">card</span>, no <span class="tok">alert</span>, no <span class="tok">button</span>. It contained <span class="tok">entry-card</span>, <span class="tok">callout</span>, <span class="tok">work-entry</span>, <span class="tok">toc-link</span>, <span class="tok">post-nav-item</span>. Those are nouns from a site about writing, not nouns from a UI kit. If your migrated stylesheet reads like a UI kit, you have ported the catalog instead of replacing it, and you have kept the coupling you were trying to remove.</p>
+
+<p class="doc-p">The corollary is what makes migration cheap: <strong>you are not porting the variant matrix.</strong> Tone, variant, size, state and both themes come from underneath. Every line in your old stylesheet that exists to express "the danger version of this, in dark mode, at large size" has no counterpart. It evaporates.</p>
+
+<hr class="doc-rule">
+
+<h2 class="section-title" id="phase-0-decide-what-you-are-not-migrating">Phase 0 — Decide what you are <em>not</em> migrating</h2>
+
+<p class="doc-p">Do this first, and write it down, because it is the decision most likely to be made badly under momentum.</p>
+
+<p class="doc-p"><strong>largen replaces theming. It does not replace behaviour.</strong> That migration kept <span class="tok">radix</span>'s <span class="tok">ScrollArea</span> and its PDF viewer, and the note left in the stylesheet says why: <em>"Those are behaviour, not theming."</em> Focus trapping, virtual scrolling, drag and drop, date-picker keyboard semantics, combobox ARIA — none of that is CSS, and a stylesheet cannot give it to you.</p>
+
+<p class="doc-p">Sort every dependency into three piles:</p>
+
+<table class="doc-table">
+<thead><tr><th>Pile</th><th>Examples</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td>Theming</td><td>tailwind, daisyUI, CVA, clsx, tailwind-merge, a typography stylesheet, a <span class="tok">ui/*</span> registry that is mostly styling</td><td><strong>Replace</strong></td></tr>
+<tr><td>Behaviour</td><td>focus trapping, virtualisation, complex ARIA widgets, PDF/canvas/media</td><td><strong>Keep</strong></td></tr>
+<tr><td>Platform already does it</td><td>modal, disclosure, popover, dialog, form validation</td><td><strong>Delete and use the element</strong></td></tr>
+</tbody></table>
+
+<p class="doc-p">That third pile is bigger than it looks. <span class="tok">&lt;dialog&gt;</span> is the modal, <span class="tok">&lt;details&gt;</span> is the collapse, and largen themes bare elements already. That site's accordion and its 24-type callout were both <span class="tok">&lt;details&gt;</span>, with about fifteen lines of CSS between them.</p>
+
+<p class="doc-p"><strong>Write your pile assignment into a comment at the top of your component file.</strong> It is the thing future-you will most want and least remember.</p>
+
+<hr class="doc-rule">
+
+<h2 class="section-title" id="phase-1-inventory-what-is-genuinely-in-use">Phase 1 — Inventory what is genuinely in use</h2>
+
+<p class="doc-p">Two questions, and the second matters more.</p>
+
+<p class="doc-p"><strong>What components exist?</strong></p>
+
+<pre class="code" data-lang="sh"># Your own component set, if you already have CSS
+npx largen manifest src/**/*.css
+
+# Or count the registry you are replacing
+ls src/components/ui/*.tsx | wc -l</pre>
+
+<p class="doc-p"><strong>Which of them are actually used, and how often?</strong> A registry ships ~50 components; a site typically renders twelve. Grep the templates, not the registry:</p>
+
+<pre class="code" data-lang="sh">grep -rhoE '&lt;[A-Z][A-Za-z]+' src/pages src/layouts src/components \
+  | sort | uniq -c | sort -rn | head -40</pre>
+
+<p class="doc-p">Everything with a count of zero is deleted, not migrated. This is usually the single largest saving in the whole exercise and it costs one command.</p>
+
+<p class="doc-p"><strong>Find the variant configs.</strong> These are where the line count is hiding:</p>
+
+<pre class="code" data-lang="sh">grep -rln "cva(\|clsx(\|twMerge(\|tailwind-merge" src/ | head -20
+grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
+
+<p class="doc-p">Every <span class="tok">dark:</span> occurrence is a line that should not survive migration. Count them now so you can check later that they are gone.</p>
+
+<hr class="doc-rule">
+
+<h2 class="section-title" id="phase-2-one-theme-one-dialect">Phase 2 — One theme, one dialect</h2>
+
+<p class="doc-p">Before any component, write your theme: the tokens, once.</p>
+
+<p class="doc-p">That site had declared its palette <strong>twice</strong> — once as shadcn tokens (<span class="tok">--background</span>, <span class="tok">--foreground</span>, <span class="tok">--muted</span>, <span class="tok">--destructive</span>) and again, in parallel and entirely unused, as daisyUI's (<span class="tok">--color-base-100</span>, <span class="tok">--color-base-content</span>). That is normal for a site that accreted two systems, and it is exactly the redundancy a migration should collect.</p>
+
+<p class="doc-p">You need eleven or so values, and a dark block that overrides the same names:</p>
+
+<pre class="code" data-lang="css">:root, [data-theme="light"] {
+  --canvas: oklch(1 0 0);
+  --ink: oklch(0.145 0 0);
+  --ink-muted: oklch(0.556 0 0);
+  --surface: oklch(0.97 0 0);
+  --line: oklch(0.922 0 0);
+
+  --primary: oklch(0.205 0 0);   --primary-on: oklch(0.985 0 0);
+  --danger:  oklch(0.577 0.245 27.325); --danger-on: oklch(0.985 0 0);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --canvas: oklch(0.145 0 0);
+  --ink: oklch(0.985 0 0);
+  --surface: oklch(0.269 0 0);
+  --line: oklch(1 0 0 / 12%);
+  /* …the same names, different values… */
+  color-scheme: dark;
+}</pre>
+
+<p class="doc-p">Two things worth knowing while you do this:</p>
+
+<ul class="doc-list">
+  <li><strong>A near-monochrome site is normal.</strong> That site's "primary" was near-black, so <span class="tok">neutral</span> carried almost all of its UI. Do not invent a colour system you do not have.</li>
+  <li><strong>Site-wide typography is a theme concern, not a component one.</strong> That site's identity was one monospace face, light, with tight tracking — expressed before the migration as an <span class="tok">@apply … tracking-tighter font-light</span> on the universal selector, and afterwards as three token values plus one <span class="tok">body</span> rule.</li>
+</ul>
+
+<p class="doc-p"><strong>This is the last time you write a colour.</strong> From here on, components name <span class="tok">var(--tone-soft)</span> and the theme decides what that is.</p>
+
+<hr class="doc-rule">
+
+<h2 class="section-title" id="phase-3-author-components-leaf-first">Phase 3 — Author components, leaf-first</h2>
+
+<p class="doc-p">Work from the inside out: the smallest, most-repeated things first (<span class="tok">tag</span>, <span class="tok">avatar</span>, <span class="tok">nav-link</span>), then the containers that hold them. Leaf-first means every container you write is already made of finished parts, and you see real results on day one.</p>
+
+<p class="doc-p">Each component is a bundle of slots and a little shape:</p>
+
+<pre class="code" data-lang="css">@layer largen.components {
+  .entry-card, entry-card {
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-lg);
+    --pad: 1rem;
+    --transition: var(--speed) background-color;
+    display: block;
+    text-decoration: none;
+  }
+
+  .entry-card:hover, entry-card:hover {
+    --bg: color-mix(in oklab, var(--surface) 55%, transparent);
+  }
+}</pre>
+
+<p class="doc-p">Three habits that make the difference:</p>
+
+<p class="doc-p"><strong>Write the interaction once, not per element.</strong> That site's signature was links muted until hovered — <span class="tok">text-foreground/60 hover:text-foreground transition-colors</span> repeated on every link in the codebase. It became one component with one hover rule, and every link got it. <span class="tok">sites/example/</span> shows the shape as <span class="tok">.entry-link</span>.</p>
+
+<p class="doc-p"><strong>Multiply by <span class="tok">var(--scale)</span> wherever you set a size</strong>, and express the rest in <span class="tok">em</span>. That is what buys you the size axis for free; it is also why you never write a size variant.</p>
+
+<p class="doc-p"><strong>Set <span class="tok">--tone</span>, not colours.</strong> The headline conversion was the callout: <span class="tok">callout.astro</span> carried a 24-entry CVA config, roughly <strong>100 lines of hand-written colour strings</strong> — two per type per colour mode, like <span class="tok">border-blue-500 dark:bg-blue-950/5</span> alongside <span class="tok">text-blue-700 dark:text-blue-300</span>. It became one shape rule plus this:</p>
+
+<pre class="code" data-lang="css">.callout[data-type="note"]    { --tone: var(--hue-blue) }
+.callout[data-type="tip"]     { --tone: var(--hue-green) }
+.callout[data-type="warning"] { --tone: var(--hue-yellow) }
+/* …21 more, one line each… */</pre>
+
+<p class="doc-p"><strong>Dark mode is never mentioned</strong>, because <span class="tok">--tone-soft</span> and <span class="tok">--tone-ink</span> resolve against <span class="tok">--canvas</span> and <span class="tok">--ink</span>. That is the whole trick, and it generalises: any time you are about to write a <span class="tok">dark:</span> variant, you have found something the algebra should be doing for you.</p>
+
+<h3 class="section-title" id="check-each-component-as-you-write-it">Check each component as you write it</h3>
+
+<p class="doc-p">Locally:</p>
+
+<pre class="code" data-lang="sh">npx largen verify</pre>
+
+<p class="doc-p">Or over MCP, which is the same rules from the same module, and is useful when the agent doing the migration is not sitting in this repository:</p>
+
+<pre class="code" data-lang="sh">claude mcp add largen --transport http https://largen.exe.xyz/api/mcp</pre>
+
+<p class="doc-p">Then <span class="tok">check_component_css</span> on what you just wrote, and <span class="tok">get_contract</span> when you are unsure. Both take snippets, so you can check a component before it is in a file.</p>
+
+<hr class="doc-rule">
+
+<h2 class="section-title" id="phase-4-convert-the-templates">Phase 4 — Convert the templates</h2>
+
+<p class="doc-p">Now the markup. The pattern is: a long <span class="tok">class</span> attribute becomes a component name plus, at most, an axis attribute.</p>
+
+<pre class="code" data-lang="html">&lt;!-- before --&gt;
+&lt;div class="rounded-xl border bg-card p-4 hover:bg-muted/50 transition-colors
+            dark:border-neutral-800 text-sm"&gt;
+
+&lt;!-- after --&gt;
+&lt;div class="entry-card"&gt;</pre>
+
+<pre class="code" data-lang="html">&lt;!-- before --&gt;
+&lt;div class="border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/10
+            text-amber-800 dark:text-amber-200 rounded-md px-4 py-3"&gt;
+
+&lt;!-- after --&gt;
+&lt;details class="callout" data-type="warning"&gt;</pre>
+
+<p class="doc-p">Go page by page, not component by component, and <strong>keep the old stylesheet loaded until a page is fully converted</strong>. A half-converted page under both systems is readable; a half-converted codebase under neither is not.</p>
+
+<p class="doc-p">If your framework has a class-merging helper (<span class="tok">cn</span>, <span class="tok">clsx</span>, <span class="tok">twMerge</span>), delete the call rather than porting it. There is nothing left to merge — a component name and a <span class="tok">data-tone</span> do not conflict, which is the point.</p>
+
+<hr class="doc-rule">
+
+<h2 class="section-title" id="phase-5-verify-including-with-your-eyes">Phase 5 — Verify, including with your eyes</h2>
+
+<pre class="code" data-lang="sh">npx largen verify        # static: layers, colour literals, tone bypass, slots
+npx largen manifest src/components.css --out largen.manifest.json</pre>
+
+<p class="doc-p"><span class="tok">verify</span> is static and <strong>it is not sufficient</strong>. This library's own history is twelve static checks passing while six components were visibly broken. Render every converted page in a browser, <strong>in both themes</strong>, and look at it.</p>
+
+<pre class="code" data-lang="sh"># a serviceable screenshot pass, no dependencies
+for page in / /blog /about; do
+  for theme in light dark; do
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --hide-scrollbars \
+      --screenshot="shot-${theme}.png" --window-size=1280,1600 \
+      "http://localhost:4321${page}?theme=${theme}"
+  done
+done</pre>
+
+<p class="doc-p">Then check the numbers you took in Phase 1:</p>
+
+<pre class="code" data-lang="sh"># Strip comments first. Your migrated CSS will quote the old Tailwind strings in
+# comments explaining what was replaced, and a naive grep counts those as
+# failures. A check that cries wolf gets ignored.
+grep -rn "dark:" src/ --include=*.css --include=*.astro --include=*.tsx \
+  | grep -vE '^\s*\*|/\*|//' | head
+grep -rln "cva(\|twMerge(\|clsx(" src/          # expect nothing</pre>
+
+<p class="doc-p">Both should come back empty. If <span class="tok">dark:</span> survives anywhere that is not a comment, that component is doing by hand something the tone derivations were going to do for it.</p>
+
+<h3 class="section-title" id="the-one-failure-to-memorise">The one failure to memorise</h3>
+
+<p class="doc-p">If <span class="tok">data-variant</span> stops applying while <span class="tok">data-tone</span> and <span class="tok">data-size</span> keep working, <strong>your component is declared outside <span class="tok">@layer largen.components</span></strong>. An unlayered component outranks <span class="tok">largen.modifiers</span>, so variant loses — but tone and size act through inheriting custom properties rather than by overriding slots, so they are unaffected.</p>
+
+<p class="doc-p">One dead axis and two live ones looks like a bug in the library. It is the most expensive way to lose an afternoon in this system, and <span class="tok">largen verify</span> and <span class="tok">check_component_css</span> both catch it in a second.</p>
+
+<hr class="doc-rule">
+
+<h2 class="section-title" id="phase-6-delete-the-old-stack">Phase 6 — Delete the old stack</h2>
+
+<p class="doc-p">Only now, and all at once:</p>
+
+<pre class="code" data-lang="sh">npm remove tailwindcss daisyui class-variance-authority clsx tailwind-merge
+rm -rf src/components/ui/       # the registry
+rm src/styles/typography.css
+rm tailwind.config.* postcss.config.*</pre>
+
+<p class="doc-p">Then confirm nothing silently depended on it — build, and screenshot again. A removed PostCSS plugin can take something with it that no static check will notice.</p>
+
+<hr class="doc-rule">
+
+<h2 class="section-title" id="what-to-expect">What to expect</h2>
+
+<p class="doc-p">From that conversion, as reference points rather than targets:</p>
+
+<table class="doc-table">
+<tbody>
+<tr><td>Component CSS</td><td><strong>488 lines</strong>, 31 components — ~16 lines each including comments and blank lines</td></tr>
+<tr><td>Theme</td><td><strong>57 lines</strong>, one dialect instead of two</td></tr>
+<tr><td>Built</td><td><strong>20.1kb</strong>, <strong>4.8kb gzipped</strong>, whole site</td></tr>
+<tr><td>Build step</td><td>none — the unbuilt stylesheet is the same stylesheet</td></tr>
+<tr><td><span class="tok">dark:</span> variants</td><td>zero</td></tr>
+<tr><td>Kept deliberately</td><td>ScrollArea, PDF viewer — behaviour, not theming</td></tr>
+</tbody></table>
+
+<p class="doc-p">The largest single conversion was the callout: ~100 lines of CVA colour strings to 24 one-line rules and one shape rule. The second largest was pagination and breadcrumbs — ~120 lines of TSX across two radix + CVA components — which became two small component rules and ordinary <span class="tok">&lt;ol&gt;</span> markup.</p>
+
+<h2 class="section-title" id="sequencing-advice">Sequencing advice</h2>
+
+<p class="doc-p">Migrate in this order and each step is independently shippable:</p>
+
+<ol class="doc-list">
+  <li>Theme only, loaded <em>alongside</em> the old stack. Nothing should change visually.</li>
+  <li>One leaf component, one page. Confirm the axes work by adding a <span class="tok">data-tone</span> to a container and watching the subtree re-tone.</li>
+  <li>The rest of the leaves.</li>
+  <li>Containers, page by page.</li>
+  <li>Delete.</li>
+</ol>
+
+<p class="doc-p">Stop after any step. A site running largen's theme and Tailwind's utilities is a perfectly stable place to leave things for a week.</p>
+
+<hr class="doc-rule">
+
+<h2 class="section-title" id="reference">Reference</h2>
+
+<ul class="doc-list">
+  <li>Contract, axes and authoring rules: <a href="https://largen.exe.xyz/docs/contract.html">https://largen.exe.xyz/docs/contract.html</a></li>
+  <li>The whole contract in one file, for an agent: <a href="https://largen.exe.xyz/llms-compact.txt">https://largen.exe.xyz/llms-compact.txt</a></li>
+  <li>MCP: <span class="tok">claude mcp add largen --transport http https://largen.exe.xyz/api/mcp</span></li>
+  <li>A worked example component set in this repository: <span class="tok">sites/example/</span> — the patterns above at a smaller scale. It is not the migration these figures were measured from.</li>
+</ul>
+</article>
+</main>
+
+<footer class="site-footer">
+  <span>largen 0.2.0 — a property algebra for CSS. MIT.</span>
+  <span class="cluster" style="--gap:.75rem">
+    <a class="nav-link" href="/llms.txt">llms.txt</a>
+    <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>
+    <a class="nav-link" href="/largen.css">largen.css</a>
+    <a class="nav-link" href="/health">health</a>
+  </span>
+</footer>
+
+<script>
+  /* Decide which theme is on. Not a component concern — largen carries the theme
+     itself; this only picks one. ?theme= wins over the stored preference so a
+     link can pin a theme, which is also what makes both themes screenshottable
+     in verification. */
+  (function () {
+    var t = null
+    try { t = new URLSearchParams(location.search).get('theme') } catch (e) {}
+    if (t !== 'dark' && t !== 'light') {
+      try { t = localStorage.getItem('largen-theme') } catch (e) { t = null }
+    }
+    if (t !== 'dark' && t !== 'light') return
+    document.documentElement.dataset.theme = t
+    var box = document.querySelector('.theme-toggle input')
+    if (box) box.checked = t === 'dark'
+  })()
+</script>
+</body>
+</html>

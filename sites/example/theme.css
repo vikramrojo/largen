@@ -1,0 +1,57 @@
+/* example theme — a palette in largen's material vocabulary.
+ *
+ * Eleven or so values, and a dark block that overrides the same names. Nothing
+ * below this line ever names a colour again: components say `var(--tone-soft)`
+ * and this file decides what that resolves to.
+ */
+
+:root,
+[data-theme="light"] {
+  --canvas: oklch(0.995 0.002 250);
+  --ink: oklch(0.19 0.015 255);
+  --ink-muted: oklch(0.52 0.02 255);
+  --surface: oklch(0.97 0.005 250);
+  --line: oklch(0.9 0.008 250);
+
+  --primary: oklch(0.52 0.16 255);   --primary-on: oklch(0.99 0 0);
+  --secondary: oklch(0.55 0.02 255); --secondary-on: oklch(0.99 0 0);
+  --neutral: oklch(0.28 0.015 255);  --neutral-on: oklch(0.98 0 0);
+  --success: oklch(0.58 0.14 150);   --success-on: oklch(0.99 0 0);
+  --info: oklch(0.6 0.12 230);       --info-on: oklch(0.99 0 0);
+  --warning: oklch(0.72 0.15 75);    --warning-on: oklch(0.2 0.03 75);
+  --danger: oklch(0.58 0.2 25);      --danger-on: oklch(0.99 0 0);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --canvas: oklch(0.17 0.012 255);
+  --ink: oklch(0.96 0.004 250);
+  --ink-muted: oklch(0.68 0.015 255);
+  --surface: oklch(0.24 0.014 255);
+  --line: oklch(1 0 0 / 12%);
+
+  --primary: oklch(0.72 0.13 255);   --primary-on: oklch(0.18 0.02 255);
+  --secondary: oklch(0.7 0.02 255);  --secondary-on: oklch(0.18 0.02 255);
+  --neutral: oklch(0.88 0.008 255);  --neutral-on: oklch(0.2 0.015 255);
+  --success: oklch(0.72 0.13 150);   --success-on: oklch(0.18 0.03 150);
+  --info: oklch(0.74 0.11 230);      --info-on: oklch(0.18 0.03 230);
+  --warning: oklch(0.8 0.13 75);     --warning-on: oklch(0.2 0.03 75);
+  --danger: oklch(0.7 0.17 25);      --danger-on: oklch(0.18 0.03 25);
+
+  --shade: rgba(255, 255, 255, 0.06);
+  color-scheme: dark;
+}
+
+/* Typography and measure are theme concerns, not component ones. Setting them
+   here is what stops every component from restating them. */
+:root {
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --weight-normal: 400;
+  --weight-medium: 550;
+  --weight-bold: 650;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --measure: 60rem;
+}

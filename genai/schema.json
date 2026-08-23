@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://largen.css/genai/schema.json",
+  "title": "largen node",
+  "description": "One approved component. The model chooses a component and a tone; it cannot express a colour, a class or inline CSS.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "component"
+  ],
+  "properties": {
+    "component": {
+      "type": "string",
+      "enum": [
+        "alert",
+        "badge",
+        "dot",
+        "spinner",
+        "skeleton",
+        "card",
+        "panel",
+        "divider",
+        "stat",
+        "stat-label",
+        "stat-value",
+        "menu",
+        "crumbs",
+        "steps",
+        "bubble",
+        "avatar",
+        "tip",
+        "prose",
+        "stack",
+        "row",
+        "cluster",
+        "grid",
+        "center"
+      ],
+      "description": "Which approved component to render."
+    },
+    "tone": {
+      "type": "string",
+      "enum": [
+        "primary",
+        "secondary",
+        "success",
+        "info",
+        "warning",
+        "danger",
+        "neutral"
+      ],
+      "description": "Semantic colour. Inherits — set it on a container to re-tone everything inside."
+    },
+    "variant": {
+      "type": "string",
+      "enum": [
+        "solid",
+        "soft",
+        "outline",
+        "ghost"
+      ],
+      "description": "How the tone is applied as a fill. Derived from the tone, never a separate colour. Applies to the element it is on."
+    },
+    "size": {
+      "type": "string",
+      "enum": [
+        "xs",
+        "sm",
+        "md",
+        "lg",
+        "xl"
+      ],
+      "description": "One multiplier scaling type, padding and gap. Inherits."
+    },
+    "text": {
+      "type": "string",
+      "description": "Plain text content. Never markup."
+    },
+    "children": {
+      "type": "array",
+      "items": {
+        "$ref": "#"
+      }
+    }
+  }
+}

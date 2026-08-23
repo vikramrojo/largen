@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>largen — a property algebra for CSS</title>
+<meta name="description" content="A property algebra for CSS. Twelve slots, four axes, one paint rule, and components you write yourself. No build step.">
+<link rel="stylesheet" href="/largen.css">
+<link rel="stylesheet" href="/largen.components.css">
+<link rel="stylesheet" href="/theme-dark.css">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="/">largen</a>
+  <nav class="cluster" style="--gap:1rem">
+        <a class="nav-link" href="/docs/contract.html">contract</a>
+        <a class="nav-link" href="/docs/axes.html">axes</a>
+        <a class="nav-link" href="/docs/authoring.html">authoring</a>
+        <a class="nav-link" href="/docs/components.html">components</a>
+        <a class="nav-link" href="/docs/mcp.html">mcp</a>
+        <a class="nav-link" href="/docs/migrating.html">migrating</a>
+        <a class="nav-link" href="/play">play</a>
+        <a class="nav-link" href="/demo/">demos</a>
+    <label class="theme-toggle">
+      <input type="checkbox" hidden onchange="
+        document.documentElement.dataset.theme = this.checked ? 'dark' : 'light';
+        try { localStorage.setItem('largen-theme', document.documentElement.dataset.theme) } catch (e) {}
+      "><span data-swap="off">☀</span><span data-swap="on">☾</span>
+    </label>
+  </nav>
+</header>
+
+<main class="page">
+<section class="hero">
+    <h1 class="hero-title">A property algebra for CSS.</h1>
+    <p class="hero-lede">Twelve custom-property slots, four axes, one universal paint
+    rule — and the components are yours. Plain CSS: no build step, no preprocessor,
+    no plugin.</p>
+    <div class="cluster" style="--gap:.6rem">
+      <a class="pill" data-tone="primary" href="/docs/contract.html">Read the contract</a>
+      <a class="pill" data-tone="neutral" href="/docs/mcp.html">MCP server</a>
+      <a class="pill" data-tone="neutral" href="/play">Playground</a>
+    </div>
+  </section>
+  
+  <section class="stack" style="--gap:.75rem">
+    <h2 class="section-title">A complete component</h2>
+    <pre class="code">@layer largen.components {
+    .notification, notification {
+      --bg: var(--tone-soft);
+      --fg: var(--tone-ink);
+      --border-width: 0 0 0 3px;
+      --border-color: var(--tone);
+      --border-style: solid;
+      --radius: var(--radius-md);
+      --pad: .75em 1em;
+      --gap: .75em;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+    }
+  }</pre>
+    <p class="spec-note">Seven tones, four variants, five sizes, every state and both
+    themes — none of which it mentions. Everything above the component row is already
+    solved, so the component is the only thing left to write.</p>
+  </section>
+  
+  <section class="stack" style="--gap:.75rem">
+    <h2 class="section-title">It is not a catalog</h2>
+    <p class="spec-note">Most CSS libraries ship components and ask you to configure
+    them. largen ships the algebra underneath components and expects you to write your
+    own, named in your application's own language — <span class="tok">.entry-card</span>,
+    not <span class="tok">.card-lg-bordered</span>.</p>
+    <p class="spec-note">That premise shapes the <a href="/docs/mcp.html">MCP server</a>
+    too. It cannot know your components, so every tool takes an optional manifest of
+    them and answers in your vocabulary rather than largen's.</p>
+  </section>
+  
+  <section class="stack" style="--gap:.75rem">
+    <h2 class="section-title">Start here</h2>
+    <div class="grid" style="--min-item:16rem;--gap:.75rem">
+    <a class="doc-card" href="/docs/contract.html">
+      <span class="doc-card-title">The contract</span>
+      <span class="doc-card-desc">Twelve slots, the layer rule, the paint rule. What the library guarantees.</span>
+    </a>
+    <a class="doc-card" href="/docs/axes.html">
+      <span class="doc-card-title">The axes</span>
+      <span class="doc-card-desc">tone, variant, size, state — and why only two of them inherit.</span>
+    </a>
+    <a class="doc-card" href="/docs/authoring.html">
+      <span class="doc-card-title">Authoring</span>
+      <span class="doc-card-desc">Six rules for writing a component, and the four ways it goes wrong.</span>
+    </a>
+    <a class="doc-card" href="/docs/components.html">
+      <span class="doc-card-title">Reference components</span>
+      <span class="doc-card-desc">Twenty-three optional components. Copy them or ignore them.</span>
+    </a>
+    <a class="doc-card" href="/docs/mcp.html">
+      <span class="doc-card-title">MCP server</span>
+      <span class="doc-card-desc">Six tools for agents. No API key, no generate_ui.</span>
+    </a>
+    <a class="doc-card" href="/play">
+      <span class="doc-card-title">Playground</span>
+      <span class="doc-card-desc">Render a spec. Share it in a URL with no server involved.</span>
+    </a>
+    </div>
+  </section>
+  
+  <section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Use it</h2>
+    <pre class="code">&lt;link rel="stylesheet" href="https://largen.dev/largen.css"&gt;
+  
+  # or pinned, immutable:
+  &lt;link rel="stylesheet" href="https://largen.dev/v/0.2.0/largen.css"&gt;
+  
+  # or from npm:
+  npm install largen</pre>
+    <p class="spec-note">For agents: <a href="/llms-compact.txt">/llms-compact.txt</a>
+    carries the whole contract inline, about 2,400 tokens.</p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <span>largen 0.2.0 — a property algebra for CSS. MIT.</span>
+  <span class="cluster" style="--gap:.75rem">
+    <a class="nav-link" href="/llms.txt">llms.txt</a>
+    <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>
+    <a class="nav-link" href="/largen.css">largen.css</a>
+    <a class="nav-link" href="/health">health</a>
+  </span>
+</footer>
+
+<script>
+  /* Decide which theme is on. Not a component concern — largen carries the theme
+     itself; this only picks one. ?theme= wins over the stored preference so a
+     link can pin a theme, which is also what makes both themes screenshottable
+     in verification. */
+  (function () {
+    var t = null
+    try { t = new URLSearchParams(location.search).get('theme') } catch (e) {}
+    if (t !== 'dark' && t !== 'light') {
+      try { t = localStorage.getItem('largen-theme') } catch (e) { t = null }
+    }
+    if (t !== 'dark' && t !== 'light') return
+    document.documentElement.dataset.theme = t
+    var box = document.querySelector('.theme-toggle input')
+    if (box) box.checked = t === 'dark'
+  })()
+</script>
+</body>
+</html>

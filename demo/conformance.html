@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>largen — conformance</title>
+<link rel="stylesheet" href="../src/largen.css">
+<style>
+  /* Two components authored the normal way — the same shapes demo/tests.html
+     uses, so this page exercises the documented authoring contract and not a
+     private one. */
+  @layer largen.components {
+    .panel {
+      --bg: var(--surface); --border-color: var(--line);
+      --border-width: var(--hairline); --border-style: solid;
+      --radius: var(--radius-md); --pad: 1rem; --gap: .75rem;
+      display: flex; flex-direction: column;
+    }
+    .chip {
+      --bg: var(--tone-soft); --fg: var(--tone-ink);
+      --border-color: var(--tone-line); --border-width: var(--hairline);
+      --border-style: solid; --radius: 2em; --pad: .15em .6em;
+      --font-size: calc(.8rem * var(--scale));
+      display: inline-flex; align-items: center;
+    }
+  }
+  .wrap { max-inline-size: 60rem; margin-inline: auto; padding: 1.5rem 1.5rem 4rem }
+  #banner { font: 700 2rem/1.2 ui-monospace, monospace; padding: .6rem .9rem;
+            border-radius: .5rem; margin-block-end: .5rem }
+  #banner.pass { background: #d8f5d8; color: #0a4a0a }
+  #banner.fail { background: #ffd6d6; color: #6a0000 }
+  #ua { font: .75rem/1.5 ui-monospace, monospace; color: var(--ink-muted);
+        word-break: break-all; margin-block-end: 1.5rem }
+  #out { border-collapse: collapse; inline-size: 100% }
+  #out td { font-size: .82rem; vertical-align: top }
+  #out .v { font: 700 .75rem ui-monospace, monospace; white-space: nowrap }
+  #out tr.pass .v { color: #157a15 }
+  #out tr.fail .v { color: #c00 }
+  #out .d { font: .72rem ui-monospace, monospace; color: var(--ink-muted) }
+
+  /* The fixtures. Kept off-screen: their computed values are the test, their
+     appearance is not. */
+  #fixtures { position: absolute; inset-block-start: -9999px; inline-size: 40rem }
+</style>
+</head>
+<body>
+
+<!-- Fixtures ---------------------------------------------------------------
+     Nothing here sets a slot except where an assertion needs one set. -->
+<div id="fixtures">
+  <h1 id="f-h1">heading</h1>
+  <ul id="f-ul"><li>item</li></ul>
+  <div id="f-div">bare div</div>
+  <div class="panel" id="f-panel"><div id="f-panel-child">child of a panel</div></div>
+  <div data-tone="danger" id="f-tone"><span class="chip" id="f-chip">chip</span></div>
+  <div data-size="lg" id="f-size"><div><div id="f-scale">deep</div></div></div>
+  <div class="panel" data-variant="solid" data-tone="primary" id="f-variant">variant</div>
+</div>
+
+<div class="wrap">
+  <div id="banner">running…</div>
+  <div id="ua"></div>
+  <table id="out"></table>
+</div>
+
+<script>
+/* A conformance check for the one mechanism largen has no fallback for.
+ *
+ * src/paint.css applies twelve declarations to `*`. That is only non-destructive
+ * because src/properties.css registers each slot with `syntax: "*"` and NO
+ * `initial-value`, which makes an unset slot the guaranteed-invalid value, so
+ * `var(--pad, revert-layer)` falls back and hands the property to the UA
+ * stylesheet. Assertions 1-4 below are that mechanism. 5-9 are the rest of the
+ * algebra, cheap to check and able to catch an engine that passes 1-4 while
+ * still being broken.
+ *
+ * Everything is read from getComputedStyle, so the verdict does not depend on a
+ * human reading the page correctly. */
+
+const results = []
+const cs = (id) => getComputedStyle(document.getElementById(id))
+const px = (s) => parseFloat(s)
+
+function check (name, fn) {
+  let ok = false, detail = ''
+  try { detail = fn() ?? ''; ok = true }
+  catch (e) { detail = e.message }
+  results.push({ name, ok, detail })
+}
+const assert = (c, m) => { if (!c) throw new Error(m) }
+
+/* --- The mechanism ------------------------------------------------------- */
+
+check('1 · an unset registered slot is guaranteed-invalid', () => {
+  const v = cs('f-div').getPropertyValue('--pad')
+  assert(v.trim() === '', `--pad on a bare <div> computed to "${v}", expected empty`)
+  return 'computed --pad is the empty string'
+})
+
+check('2 · revert-layer restores the UA font-size and weight', () => {
+  const h1 = cs('f-h1'), base = px(cs('f-div').fontSize)
+  assert(px(h1.fontSize) > base * 1.6,
+    `<h1> font-size ${h1.fontSize}, expected ~2x the ${base}px base`)
+  assert(px(h1.fontWeight) >= 700,
+    `<h1> font-weight ${h1.fontWeight}, expected bold`)
+  return `${h1.fontSize} / ${h1.fontWeight} on a ${base}px base`
+})
+
+check('3 · revert-layer restores UA padding', () => {
+  const ul = cs('f-ul')
+  assert(px(ul.paddingInlineStart) > 20,
+    `<ul> padding-inline-start ${ul.paddingInlineStart}, expected the UA indent`)
+  return `<ul> indent ${ul.paddingInlineStart}`
+})
+
+check('4 · revert-layer leaves background and border alone', () => {
+  const d = cs('f-div')
+  const bg = d.backgroundColor.replace(/\s/g, '')
+  assert(/^(rgba\(0,0,0,0\)|transparent)$/.test(bg),
+    `bare <div> background-color is "${d.backgroundColor}", expected transparent`)
+  assert(px(d.borderTopWidth) === 0,
+    `bare <div> border-top-width is ${d.borderTopWidth}, expected 0`)
+  return `background ${d.backgroundColor}, border ${d.borderTopWidth}`
+})
+
+/* --- The rest of the algebra --------------------------------------------- */
+
+check('5 · setting a slot opts the element in', () => {
+  const p = cs('f-panel')
+  assert(px(p.paddingTop) === 16, `.panel padding-top ${p.paddingTop}, expected 16px`)
+  assert(px(p.borderTopWidth) > 0, `.panel border-top-width ${p.borderTopWidth}, expected > 0`)
+  return `padding ${p.paddingTop}, border ${p.borderTopWidth}`
+})
+
+check('6 · inherits:false — a slot does not leak to children', () => {
+  const c = cs('f-panel-child')
+  assert(px(c.paddingTop) === 0,
+    `child of .panel has padding-top ${c.paddingTop}, expected 0 — --pad leaked`)
+  const bg = c.backgroundColor.replace(/\s/g, '')
+  assert(/^(rgba\(0,0,0,0\)|transparent)$/.test(bg),
+    `child of .panel has background "${c.backgroundColor}" — --bg leaked`)
+  return 'neither --pad nor --bg reached the child'
+})
+
+check('7 · --scale is registered, inherits, initial-value 1', () => {
+  const deep = cs('f-scale').getPropertyValue('--scale').trim()
+  assert(deep !== '', '--scale computed empty on a descendant of [data-size]')
+  assert(parseFloat(deep) > 1,
+    `--scale inside [data-size="lg"] is ${deep}, expected > 1`)
+  const bare = cs('f-div').getPropertyValue('--scale').trim()
+  assert(parseFloat(bare) === 1,
+    `--scale with no [data-size] ancestor is "${bare}", expected the initial-value 1`)
+  return `initial ${bare}, inherited into data-size="lg" as ${deep}`
+})
+
+check('8 · tone inherits and color-mix resolves', () => {
+  const chip = cs('f-chip')
+  const tone = chip.getPropertyValue('--tone').trim()
+  assert(tone !== '', '--tone did not inherit onto an unattributed .chip')
+  const bg = chip.backgroundColor
+  assert(/^(rgb|color|oklab|lab)/.test(bg.trim()),
+    `.chip background resolved to "${bg}" — color-mix() did not compute`)
+  assert(!/rgba\(0,\s*0,\s*0,\s*0\)/.test(bg), '.chip background is transparent')
+  return `--tone ${tone} → ${bg}`
+})
+
+check('9 · layer order — modifiers beat components', () => {
+  const v = cs('f-variant'), tone = v.getPropertyValue('--tone').trim()
+  assert(tone !== '', '--tone missing on the variant fixture')
+  assert(v.getPropertyValue('--bg').trim() === tone,
+    `data-variant="solid" did not override .panel's --bg (got "${v.getPropertyValue('--bg')}", tone is "${tone}")`)
+  return `--bg resolved to the tone, not .panel's --surface`
+})
+
+/* --- Report -------------------------------------------------------------- */
+
+const passed = results.filter(r => r.ok).length
+const banner = document.getElementById('banner')
+banner.textContent = passed === results.length
+  ? `PASS — ${passed}/${results.length}`
+  : `FAIL — ${passed}/${results.length}`
+banner.className = passed === results.length ? 'pass' : 'fail'
+document.title = `largen conformance — ${passed}/${results.length}`
+document.getElementById('ua').textContent = navigator.userAgent
+
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+
+document.getElementById('out').innerHTML = results.map(r => `
+  <tr class="${r.ok ? 'pass' : 'fail'}">
+    <td class="v">${r.ok ? 'PASS' : 'FAIL'}</td>
+    <td>${r.name}<div class="d">${esc(r.detail)}</div></td>
+  </tr>`).join('')
+
+window.__largen = { passed, total: results.length, results, ua: navigator.userAgent }
+</script>
+</body></html>

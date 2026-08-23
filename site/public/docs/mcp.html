@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCP server — largen</title>
+<meta name="description" content="Six MCP tools for agents building with largen. Streamable HTTP, no authentication, and deliberately no generate_ui.">
+<link rel="stylesheet" href="/largen.css">
+<link rel="stylesheet" href="/largen.components.css">
+<link rel="stylesheet" href="/theme-dark.css">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="/">largen</a>
+  <nav class="cluster" style="--gap:1rem">
+        <a class="nav-link" href="/docs/contract.html">contract</a>
+        <a class="nav-link" href="/docs/axes.html">axes</a>
+        <a class="nav-link" href="/docs/authoring.html">authoring</a>
+        <a class="nav-link" href="/docs/components.html">components</a>
+        <a class="nav-link" href="/docs/mcp.html" aria-current="page">mcp</a>
+        <a class="nav-link" href="/docs/migrating.html">migrating</a>
+        <a class="nav-link" href="/play">play</a>
+        <a class="nav-link" href="/demo/">demos</a>
+    <label class="theme-toggle">
+      <input type="checkbox" hidden onchange="
+        document.documentElement.dataset.theme = this.checked ? 'dark' : 'light';
+        try { localStorage.setItem('largen-theme', document.documentElement.dataset.theme) } catch (e) {}
+      "><span data-swap="off">☀</span><span data-swap="on">☾</span>
+    </label>
+  </nav>
+</header>
+
+<main class="page">
+<div class="stack" style="--gap:.4rem">
+    <h1 class="page-title">MCP server</h1>
+    <p class="page-desc">Six tools, over Streamable HTTP, with no authentication.
+    Everything here is public documentation or a pure function over what you send.</p>
+  </div>
+  
+  <section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Connect</h2>
+    <pre class="code">claude mcp add largen --transport http https://largen.dev/api/mcp</pre>
+    <p class="spec-note">No key, no account, no configuration.</p>
+  </section>
+  
+  <section class="stack" style="--gap:.75rem">
+    <h2 class="section-title">The tools</h2>
+  
+    <div class="tool">
+      <span class="tool-name">get_contract</span>
+      <p class="tool-desc">The slots, the axes and their permitted values, the layer
+      rule, the authoring rules and the known failure modes. Takes an optional
+      <span class="tok">section</span>. Call it before authoring a component.</p>
+    </div>
+  
+    <div class="tool">
+      <span class="tool-name">list_components</span>
+      <p class="tool-desc">Every component a spec may name, with descriptions, elements,
+      slots and permitted children.</p>
+    </div>
+  
+    <div class="tool">
+      <span class="tool-name">get_component_source</span>
+      <p class="tool-desc">The CSS of one reference component, for copying in. Names are
+      resolved against a known list and never against a path.</p>
+    </div>
+  
+    <div class="tool">
+      <span class="tool-name">validate_spec</span>
+      <p class="tool-desc">Checks a model-emitted node tree against the allowlist.
+      Rejects unknown components and axis values, and rejects
+      <span class="tok">style</span>, <span class="tok">onclick</span>,
+      <span class="tok">className</span> or
+      <span class="tok">dangerouslySetInnerHTML</span> rather than dropping them —
+      a model emitting one of those is a signal worth surfacing.</p>
+    </div>
+  
+    <div class="tool">
+      <span class="tool-name">check_component_css</span>
+      <p class="tool-desc">Lints CSS you just wrote: layer membership, colour literals,
+      reaching past the tone axis, unregistered slots. This tool has no equivalent
+      elsewhere, because elsewhere the components are fixed. Here you write them, so the
+      most useful thing a server can do is tell you whether what you wrote is correct.</p>
+    </div>
+  
+    <div class="tool">
+      <span class="tool-name">render_spec</span>
+      <p class="tool-desc">Validates, renders, and returns the HTML inline plus a preview
+      URL. Takes <span class="tok">theme</span> and <span class="tok">css</span>, so your
+      own components appear as they do in your project.</p>
+    </div>
+  </section>
+  
+  <section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Your components, not ours</h2>
+    <p class="spec-note">largen's premise is that you write your own components, so a
+    server holding a catalog could only ever describe largen's reference set — useless in
+    the project you are actually working in. Instead every tool takes an optional
+    <span class="tok">components</span> manifest.</p>
+    <pre class="code">npx largen manifest src/components.css --out largen.manifest.json</pre>
+    <p class="spec-note">Pass that object as <span class="tok">components</span> and the
+    tools answer in your vocabulary. Omit it and they fall back to the reference set. A
+    malformed manifest is an error, never a silent fallback — answering confidently in
+    the wrong vocabulary is worse than refusing.</p>
+  </section>
+  
+  <section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">There is no generate_ui</h2>
+    <p class="spec-note">This is a position, not a gap.</p>
+    <p class="spec-note">A <span class="tok">generate_ui</span> tool takes natural
+    language and returns a UI spec, which requires a model on the server. You are already
+    a capable model, and you know the application being built, its data and its
+    conventions. A model here would know none of that, and would add an API key, a cost
+    and a latency budget to every call in exchange for a worse answer.</p>
+    <p class="spec-note">So this server equips you —
+    <span class="tok">get_contract</span>, <span class="tok">list_components</span>,
+    <span class="tok">get_component_source</span> — and then checks your work:
+    <span class="tok">validate_spec</span>, <span class="tok">check_component_css</span>,
+    <span class="tok">render_spec</span>. You do the generating.</p>
+  </section>
+  
+  <section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Without MCP</h2>
+    <p class="spec-note">Fetch <a href="/llms-compact.txt">/llms-compact.txt</a>: the
+    whole contract inline, roughly 2,400 tokens, enough to author a correct component
+    without another request.</p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <span>largen 0.2.0 — a property algebra for CSS. MIT.</span>
+  <span class="cluster" style="--gap:.75rem">
+    <a class="nav-link" href="/llms.txt">llms.txt</a>
+    <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>
+    <a class="nav-link" href="/largen.css">largen.css</a>
+    <a class="nav-link" href="/health">health</a>
+  </span>
+</footer>
+
+<script>
+  /* Decide which theme is on. Not a component concern — largen carries the theme
+     itself; this only picks one. ?theme= wins over the stored preference so a
+     link can pin a theme, which is also what makes both themes screenshottable
+     in verification. */
+  (function () {
+    var t = null
+    try { t = new URLSearchParams(location.search).get('theme') } catch (e) {}
+    if (t !== 'dark' && t !== 'light') {
+      try { t = localStorage.getItem('largen-theme') } catch (e) { t = null }
+    }
+    if (t !== 'dark' && t !== 'light') return
+    document.documentElement.dataset.theme = t
+    var box = document.querySelector('.theme-toggle input')
+    if (box) box.checked = t === 'dark'
+  })()
+</script>
+</body>
+</html>

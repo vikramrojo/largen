@@ -1,0 +1,14 @@
+{
+  "name": "largen-site",
+  "version": "0.1.0",
+  "private": true,
+  "description": "largen.dev — the documentation site and MCP server. Deliberately a separate package: the library at the root ships to npm and stays dependency-free, so every dependency lives here and every import points downward into the root, never the reverse.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test/run.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  }
+}

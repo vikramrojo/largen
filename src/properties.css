@@ -1,0 +1,45 @@
+/* largen — the slots.
+ *
+ * Every component is painted from these and only these.
+ *
+ * Two descriptors do all the work, and both are load-bearing:
+ *
+ *   inherits: false    A component's background cannot cascade onto a child.
+ *                      The slot names are generic, so without this a card would
+ *                      repaint every element inside it.
+ *
+ *   NO initial-value   With universal syntax, omitting initial-value makes an
+ *                      unset slot the *guaranteed-invalid* value. var() then
+ *                      falls back — which is what lets paint.css say
+ *                      `var(--pad, revert-layer)` and hand the property back to
+ *                      the UA stylesheet untouched.
+ *
+ * Remove either and the universal paint rule becomes destructive: every <ul>
+ * loses its indent and every <h1> its size. This file is the reason largen needs
+ * no build step.
+ */
+
+@property --bg            { syntax: "*"; inherits: false; }
+@property --fg            { syntax: "*"; inherits: false; }
+@property --border-color  { syntax: "*"; inherits: false; }
+@property --border-width  { syntax: "*"; inherits: false; }
+@property --border-style  { syntax: "*"; inherits: false; }
+@property --radius        { syntax: "*"; inherits: false; }
+@property --pad           { syntax: "*"; inherits: false; }
+@property --gap           { syntax: "*"; inherits: false; }
+@property --font-size     { syntax: "*"; inherits: false; }
+@property --weight        { syntax: "*"; inherits: false; }
+@property --shadow        { syntax: "*"; inherits: false; }
+
+/* Opt-in. A transition on every element would animate the whole page on any
+   state change; unset, this slot costs nothing. */
+@property --transition    { syntax: "*"; inherits: false; }
+
+/* --- The inheriting half -------------------------------------------------
+ *
+ * These DO inherit, deliberately. `--tone` on a <section> re-tones every
+ * component inside it; `--scale` resizes a whole subtree. That is the half of
+ * the system a modifier class cannot express.
+ */
+
+@property --scale { syntax: "<number>"; inherits: true; initial-value: 1; }

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Authoring — largen</title>
+<meta name="description" content="How to write a largen component, and the four ways it goes wrong.">
+<link rel="stylesheet" href="/largen.css">
+<link rel="stylesheet" href="/largen.components.css">
+<link rel="stylesheet" href="/theme-dark.css">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="/">largen</a>
+  <nav class="cluster" style="--gap:1rem">
+        <a class="nav-link" href="/docs/contract.html">contract</a>
+        <a class="nav-link" href="/docs/axes.html">axes</a>
+        <a class="nav-link" href="/docs/authoring.html" aria-current="page">authoring</a>
+        <a class="nav-link" href="/docs/components.html">components</a>
+        <a class="nav-link" href="/docs/mcp.html">mcp</a>
+        <a class="nav-link" href="/docs/migrating.html">migrating</a>
+        <a class="nav-link" href="/play">play</a>
+        <a class="nav-link" href="/demo/">demos</a>
+    <label class="theme-toggle">
+      <input type="checkbox" hidden onchange="
+        document.documentElement.dataset.theme = this.checked ? 'dark' : 'light';
+        try { localStorage.setItem('largen-theme', document.documentElement.dataset.theme) } catch (e) {}
+      "><span data-swap="off">☀</span><span data-swap="on">☾</span>
+    </label>
+  </nav>
+</header>
+
+<main class="page">
+<div class="stack" style="--gap:.4rem">
+  <h1 class="page-title">Authoring a component</h1>
+  <p class="page-desc">Six rules, and the four ways it goes wrong when you break
+  them.</p>
+</div>
+
+<section class="stack" style="--gap:.75rem">
+  <h2 class="section-title">A complete component</h2>
+  <pre class="code">@layer largen.components {
+  .notification, notification {
+    --bg: var(--tone-soft);
+    --fg: var(--tone-ink);
+    --border-width: 0 0 0 3px;
+    --border-color: var(--tone);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: .75em 1em;
+    --gap: .75em;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+  }
+}</pre>
+  <pre class="code">&lt;notification data-tone="warning"&gt;Two accounts need review.&lt;/notification&gt;
+&lt;div class="notification" data-tone="warning"&gt;…same thing…&lt;/div&gt;</pre>
+  <p class="spec-note">That is a complete component: seven tones, four variants, five sizes, every state, both themes — none of which it mentions.</p>
+</section>
+
+<section class="stack" style="--gap:.75rem">
+  <h2 class="section-title">The rules</h2>
+  <div class="rule">
+    <span class="rule-title">1. Author inside <span class="tok">@layer largen.components</span>. Override from outside it.</span>
+    <p class="rule-why">Unlayered CSS beats every layer. That is what makes overriding largen work without <span class="tok">!important</span> — and it is exactly what breaks an unlayered <em>component</em>: it outranks <span class="tok">largen.modifiers</span>, so <span class="tok">data-variant</span> silently stops applying while tone and size keep working. If a variant "isn't applying", check this before anything else.</p>
+  </div>
+  <div class="rule">
+    <span class="rule-title">2. A component sets slots. It does not set colours.</span>
+    <p class="rule-why">Write <span class="tok">--bg: var(--tone-soft)</span>, never <span class="tok">--bg: #fee</span>, and never <span class="tok">--bg: var(--danger)</span>. A colour literal cannot follow a theme swap, and reaching past <span class="tok">--tone*</span> to a raw semantic token breaks tone inheritance — the component pins itself to one colour and stops responding to the <span class="tok">data-tone</span> on its container. <span class="tok">largen verify</span> enforces both.</p>
+  </div>
+  <div class="rule">
+    <span class="rule-title">3. Never write a dark-mode rule.</span>
+    <p class="rule-why"><span class="tok">--tone-soft</span> and <span class="tok">--tone-ink</span> resolve against <span class="tok">--canvas</span> and <span class="tok">--ink</span>, so a theme swap carries every component with it. If a component seems to need a dark-mode rule, the algebra has failed to cover something and <em>that</em> is the bug worth fixing — the dark rule would only hide it.</p>
+  </div>
+  <div class="rule">
+    <span class="rule-title">4. Never write a size variant.</span>
+    <p class="rule-why">Multiply by <span class="tok">var(--scale)</span> where you set a size, express the rest in <span class="tok">em</span>, and padding follows type automatically. Five hand-written size variants per component is the cost the size axis exists to remove.</p>
+  </div>
+  <div class="rule">
+    <span class="rule-title">5. Reach for HTML first.</span>
+    <p class="rule-why"><span class="tok">&lt;dialog&gt;</span> is the modal, <span class="tok">&lt;details&gt;</span> is the collapse. Both are already themed by <span class="tok">largen.elements</span>. Reimplementing focus trapping or open-state management in CSS and JS buys nothing the platform has not already shipped and tested.</p>
+  </div>
+  <div class="rule">
+    <span class="rule-title">6. Never add an <span class="tok">initial-value</span> to a slot.</span>
+    <p class="rule-why">With universal syntax, omitting <span class="tok">initial-value</span> makes an unset slot the <em>guaranteed-invalid</em> value, so <span class="tok">var(--pad, revert-layer)</span> falls back and hands the property back to the UA stylesheet untouched. Add an initial value and the slot is never unset, the fallback never fires, and the universal paint rule resets every element's UA defaults — every <span class="tok">&lt;ul&gt;</span> loses its indent and every <span class="tok">&lt;h1&gt;</span> its size. This descriptor is the reason largen needs no build step.</p>
+  </div>
+</section>
+
+<section class="stack" style="--gap:.75rem">
+  <h2 class="section-title">When it goes wrong</h2>
+  <p class="spec-note">The first one is the one to memorise. It is the only failure
+  in largen that looks like success.</p>
+  <div class="failure" data-tone="danger">
+    <span class="failure-symptom"><span class="tok">data-variant</span> has no effect, but <span class="tok">data-tone</span> and <span class="tok">data-size</span> still work.</span>
+    <span class="failure-line"><strong>Cause</strong> — The component is declared outside <span class="tok">@layer largen.components</span>.</span>
+    <span class="failure-line"><strong>Fix</strong> — Wrap the component rule in <span class="tok">@layer largen.components { … }</span>.</span>
+    <p class="failure-line">This is the worst failure mode in the system because it looks like it works. An unlayered component outranks <span class="tok">largen.modifiers</span>, so the variant rules lose — but tone and size act through inheriting custom properties rather than by overriding slots, so they are unaffected. One dead axis and two live ones reads as "variant is buggy" rather than "my component is in the wrong layer".</p>
+  </div>
+  <div class="failure" data-tone="warning">
+    <span class="failure-symptom">A component ignores the <span class="tok">data-tone</span> on its container.</span>
+    <span class="failure-line"><strong>Cause</strong> — It reaches past <span class="tok">--tone*</span> to a raw semantic token, e.g. <span class="tok">--bg: var(--danger)</span>.</span>
+    <span class="failure-line"><strong>Fix</strong> — Use <span class="tok">var(--tone)</span>, <span class="tok">var(--tone-soft)</span>, <span class="tok">var(--tone-ink)</span> or <span class="tok">var(--tone-line)</span>.</span>
+    <p class="failure-line">Raw semantic tokens are absolute; the <span class="tok">--tone*</span> family is relative to whatever tone is in scope. Naming the absolute one opts the component out of the axis entirely, which is invisible until someone sets a tone on an ancestor.</p>
+  </div>
+  <div class="failure" data-tone="warning">
+    <span class="failure-symptom">Every element on the page loses its browser defaults — lists unindent, headings shrink.</span>
+    <span class="failure-line"><strong>Cause</strong> — A slot was given an <span class="tok">initial-value</span>, or <span class="tok">paint.css</span> was moved out of its layer.</span>
+    <span class="failure-line"><strong>Fix</strong> — Remove the <span class="tok">initial-value</span>; keep the universal rule inside <span class="tok">@layer largen.paint</span>.</span>
+    <p class="failure-line"><span class="tok">revert-layer</span> is only meaningful from inside a layer, and only reached when the slot is guaranteed-invalid. Break either condition and the one universal rule stops being inert and starts being destructive.</p>
+  </div>
+  <div class="failure" data-tone="warning">
+    <span class="failure-symptom">A component looks right in one theme and wrong in the other.</span>
+    <span class="failure-line"><strong>Cause</strong> — A colour literal, or a value that does not resolve against <span class="tok">--canvas</span>/<span class="tok">--ink</span>.</span>
+    <span class="failure-line"><strong>Fix</strong> — Route the colour through a token or a <span class="tok">--tone*</span> derivation.</span>
+    <p class="failure-line">Theme swapping works by changing what the tokens resolve to. Anything that bypasses the tokens is simply not part of that mechanism.</p>
+  </div>
+</section>
+
+<section class="stack" style="--gap:.5rem">
+  <h2 class="section-title">Check what you wrote</h2>
+  <p class="spec-note">Locally, <span class="tok">npx largen verify</span>. Over MCP,
+  <span class="tok">check_component_css</span>. Both run the same rules from the same
+  module, so they cannot disagree.</p>
+  <p class="spec-note">Both are static. They have passed clean on visibly broken
+  components before — render the result in a browser, in both themes.</p>
+</section>
+</main>
+
+<footer class="site-footer">
+  <span>largen 0.2.0 — a property algebra for CSS. MIT.</span>
+  <span class="cluster" style="--gap:.75rem">
+    <a class="nav-link" href="/llms.txt">llms.txt</a>
+    <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>
+    <a class="nav-link" href="/largen.css">largen.css</a>
+    <a class="nav-link" href="/health">health</a>
+  </span>
+</footer>
+
+<script>
+  /* Decide which theme is on. Not a component concern — largen carries the theme
+     itself; this only picks one. ?theme= wins over the stored preference so a
+     link can pin a theme, which is also what makes both themes screenshottable
+     in verification. */
+  (function () {
+    var t = null
+    try { t = new URLSearchParams(location.search).get('theme') } catch (e) {}
+    if (t !== 'dark' && t !== 'light') {
+      try { t = localStorage.getItem('largen-theme') } catch (e) { t = null }
+    }
+    if (t !== 'dark' && t !== 'light') return
+    document.documentElement.dataset.theme = t
+    var box = document.querySelector('.theme-toggle input')
+    if (box) box.checked = t === 'dark'
+  })()
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+/* largen light theme. Matches src/tokens.css defaults; exists so a theme swap is
+   symmetrical. A theme sets tokens and nothing else. */
+:root,
+[data-theme="light"] {
+  --canvas: #ffffff;
+  --ink: #16181c;
+  --ink-muted: #5c636e;
+  --surface: #f4f5f7;
+  --line: #dfe2e7;
+  color-scheme: light;
+}

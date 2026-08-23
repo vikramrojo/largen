@@ -1,0 +1,72 @@
+/* largen — tokens.
+ *
+ * The material vocabulary: canvas, ink, surface, line. Every name here is chosen
+ * so it cannot collide with an unprefixed slot (--bg, --pad, --radius …).
+ *
+ * A theme sets these and nothing else. If a theme needs to mention a component,
+ * a slot, or a variant, the algebra has failed to cover something and that is
+ * the bug — not the theme.
+ */
+
+@layer largen.tokens {
+  :root {
+    /* --- Material ------------------------------------------------------- */
+    --canvas: #ffffff;        /* the page */
+    --ink: #16181c;           /* body text */
+    --ink-muted: #5c636e;     /* secondary text */
+    --surface: #f4f5f7;       /* raised or recessed panels */
+    --line: #dfe2e7;          /* borders and rules */
+
+    /* --- Semantic tones. Each pairs with the colour text takes when sitting
+       ON it — solid variants are impossible without the pair. ------------- */
+    --primary: #1c6fd6;       --primary-on: #ffffff;
+    --secondary: #5c636e;     --secondary-on: #ffffff;
+    --success: #2f9e52;       --success-on: #ffffff;
+    --info: #0e8fa8;          --info-on: #ffffff;
+    --warning: #c8791a;       --warning-on: #ffffff;
+    --danger: #d13b3b;        --danger-on: #ffffff;
+    --neutral: #16181c;       --neutral-on: #ffffff;
+
+    /* --- Hues, for components that need a colour outside the semantic set
+       (one site measured had 24 callout types and only seven tones). ------ */
+    --hue-red: #d13b3b;    --hue-pink: #c9376b;   --hue-grape: #9b3fc4;
+    --hue-violet: #6b4ce0; --hue-indigo: #4059de; --hue-blue: #1c6fd6;
+    --hue-cyan: #0e8fa8;   --hue-teal: #0d9b73;   --hue-green: #2f9e52;
+    --hue-lime: #6aa617;   --hue-yellow: #c8a01a; --hue-orange: #d1691a;
+    --hue-slate: #5c636e;  --hue-stone: #78706a;
+
+    /* --- Shape ---------------------------------------------------------- */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --hairline: 1px;
+
+    /* --- Motion --------------------------------------------------------- */
+    --speed: 0.12s;
+
+    /* --- Type ----------------------------------------------------------- */
+    --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --text-base: 1rem;
+    --leading: 1.55;
+    --weight-normal: 400;
+    --weight-medium: 500;
+    --weight-bold: 650;
+
+    /* --- Depth ---------------------------------------------------------- */
+    --shade: rgba(0, 0, 0, 0.08);
+    --shade-strong: rgba(0, 0, 0, 0.28);
+    --lift-1: 0 1px 2px var(--shade);
+    --lift-2: 0 8px 28px var(--shade-strong);
+
+    /* --- The default tone. Without this an un-toned component resolves every
+       mix against an empty --tone and paints transparent. ----------------- */
+    --tone: var(--neutral);
+    --tone-contrast: var(--neutral-on);
+    --tone-soft: color-mix(in oklab, var(--tone) 10%, var(--canvas));
+    --tone-ink: color-mix(in oklab, var(--tone) 72%, var(--ink));
+    --tone-line: color-mix(in oklab, var(--tone) 30%, var(--canvas));
+
+    color-scheme: light;
+  }
+}

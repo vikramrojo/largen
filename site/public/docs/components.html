@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reference components — largen</title>
+<meta name="description" content="largen's twenty-three optional reference components. Copy them into your project or ignore them.">
+<link rel="stylesheet" href="/largen.css">
+<link rel="stylesheet" href="/largen.components.css">
+<link rel="stylesheet" href="/theme-dark.css">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="/">largen</a>
+  <nav class="cluster" style="--gap:1rem">
+        <a class="nav-link" href="/docs/contract.html">contract</a>
+        <a class="nav-link" href="/docs/axes.html">axes</a>
+        <a class="nav-link" href="/docs/authoring.html">authoring</a>
+        <a class="nav-link" href="/docs/components.html" aria-current="page">components</a>
+        <a class="nav-link" href="/docs/mcp.html">mcp</a>
+        <a class="nav-link" href="/docs/migrating.html">migrating</a>
+        <a class="nav-link" href="/play">play</a>
+        <a class="nav-link" href="/demo/">demos</a>
+    <label class="theme-toggle">
+      <input type="checkbox" hidden onchange="
+        document.documentElement.dataset.theme = this.checked ? 'dark' : 'light';
+        try { localStorage.setItem('largen-theme', document.documentElement.dataset.theme) } catch (e) {}
+      "><span data-swap="off">☀</span><span data-swap="on">☾</span>
+    </label>
+  </nav>
+</header>
+
+<main class="page">
+<div class="stack" style="--gap:.4rem">
+    <h1 class="page-title">Reference components</h1>
+    <p class="page-desc">Optional, and copy-in rather than imported. largen ships an
+    algebra, not a dependency — take the source and it is yours to edit.</p>
+  </div>
+  
+  <section class="stack" style="--gap:.5rem">
+    <p class="spec-note">Every one of these is six or so lines, because the tones, the
+    variants, the sizes and both themes come from the layers underneath. Fetch any of
+    them over MCP with <span class="tok">get_component_source</span>, or read
+    <a href="/components/reference.css">reference.css</a> directly.</p>
+  </section>
+  
+  <section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Feedback</h2>
+    <div class="stack" style="--gap:0">
+      <div class="spec-row"><span class="spec-name">alert</span><span class="spec-note">A message reporting a state. Use with a tone.</span></div>
+    <div class="spec-row"><span class="spec-name">badge</span><span class="spec-note">A short inline label or count.</span></div>
+    <div class="spec-row"><span class="spec-name">dot</span><span class="spec-note">A bare status dot. No content.</span></div>
+    <div class="spec-row"><span class="spec-name">spinner</span><span class="spec-note">An indeterminate activity indicator.</span></div>
+    <div class="spec-row"><span class="spec-name">skeleton</span><span class="spec-note">A loading placeholder occupying a future element's box.</span></div>
+    </div>
+  </section>
+
+<section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Surfaces</h2>
+    <div class="stack" style="--gap:0">
+      <div class="spec-row"><span class="spec-name">card</span><span class="spec-note">A container grouping related content on a surface.</span></div>
+    <div class="spec-row"><span class="spec-name">panel</span><span class="spec-note">A surface with no border.</span></div>
+    <div class="spec-row"><span class="spec-name">divider</span><span class="spec-note">A labelled or bare horizontal rule.</span></div>
+    </div>
+  </section>
+
+<section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Data</h2>
+    <div class="stack" style="--gap:0">
+      <div class="spec-row"><span class="spec-name">stat</span><span class="spec-note">A figure with a label. Wraps stat-label and stat-value.</span></div>
+    <div class="spec-row"><span class="spec-name">stat-label</span><span class="spec-note">The label above a figure.</span></div>
+    <div class="spec-row"><span class="spec-name">stat-value</span><span class="spec-note">The figure itself. Renders tabular-nums.</span></div>
+    </div>
+  </section>
+
+<section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Navigation</h2>
+    <div class="stack" style="--gap:0">
+      <div class="spec-row"><span class="spec-name">menu</span><span class="spec-note">A vertical list of navigation or action items.</span></div>
+    <div class="spec-row"><span class="spec-name">crumbs</span><span class="spec-note">An ancestry trail.</span></div>
+    <div class="spec-row"><span class="spec-name">steps</span><span class="spec-note">A numbered sequence. Mark position with aria-current.</span></div>
+    </div>
+  </section>
+
+<section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Conversation</h2>
+    <div class="stack" style="--gap:0">
+      <div class="spec-row"><span class="spec-name">bubble</span><span class="spec-note">A conversation bubble. data-side="end" for the user's own turn.</span></div>
+    <div class="spec-row"><span class="spec-name">avatar</span><span class="spec-note">A person's image or initials.</span></div>
+    </div>
+  </section>
+
+<section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Overlay</h2>
+    <div class="stack" style="--gap:0">
+      <div class="spec-row"><span class="spec-name">tip</span><span class="spec-note">Wraps a child; hint text goes in data-tip.</span></div>
+    </div>
+  </section>
+
+<section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Text</h2>
+    <div class="stack" style="--gap:0">
+      <div class="spec-row"><span class="spec-name">prose</span><span class="spec-note">Long-form rendered text. Wrap markdown output in this.</span></div>
+    </div>
+  </section>
+
+<section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Layout utilities</h2>
+    <div class="stack" style="--gap:0">
+      <div class="spec-row"><span class="spec-name">stack</span><span class="spec-note">Vertical layout. Set --gap.</span></div>
+    <div class="spec-row"><span class="spec-name">row</span><span class="spec-note">Horizontal layout, no wrap.</span></div>
+    <div class="spec-row"><span class="spec-name">cluster</span><span class="spec-note">Horizontal layout that wraps. Tag lists, icon groups.</span></div>
+    <div class="spec-row"><span class="spec-name">grid</span><span class="spec-note">As many columns as fit at --min-item.</span></div>
+    <div class="spec-row"><span class="spec-name">center</span><span class="spec-note">Constrained measure, centred.</span></div>
+    </div>
+  </section>
+  
+  <section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Using them</h2>
+    <pre class="code">&lt;link rel="stylesheet" href="https://largen.dev/largen.css"&gt;
+  &lt;link rel="stylesheet" href="https://largen.dev/largen.components.css"&gt;</pre>
+    <p class="spec-note">Or copy one component's source and skip the file. That is the
+    intended path — the reference set exists to be read and taken from, not depended on.</p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <span>largen 0.2.0 — a property algebra for CSS. MIT.</span>
+  <span class="cluster" style="--gap:.75rem">
+    <a class="nav-link" href="/llms.txt">llms.txt</a>
+    <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>
+    <a class="nav-link" href="/largen.css">largen.css</a>
+    <a class="nav-link" href="/health">health</a>
+  </span>
+</footer>
+
+<script>
+  /* Decide which theme is on. Not a component concern — largen carries the theme
+     itself; this only picks one. ?theme= wins over the stored preference so a
+     link can pin a theme, which is also what makes both themes screenshottable
+     in verification. */
+  (function () {
+    var t = null
+    try { t = new URLSearchParams(location.search).get('theme') } catch (e) {}
+    if (t !== 'dark' && t !== 'light') {
+      try { t = localStorage.getItem('largen-theme') } catch (e) { t = null }
+    }
+    if (t !== 'dark' && t !== 'light') return
+    document.documentElement.dataset.theme = t
+    var box = document.querySelector('.theme-toggle input')
+    if (box) box.checked = t === 'dark'
+  })()
+</script>
+</body>
+</html>

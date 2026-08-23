@@ -1,0 +1,13 @@
+schema: spec-driven
+
+context: |
+  largen is a CSS library that ships a property algebra rather than a component
+  catalog. Plain CSS, no build step. Built for agents to build on.
+
+  Tiers: tokens -> slots -> axes -> paint (primitives, fixed cost)
+         layout utilities (a handful)
+         components (the only tier that grows; the project writes these)
+
+  Conventions: components are authored inside @layer largen.components; they set
+  custom-property slots (--bg, --pad, --gap) and never colours; dark mode and
+  size variants are never written by hand.

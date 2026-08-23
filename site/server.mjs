@@ -1,0 +1,228 @@
+#!/usr/bin/env node
+/* largen.dev.
+ *
+ * Plain node:http. No framework, and no build step for the site it serves —
+ * largen's argument is that a stylesheet needs neither, so a site that needed
+ * either would be arguing against itself.
+ *
+ * The stylesheet is streamed straight out of dist/ rather than copied into
+ * public/. A copy is a thing that can go stale, and a CDN quietly serving last
+ * week's library is a bad failure. Versioned paths are the deliberate exception
+ * and are snapshots — see `largen release`.
+ */
+import { createServer } from 'node:http'
+import { readFile, stat } from 'node:fs/promises'
+import { existsSync, readFileSync } from 'node:fs'
+import { join, extname, normalize, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { dirname } from 'node:path'
+
+import { handleMcpRequest } from './mcp/server.mjs'
+import { Previews } from './mcp/previews.mjs'
+
+const here = dirname(fileURLToPath(import.meta.url))
+const root = join(here, '..')
+const PUBLIC = join(here, 'public')
+const DIST = join(root, 'dist')
+
+const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+const PORT = Number(process.env.PORT ?? 8787)
+const BASE_URL = process.env.LARGEN_BASE_URL ?? `http://127.0.0.1:${PORT}`
+
+const previews = new Previews(join(here, '.previews'))
+
+const TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.woff2': 'font/woff2',
+}
+
+const send = (res, status, body, headers = {}) => {
+  res.writeHead(status, { 'content-length': Buffer.byteLength(body), ...headers })
+  res.end(body)
+}
+
+/* Directories the site is allowed to serve from the repository. All of it is
+   plain CSS and dependency-free ESM that is already public.
+   Mounting these is what lets demo/*.html port to the site with no edits at all:
+   their `../src/largen.css` resolves to `/src/largen.css` unchanged. A site that
+   had to rewrite its own demo pages to serve them would be quietly admitting to a
+   build step. */
+const REPO_MOUNTS = ['src', 'themes', 'components', 'sites', 'genai', 'skill', 'demo', 'dist']
+
+/** Join a URL path onto a base directory without letting it escape. Rejects
+ *  anything that normalises outside the base, so `..` in a URL cannot reach the
+ *  filesystem above it. */
+function safeJoin(base, urlPath) {
+  const clean = normalize(decodeURIComponent(urlPath)).replace(/^(\.\.[/\\])+/, '')
+  const full = join(base, clean)
+  if (full !== base && !full.startsWith(base + sep)) return null
+  return full
+}
+
+async function serveFile(res, file, { immutable = false, status = 200 } = {}) {
+  try {
+    const info = await stat(file)
+    if (!info.isFile()) return false
+    const body = await readFile(file)
+    send(res, status, body, {
+      'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
+      'cache-control': immutable
+        ? 'public, max-age=31536000, immutable'
+        : 'public, max-age=60',
+    })
+    return true
+  } catch { return false }
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    let size = 0
+    req.on('data', (c) => {
+      size += c.length
+      if (size > 4 * 1024 * 1024) { reject(new Error('request body too large')); req.destroy(); return }
+      chunks.push(c)
+    })
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks).toString('utf8')
+      if (!raw) return resolve(undefined)
+      try { resolve(JSON.parse(raw)) } catch (e) { reject(e) }
+    })
+    req.on('error', reject)
+  })
+}
+
+/* One line per request. A deployed service that cannot say what reached it is a
+   service you debug by guessing — which is how an afternoon disappears. */
+const LOG = process.env.LARGEN_LOG !== 'off'
+const log = (req, path, note = '') => {
+  if (!LOG) return
+  console.log(`${req.method} ${path} ${note}`.trimEnd())
+}
+
+const server = createServer(async (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`)
+  const path = url.pathname
+
+  try {
+    /* --- MCP ------------------------------------------------------------- */
+    if (path === '/api/mcp') {
+      /* No server->client stream. The spec permits answering GET with 405 when
+         the server does not offer one, and this server never pushes anything:
+         it is stateless, every tool returns a single complete result, and there
+         are no subscriptions or progress notifications.
+     
+         Declining it is also what makes this work behind a reverse proxy. A GET
+         held open here occupies the connection, and an intermediary that
+         serialises requests per connection — exe.dev's front door does — will
+         queue every later POST behind a stream that never ends. The client then
+         hangs without a single request reaching this process. */
+      if (req.method === 'GET') {
+        return send(res, 405, JSON.stringify({
+          jsonrpc: '2.0',
+          error: { code: -32000, message: 'this server does not offer a server-to-client stream' },
+          id: null,
+        }) + '\n', { 'content-type': TYPES['.json'], allow: 'POST, DELETE' })
+      }
+      const body = req.method === 'POST' ? await readBody(req) : undefined
+      log(req, path, `method=${body?.method ?? '-'} id=${body?.id ?? '-'} ` +
+        `proto=${req.headers['mcp-protocol-version'] ?? '-'} accept=${req.headers.accept ?? '-'}`)
+      return await handleMcpRequest(req, res, body, {
+        previews, baseUrl: BASE_URL, version: pkg.version,
+      })
+    }
+
+    /* --- Health ------------------------------------------------------------ */
+    if (path === '/health') {
+      return send(res, 200, JSON.stringify({
+        ok: true,
+        service: 'largen.dev',
+        version: pkg.version,
+        stylesheet: existsSync(join(DIST, 'largen.css')) ? `/v/${pkg.version}/largen.css` : null,
+        uptimeSeconds: Math.round(process.uptime()),
+      }, null, 2) + '\n', { 'content-type': TYPES['.json'], 'cache-control': 'no-store' })
+    }
+
+    /* --- The renderer, for the playground ----------------------------------
+     *
+     * Served from its source rather than copied into public/, for the same
+     * reason the stylesheet is streamed out of dist/: a copy is a thing that can
+     * go stale, and a playground quietly running last week's renderer would
+     * undercut the claim that it cannot disagree with the server. */
+    if (path === '/site-render.mjs') {
+      if (await serveFile(res, join(here, 'mcp', 'render.mjs'))) return
+    }
+
+    /* --- Stylesheet, current ---------------------------------------------- */
+    if (/^\/(largen|largen\.components|theme-dark|site-example)\.css$/.test(path)) {
+      if (await serveFile(res, join(DIST, path.slice(1)))) return
+      return send(res, 503, 'stylesheet not built — run `largen build`\n',
+        { 'content-type': TYPES['.txt'] })
+    }
+
+    /* --- Stylesheet, pinned. Snapshots, so these never change. ------------- */
+    if (path.startsWith('/v/')) {
+      const file = safeJoin(PUBLIC, path)
+      if (file && await serveFile(res, file, { immutable: true })) return
+      return send(res, 404, 'no such version\n', { 'content-type': TYPES['.txt'] })
+    }
+
+    /* --- Stored previews ---------------------------------------------------- */
+    if (path.startsWith('/play/')) {
+      const rec = previews.get(path.slice('/play/'.length))
+      if (!rec) {
+        return send(res, 404,
+          '<!doctype html><meta charset=utf-8><title>expired</title>' +
+          '<link rel=stylesheet href="/largen.css"><body style="padding:2rem">' +
+          '<h1>No such preview</h1><p>Previews expire after 24 hours. ' +
+          'Call <code>render_spec</code> again, or use ' +
+          '<a href="/play">the playground</a>.</p>',
+          { 'content-type': TYPES['.html'] })
+      }
+      return send(res, 200, rec.document, { 'content-type': TYPES['.html'], 'cache-control': 'no-store' })
+    }
+
+    /* --- Repository mounts --------------------------------------------------- */
+    const mount = REPO_MOUNTS.find((d) => path === `/${d}` || path.startsWith(`/${d}/`))
+    if (mount) {
+      const file = safeJoin(root, path)
+      if (file) {
+        if (await serveFile(res, file)) return
+        if (await serveFile(res, join(file, 'index.html'))) return
+      }
+    }
+
+    /* --- Static site --------------------------------------------------------- */
+    const rel = path === '/' ? '/index.html' : path
+    const candidate = safeJoin(PUBLIC, rel)
+    if (candidate) {
+      if (await serveFile(res, candidate)) return
+      if (!extname(rel) && await serveFile(res, candidate + '.html')) return
+      if (!extname(rel) && await serveFile(res, join(candidate, 'index.html'))) return
+    }
+
+    const notFound = join(PUBLIC, '404.html')
+    if (await serveFile(res, notFound, { status: 404 })) return
+    return send(res, 404, 'not found\n', { 'content-type': TYPES['.txt'] })
+  } catch (error) {
+    if (!res.headersSent) {
+      send(res, 500, JSON.stringify({ ok: false, error: error.message }) + '\n',
+        { 'content-type': TYPES['.json'] })
+    }
+  }
+})
+
+server.listen(PORT, () => {
+  console.log(`largen.dev — http://127.0.0.1:${PORT}`)
+  console.log(`  mcp     ${BASE_URL}/api/mcp`)
+  console.log(`  health  ${BASE_URL}/health`)
+})
+
+export { server }

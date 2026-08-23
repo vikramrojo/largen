@@ -1,0 +1,10 @@
+/* An example site's whole stylesheet.
+ *
+ * Four imports and no build step. This is the shape a project ends up with:
+ * the library, optionally its prose component, one theme, and the components
+ * the project actually needed.
+ */
+@import url("../../src/largen.css");            /* the algebra + layout */
+@import url("../../components/prose.css");      /* long-form text */
+@import url("./theme.css");                     /* the palette */
+@import url("./components.css");                /* this project's own nouns */

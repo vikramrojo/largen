@@ -1,0 +1,30 @@
+/* largen — reset. Minimal, and in the lowest layer so any unlayered author CSS
+ * beats it outright. */
+
+@layer largen.reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  :where(body) {
+    margin: 0;
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: var(--text-base);
+    line-height: var(--leading);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :where(img, svg, video, canvas) {
+    max-inline-size: 100%;
+    block-size: auto;
+  }
+
+  :where(button, input, select, textarea) {
+    font: inherit;
+    color: inherit;
+  }
+}

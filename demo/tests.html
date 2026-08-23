@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>largen — the load-bearing tests</title>
+<link rel="stylesheet" href="../src/largen.css">
+<link rel="stylesheet" href="../themes/dark.css">
+<style>
+  /* Page furniture, and two demo components authored the normal way. */
+  @layer largen.components {
+    .panel {
+      --bg: var(--surface); --border-color: var(--line);
+      --border-width: var(--hairline); --border-style: solid;
+      --radius: var(--radius-md); --pad: 1rem; --gap: .75rem;
+      display: flex; flex-direction: column;
+    }
+    .note {
+      --bg: var(--tone-soft); --fg: var(--tone-ink);
+      --border-color: var(--tone); --border-width: 0 0 0 3px;
+      --border-style: solid; --radius: var(--radius-sm);
+      --pad: .75em 1em; --gap: .75em;
+      display: grid; grid-template-columns: auto 1fr;
+      align-items: center;
+    }
+    .chip {
+      --bg: var(--tone-soft); --fg: var(--tone-ink);
+      --border-color: var(--tone-line); --border-width: var(--hairline);
+      --border-style: solid; --radius: 2em; --pad: .15em .6em;
+      --font-size: calc(.8rem * var(--scale));
+      display: inline-flex; align-items: center;
+    }
+  }
+  .wrap { max-inline-size: 60rem; margin-inline: auto; padding: 1.5rem 1.5rem 5rem }
+  h2 { font-size: 1rem; margin: 2.5rem 0 .3rem }
+  .claim { margin: 0 0 1rem; color: var(--ink-muted); font-size: .85rem; max-inline-size: 62ch; line-height: 1.6 }
+  .verdict { font-size: .8rem; color: var(--ink-muted); border-block-start: 1px dashed var(--line); padding-block-start: .6rem }
+  code { font-size: .85em; background: color-mix(in oklab, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 3px }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="row" data-justify="between">
+  <strong>largen — load-bearing tests</strong>
+  <button onclick="document.documentElement.dataset.theme =
+    document.documentElement.dataset.theme==='dark'?'light':'dark'">flip theme</button>
+</div>
+
+<h2>0 · The universal paint rule is inert until asked</h2>
+<p class="claim">Every element on this page matches <code>* { }</code>. If
+<code>revert-layer</code> works, none of these lost anything to it.</p>
+<div class="panel">
+  <h1 style="margin:0">H1 keeps its UA size</h1>
+  <ul><li>UL keeps its indent</li></ul>
+  <div class="row"><button>button keeps padding</button>
+    <table><tr><td>td</td><td>keeps padding</td></tr></table></div>
+  <p class="verdict">Must read: large heading, indented bullet, padded button and cells.</p>
+</div>
+
+<h2>1 · Tone inherits</h2>
+<p class="claim">The three components below carry <em>no</em> tone of their own —
+only the <code>&lt;div&gt;</code> around them does.</p>
+<div class="panel" data-tone="danger">
+  <div class="note"><span>▲</span><span>Nothing on this note says danger.</span></div>
+  <div class="cluster">
+    <button>unattributed button</button>
+    <span class="chip">unattributed chip</span>
+  </div>
+  <p class="verdict">Must read: all three red.</p>
+</div>
+
+<h2>2 · …but slots do not leak</h2>
+<div class="panel" data-tone="danger">
+  <span class="chip">outer</span>
+  <div class="panel" data-tone="success">
+    <div class="cluster"><span class="chip">inner</span><button>inner</button></div>
+  </div>
+  <p class="verdict">Must read: outer chip red; inner chip and button green; the
+  inner panel's own grey surface not inherited by the chip sitting on it.</p>
+</div>
+
+<h2>3 · Variants derive from the tone</h2>
+<div class="panel"><div class="cluster" id="variants"></div></div>
+
+<h2>4 · Size is one inherited number</h2>
+<div class="panel">
+  <div class="cluster" id="sizes"></div>
+  <p class="claim" style="margin:.5rem 0 0">a wrapper at <code>data-size="sm"</code>, children unattributed:</p>
+  <div class="cluster" data-size="sm">
+    <button data-tone="primary">button</button>
+    <span class="chip" data-tone="primary">chip</span>
+  </div>
+</div>
+
+<h2>5 · Layout utilities, no breakpoints</h2>
+<p class="claim"><code>switcher</code> reflows on container width with no media
+query — narrow the window and these stack.</p>
+<div class="panel">
+  <div class="switcher" style="--min-item:18rem">
+    <div class="panel">one</div><div class="panel">two</div><div class="panel">three</div>
+  </div>
+</div>
+
+</div>
+<script>
+const TONES=['primary','secondary','success','info','warning','danger','neutral']
+const VARIANTS=['solid','soft','outline','ghost']
+document.getElementById('variants').innerHTML = VARIANTS.map(v =>
+  `<div class="stack" style="--gap:.4rem">${TONES.map(t =>
+    `<button data-tone="${t}" data-variant="${v}">${t}</button>`).join('')}
+   <span style="font:.7rem ui-monospace;color:var(--ink-muted)">${v}</span></div>`).join('')
+document.getElementById('sizes').innerHTML = ['xs','sm','md','lg','xl'].map(s =>
+  `<button data-tone="primary" data-size="${s}">${s}</button>`).join('')
+</script>
+</body></html>

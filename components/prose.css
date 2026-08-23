@@ -1,0 +1,85 @@
+/* largen — prose.
+ *
+ * Long-form typography. Not something daisyUI ships, and nevertheless the single
+ * most-used class on one site measured (77 occurrences, served by its own
+ * 162-line typography.css) and ~120 hand-rolled lines in another. Both
+ * reinvented it because the framework underneath declined to have an opinion.
+ *
+ * Tone-aware (links and marks take the ambient tone), scale-aware, measure-aware.
+ */
+
+@layer largen.components {
+  .prose, l-prose {
+    --fg: var(--ink);
+    --measure: 68ch;
+    --flow: 1.25em;
+    --font-size: calc(1rem * var(--scale));
+    line-height: 1.7;
+    max-inline-size: var(--measure);
+    text-wrap: pretty;
+  }
+
+  /* One flow rule instead of a margin declaration per element. */
+  .prose > * + *, l-prose > * + * { margin-block-start: var(--flow) }
+
+  .prose :is(h1,h2,h3,h4,h5,h6), l-prose :is(h1,h2,h3,h4,h5,h6) {
+    --weight: var(--weight-bold);
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  .prose > :is(h2,h3,h4), l-prose > :is(h2,h3,h4) { margin-block-start: 1.9em }
+
+  .prose h1, l-prose h1 { --font-size: 2em }
+  .prose h2, l-prose h2 { --font-size: 1.5em }
+  .prose h3, l-prose h3 { --font-size: 1.25em }
+
+  .prose :is(ul,ol), l-prose :is(ul,ol) { --pad: 0; padding-inline-start: 1.5em }
+  .prose li + li, l-prose li + li { margin-block-start: 0.4em }
+
+  .prose a, l-prose a {
+    --fg: var(--tone-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--tone-line);
+  }
+
+  .prose a:hover, l-prose a:hover { text-decoration-color: var(--tone) }
+  .prose strong, l-prose strong { --weight: var(--weight-bold) }
+
+  .prose :not(pre) > code, l-prose :not(pre) > code {
+    --bg: color-mix(in oklab, var(--ink) 7%, transparent);
+    --radius: var(--radius-sm);
+    --pad: 0.15em 0.35em;
+    --font-size: 0.875em;
+  }
+
+  .prose pre, l-prose pre {
+    --bg: var(--surface);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: 0.9em 1.1em;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+
+  .prose blockquote, l-prose blockquote {
+    --pad: 0 0 0 1em;
+    --fg: var(--ink-muted);
+    border-inline-start: 3px solid var(--tone-line);
+    margin-inline: 0;
+    font-style: italic;
+  }
+
+  .prose mark, l-prose mark {
+    --bg: var(--tone-soft);
+    --fg: var(--tone-ink);
+    --radius: var(--radius-sm);
+    --pad: 0.1em 0.25em;
+  }
+
+  .prose :is(img, video), l-prose :is(img, video) { --radius: var(--radius-md) }
+  .prose > :first-child, l-prose > :first-child { margin-block-start: 0 }
+  .prose > :last-child,  l-prose > :last-child  { margin-block-end: 0 }
+}

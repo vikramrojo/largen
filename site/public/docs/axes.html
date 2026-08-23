@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The axes — largen</title>
+<meta name="description" content="tone, variant, size and state — the four axes a largen component gets for free.">
+<link rel="stylesheet" href="/largen.css">
+<link rel="stylesheet" href="/largen.components.css">
+<link rel="stylesheet" href="/theme-dark.css">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="wordmark" href="/">largen</a>
+  <nav class="cluster" style="--gap:1rem">
+        <a class="nav-link" href="/docs/contract.html">contract</a>
+        <a class="nav-link" href="/docs/axes.html" aria-current="page">axes</a>
+        <a class="nav-link" href="/docs/authoring.html">authoring</a>
+        <a class="nav-link" href="/docs/components.html">components</a>
+        <a class="nav-link" href="/docs/mcp.html">mcp</a>
+        <a class="nav-link" href="/docs/migrating.html">migrating</a>
+        <a class="nav-link" href="/play">play</a>
+        <a class="nav-link" href="/demo/">demos</a>
+    <label class="theme-toggle">
+      <input type="checkbox" hidden onchange="
+        document.documentElement.dataset.theme = this.checked ? 'dark' : 'light';
+        try { localStorage.setItem('largen-theme', document.documentElement.dataset.theme) } catch (e) {}
+      "><span data-swap="off">☀</span><span data-swap="on">☾</span>
+    </label>
+  </nav>
+</header>
+
+<main class="page">
+<div class="stack" style="--gap:.4rem">
+  <h1 class="page-title">The axes</h1>
+  <p class="page-desc">Four axes. A component mentions none of them and gets all
+  of them.</p>
+</div>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">tone</h2>
+  <div class="stack" style="--gap:0">
+  <div class="spec-row"><span class="spec-name">attribute</span><span class="spec-note"><span class="tok">data-tone</span></span></div>
+  <div class="spec-row"><span class="spec-name">inherits</span><span class="spec-note">yes</span></div>
+  <div class="spec-row"><span class="spec-name">values</span><span class="spec-note"><span class="tok">primary</span> · <span class="tok">secondary</span> · <span class="tok">success</span> · <span class="tok">info</span> · <span class="tok">warning</span> · <span class="tok">danger</span> · <span class="tok">neutral</span></span></div>
+  </div>
+  <p class="spec-note">Tone inherits, and that is the point rather than a convenience: <span class="tok">&lt;section data-tone="danger"&gt;</span> re-tones every component inside it with no per-child markup. A component never names a colour; it names <span class="tok">var(--tone)</span> and its derivations, and the theme decides what that resolves to.</p>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">variant</h2>
+  <div class="stack" style="--gap:0">
+  <div class="spec-row"><span class="spec-name">attribute</span><span class="spec-note"><span class="tok">data-variant</span></span></div>
+  <div class="spec-row"><span class="spec-name">inherits</span><span class="spec-note">no</span></div>
+  <div class="spec-row"><span class="spec-name">values</span><span class="spec-note"><span class="tok">solid</span> · <span class="tok">soft</span> · <span class="tok">outline</span> · <span class="tok">ghost</span></span></div>
+  </div>
+  <p class="spec-note">Derived from the tone, never a separate colour. It deliberately does NOT inherit: with a universal paint rule there is no marker separating a component from a bare <span class="tok">&lt;span&gt;</span>, so a subtree variant would paint every wrapper element it passed through.</p>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">size</h2>
+  <div class="stack" style="--gap:0">
+  <div class="spec-row"><span class="spec-name">attribute</span><span class="spec-note"><span class="tok">data-size</span></span></div>
+  <div class="spec-row"><span class="spec-name">inherits</span><span class="spec-note">yes</span></div>
+  <div class="spec-row"><span class="spec-name">values</span><span class="spec-note"><span class="tok">xs</span> · <span class="tok">sm</span> · <span class="tok">md</span> · <span class="tok">lg</span> · <span class="tok">xl</span></span></div>
+  </div>
+  <p class="spec-note">A single <span class="tok">--scale</span> multiplier, not a set of per-size rules. Multiply by <span class="tok">var(--scale)</span> where you set a size and express everything else in <span class="tok">em</span>, and padding follows type for free. This is why a component never needs a size variant of its own.</p>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">state</h2>
+  <div class="stack" style="--gap:0">
+  <div class="spec-row"><span class="spec-name">attribute</span><span class="spec-note">none — it comes from the DOM</span></div>
+  <div class="spec-row"><span class="spec-name">inherits</span><span class="spec-note">from the DOM</span></div>
+  <div class="spec-row"><span class="spec-name">values</span><span class="spec-note"><span class="tok">:disabled</span> · <span class="tok">:user-invalid</span> · <span class="tok">:read-only</span> · <span class="tok">:focus-visible</span></span></div>
+  </div>
+  <p class="spec-note">State comes from the DOM and from real HTML attributes. It is not settable through the generative-UI manifest and should never be simulated with a class, because the browser already knows the answer.</p>
+</section>
+</main>
+
+<footer class="site-footer">
+  <span>largen 0.2.0 — a property algebra for CSS. MIT.</span>
+  <span class="cluster" style="--gap:.75rem">
+    <a class="nav-link" href="/llms.txt">llms.txt</a>
+    <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>
+    <a class="nav-link" href="/largen.css">largen.css</a>
+    <a class="nav-link" href="/health">health</a>
+  </span>
+</footer>
+
+<script>
+  /* Decide which theme is on. Not a component concern — largen carries the theme
+     itself; this only picks one. ?theme= wins over the stored preference so a
+     link can pin a theme, which is also what makes both themes screenshottable
+     in verification. */
+  (function () {
+    var t = null
+    try { t = new URLSearchParams(location.search).get('theme') } catch (e) {}
+    if (t !== 'dark' && t !== 'light') {
+      try { t = localStorage.getItem('largen-theme') } catch (e) { t = null }
+    }
+    if (t !== 'dark' && t !== 'light') return
+    document.documentElement.dataset.theme = t
+    var box = document.querySelector('.theme-toggle input')
+    if (box) box.checked = t === 'dark'
+  })()
+</script>
+</body>
+</html>

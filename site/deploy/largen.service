@@ -1,0 +1,54 @@
+# largen.dev — systemd unit.
+#
+# Install:
+#   sudo cp site/deploy/largen.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now largen
+#
+# `enable` is what makes it come back after a reboot; `Restart=always` is what
+# makes it come back after a crash. Both are required by the hosting spec, and
+# they are different failures — verify them separately.
+
+[Unit]
+Description=largen.dev — documentation site and MCP server
+Documentation=https://largen.dev/docs/mcp.html
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=largen
+Group=largen
+SupplementaryGroups=exedev
+WorkingDirectory=/srv/largen/site
+ExecStart=/usr/local/bin/node server.mjs
+Restart=always
+RestartSec=2
+
+Environment=NODE_ENV=production
+Environment=PORT=8787
+Environment=LARGEN_BASE_URL=https://largen.dev
+
+# The service reads the repository and writes only its preview directory.
+#
+# ProtectHome is read-only rather than true because node is installed under nvm
+# in /home/exedev and reached through a /usr/local/bin symlink. `true` would make
+# /home invisible and the unit would fail with a bare 203/EXEC that names none of
+# this. The largen user is in group exedev purely to traverse that path — /home/exedev
+# is 750, so group r-x is the narrowest thing that works, and read-only means the
+# service still cannot write anywhere under /home.
+#
+# If node is ever installed system-wide, revert to ProtectHome=true, drop the
+# group membership, and point ExecStart at /usr/bin/node.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/srv/largen/site/.previews
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=largen
+
+[Install]
+WantedBy=multi-user.target

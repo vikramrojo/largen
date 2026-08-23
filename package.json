@@ -1,0 +1,40 @@
+{
+  "name": "largen",
+  "version": "0.2.0",
+  "description": "A property algebra for CSS. Primitives, a handful of layout utilities, and components you write yourself.",
+  "author": "Vikram Babu",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "src",
+    "components",
+    "themes",
+    "genai",
+    "skill",
+    "dist"
+  ],
+  "exports": {
+    ".": "./src/largen.css",
+    "./dist": "./dist/largen.css",
+    "./components": "./components/index.css",
+    "./components/*": "./components/*.css",
+    "./themes/*": "./themes/*.css",
+    "./manifest": "./genai/manifest.json",
+    "./validate": "./genai/validate.js",
+    "./lint": "./genai/lint.js"
+  },
+  "bin": {
+    "largen": "./skill/scripts/cli.mjs"
+  },
+  "scripts": {
+    "build": "node skill/scripts/cli.mjs build",
+    "verify": "node skill/scripts/cli.mjs verify",
+    "gen": "node skill/scripts/cli.mjs gen"
+  },
+  "devDependencies": {
+    "lightningcss": "^1.33.0"
+  }
+}

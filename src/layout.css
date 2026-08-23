@@ -1,0 +1,124 @@
+/* largen — layout utilities.
+ *
+ * The handful. These are not atomic utilities; each is a component that happens
+ * to set only layout slots, configured by custom properties. Because --gap is a
+ * slot, the universal paint rule applies it — a layout utility and a component
+ * are the same kind of thing.
+ *
+ * Responsiveness is intrinsic. `switcher` and `sidebar` reflow on available
+ * width with no media query and no breakpoint, which is why largen needs no
+ * `sm:` / `xl:` variant system to replace Tailwind's.
+ *
+ * Measured need on a real site: after components absorb 75% of its Tailwind usage,
+ * the residual is flex x26, flex-col x15, items-center x11, max-w-3xl x8,
+ * gap-4 x8. That is what these cover.
+ */
+
+@layer largen.components {
+  /* Vertical flow. */
+  .stack {
+    --gap: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Horizontal, does not wrap. */
+  .row {
+    --gap: 1rem;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Horizontal, wraps. Tag lists, icon groups, metadata rows. */
+  .cluster {
+    --gap: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* Constrained measure, centred. */
+  .center {
+    --measure: 56rem;
+    --pad: 0 1rem;
+    inline-size: 100%;
+    max-inline-size: var(--measure);
+    margin-inline: auto;
+  }
+
+  /* As many columns as fit at --min-item. No breakpoints. */
+  .grid {
+    --gap: 1rem;
+    --min-item: 16rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(var(--min-item), 100%), 1fr));
+  }
+
+  /* A row that becomes a stack once the CONTAINER falls below --threshold.
+     The flex-basis calc goes hugely positive below it, forcing each child onto
+     its own line. Replaces `flex-col sm:flex-row`, and reflows on container
+     width rather than viewport width.
+
+     --threshold is a container width, not a per-item minimum. For "as many
+     columns as fit at N wide", use `grid` with --min-item instead; switcher is
+     for all-or-nothing switching, where a ragged final row is unwanted.
+
+     min-inline-size:0 is required: without it a flex item refuses to shrink
+     below its min-content width and the row overflows instead of fitting. */
+  .switcher {
+    --gap: 1rem;
+    --threshold: 24rem;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .switcher > * {
+    flex-grow: 1;
+    flex-basis: calc((var(--threshold) - 100%) * 999);
+    min-inline-size: 0;
+  }
+
+  /* Fixed-ish side column plus a fluid main column that collapses when the main
+     would drop below --min-content. Replaces the xl: table-of-contents layout. */
+  .sidebar {
+    --gap: 2rem;
+    --side: 16rem;
+    --min-content: 50%;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .sidebar > :first-child {
+    flex-basis: var(--side);
+    flex-grow: 1;
+  }
+
+  .sidebar > :last-child {
+    flex-basis: 0;
+    flex-grow: 999;
+    min-inline-size: var(--min-content);
+  }
+
+  .sidebar > :first-child { min-inline-size: 0 }
+
+  /* A list used as a layout container is a layout container. Without this an
+     <ol class="cluster"> keeps its numbering and its 40px UA indent. */
+  :where(ol, ul):is(.stack, .row, .cluster, .grid, .switcher, .sidebar) {
+    --pad: 0;
+    list-style: none;
+    margin: 0;
+  }
+
+  /* Alignment as orthogonal attributes, so the utilities stay knob-driven
+     rather than sprouting a class per combination. */
+  :where([data-align="start"])    { align-items: flex-start; }
+  :where([data-align="center"])   { align-items: center; }
+  :where([data-align="end"])      { align-items: flex-end; }
+  :where([data-align="baseline"]) { align-items: baseline; }
+  :where([data-align="stretch"])  { align-items: stretch; }
+
+  :where([data-justify="start"])   { justify-content: flex-start; }
+  :where([data-justify="center"])  { justify-content: center; }
+  :where([data-justify="end"])     { justify-content: flex-end; }
+  :where([data-justify="between"]) { justify-content: space-between; }
+}

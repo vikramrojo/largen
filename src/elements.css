@@ -1,0 +1,116 @@
+/* largen — bare HTML.
+ *
+ * Themed defaults for native elements, expressed as slots so they go through the
+ * same paint rule as everything else. No opt-in attribute: these live in a layer,
+ * so any unlayered CSS on the page already outranks them.
+ *
+ * HTML has elements for much of what a component library usually reimplements.
+ * <dialog> IS the modal. <details> IS the collapse. largen styles those rather
+ * than shipping a .modal that has to relearn focus trapping and Esc handling.
+ */
+
+@layer largen.elements {
+  :where(a) {
+    --fg: var(--tone-ink);
+    text-decoration-thickness: from-font;
+    text-underline-offset: 0.2em;
+  }
+
+  :where(button, [type="button"], [type="submit"], [type="reset"]) {
+    --bg: var(--tone);
+    --fg: var(--tone-contrast);
+    --border-color: var(--tone);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-sm);
+    --pad: 0.5em 0.9em;
+    --gap: 0.5em;
+    --weight: var(--weight-medium);
+    --transition: var(--speed) background-color, var(--speed) border-color;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  :where(button, [type="button"], [type="submit"]):not(:disabled):hover {
+    background-image: linear-gradient(var(--shade), var(--shade));
+  }
+
+  :where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]),
+         select, textarea) {
+    --bg: var(--canvas);
+    --fg: var(--ink);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-sm);
+    --pad: 0.5em 0.65em;
+    display: block;
+    inline-size: 100%;
+  }
+
+  :where(input, select, textarea)::placeholder {
+    color: var(--ink-muted);
+    opacity: 0.75;
+  }
+
+  :where(fieldset) {
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-sm);
+    --pad: 1rem;
+    min-inline-size: 0;
+  }
+
+  :where(table) {
+    inline-size: 100%;
+    border-collapse: collapse;
+  }
+
+  :where(th, td) {
+    --pad: 0.5em 0.75em;
+    text-align: start;
+    border-block-end: var(--hairline) solid var(--line);
+  }
+
+  :where(code, kbd, samp, pre) {
+    font-family: var(--font-mono);
+  }
+
+  :where(hr) {
+    border: none;
+    border-block-start: var(--hairline) solid var(--line);
+    margin-block: 1.5rem;
+  }
+
+  /* <dialog> is the modal. */
+  :where(dialog) {
+    --bg: var(--canvas);
+    --fg: var(--ink);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: 1.25rem;
+    --shadow: var(--lift-2);
+    margin: auto;
+    max-inline-size: min(32rem, 100% - 2rem);
+  }
+
+  :where(dialog)::backdrop {
+    background-color: var(--shade-strong);
+  }
+
+  /* <details> is the collapse. */
+  :where(details > summary) {
+    cursor: pointer;
+    list-style: none;
+  }
+
+  :where(details > summary)::-webkit-details-marker {
+    display: none;
+  }
+}

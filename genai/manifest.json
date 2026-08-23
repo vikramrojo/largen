@@ -1,0 +1,254 @@
+{
+  "$comment": "largen's approved-component allowlist. This ships covering the reference components; a project replaces the `components` array with its own. `largen gen` regenerates schema.json, prompt.md and manifest.js from this file.",
+  "version": "0.2.0",
+  "axes": {
+    "tone": {
+      "attribute": "data-tone",
+      "inherits": true,
+      "values": [
+        "primary",
+        "secondary",
+        "success",
+        "info",
+        "warning",
+        "danger",
+        "neutral"
+      ],
+      "description": "Semantic colour. Inherits \u2014 set it on a container to re-tone everything inside."
+    },
+    "variant": {
+      "attribute": "data-variant",
+      "inherits": false,
+      "values": [
+        "solid",
+        "soft",
+        "outline",
+        "ghost"
+      ],
+      "description": "How the tone is applied as a fill. Derived from the tone, never a separate colour. Applies to the element it is on."
+    },
+    "size": {
+      "attribute": "data-size",
+      "inherits": true,
+      "values": [
+        "xs",
+        "sm",
+        "md",
+        "lg",
+        "xl"
+      ],
+      "description": "One multiplier scaling type, padding and gap. Inherits."
+    }
+  },
+  "notes": [
+    "State (disabled, invalid, checked, read-only) is NOT settable here. It comes from the DOM and from real HTML attributes.",
+    "There is no field for a colour, a class, or inline CSS. The safety property is structural, not defensive: the worst a compromised model can do is pick the wrong approved component."
+  ],
+  "components": [
+    {
+      "name": "alert",
+      "for": "A message reporting a state. Use with a tone.",
+      "element": "div",
+      "slots": [
+        "icon",
+        "content",
+        "action"
+      ]
+    },
+    {
+      "name": "badge",
+      "for": "A short inline label or count.",
+      "element": "span",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "dot",
+      "for": "A bare status dot. No content.",
+      "element": "span",
+      "slots": []
+    },
+    {
+      "name": "spinner",
+      "for": "An indeterminate activity indicator.",
+      "element": "span",
+      "slots": []
+    },
+    {
+      "name": "skeleton",
+      "for": "A loading placeholder occupying a future element's box.",
+      "element": "div",
+      "slots": []
+    },
+    {
+      "name": "card",
+      "for": "A container grouping related content on a surface.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "*"
+      ]
+    },
+    {
+      "name": "panel",
+      "for": "A surface with no border.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "*"
+      ]
+    },
+    {
+      "name": "divider",
+      "for": "A labelled or bare horizontal rule.",
+      "element": "div",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "stat",
+      "for": "A figure with a label. Wraps stat-label and stat-value.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "stat-label",
+        "stat-value"
+      ]
+    },
+    {
+      "name": "stat-label",
+      "for": "The label above a figure.",
+      "element": "div",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "stat-value",
+      "for": "The figure itself. Renders tabular-nums.",
+      "element": "div",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "menu",
+      "for": "A vertical list of navigation or action items.",
+      "element": "ul",
+      "slots": [
+        "items"
+      ]
+    },
+    {
+      "name": "crumbs",
+      "for": "An ancestry trail.",
+      "element": "ol",
+      "slots": [
+        "items"
+      ]
+    },
+    {
+      "name": "steps",
+      "for": "A numbered sequence. Mark position with aria-current.",
+      "element": "ol",
+      "slots": [
+        "items"
+      ]
+    },
+    {
+      "name": "bubble",
+      "for": "A conversation bubble. data-side=\"end\" for the user's own turn.",
+      "element": "div",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "avatar",
+      "for": "A person's image or initials.",
+      "element": "span",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "tip",
+      "for": "Wraps a child; hint text goes in data-tip.",
+      "element": "span",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "prose",
+      "for": "Long-form rendered text. Wrap markdown output in this.",
+      "element": "div",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "stack",
+      "for": "Vertical layout. Set --gap.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "*"
+      ]
+    },
+    {
+      "name": "row",
+      "for": "Horizontal layout, no wrap.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "*"
+      ]
+    },
+    {
+      "name": "cluster",
+      "for": "Horizontal layout that wraps. Tag lists, icon groups.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "*"
+      ]
+    },
+    {
+      "name": "grid",
+      "for": "As many columns as fit at --min-item.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "*"
+      ]
+    },
+    {
+      "name": "center",
+      "for": "Constrained measure, centred.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "*"
+      ]
+    }
+  ]
+}

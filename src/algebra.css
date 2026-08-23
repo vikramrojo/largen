@@ -1,0 +1,138 @@
+/* largen — the algebra.
+ *
+ * This file is the library. Everything in components/ is a few lines of shape
+ * leaning on what happens here.
+ *
+ * daisyUI contains this same algebra, but re-derived inside each of its ~61
+ * components against a component-private slot:
+ *
+ *   .badge-soft { background-color: color-mix(in oklab, var(--badge-color) 8%, …); }
+ *   .btn-soft   { background-color: color-mix(in oklab, var(--btn-color)   8%, …); }
+ *   .alert-soft { … and so on, 61 times … }
+ *
+ * Pointed at one generic slot, that is a single rule.
+ */
+
+/* ---------------------------------------------------------------------------
+ * AXIS 1 — tone. Inherits.
+ *
+ * The derivation formula is written exactly once. The tone rules only name a
+ * colour: `[data-tone]` and `[data-tone="danger"]` both match the same element,
+ * and custom-property substitution happens after the cascade resolves, so the
+ * shared formula sees the winning --tone.
+ *
+ * Because --tone inherits, `<section data-tone="danger">` re-tones every
+ * component inside it with no per-child markup.
+ * ------------------------------------------------------------------------- */
+
+@layer largen.tone {
+  :where([data-tone]) {
+    --tone-soft: color-mix(in oklab, var(--tone) 10%, var(--canvas));
+    --tone-ink: color-mix(in oklab, var(--tone) 72%, var(--ink));
+    --tone-line: color-mix(in oklab, var(--tone) 30%, var(--canvas));
+  }
+
+  :where([data-tone="primary"])   { --tone: var(--primary);   --tone-contrast: var(--primary-on); }
+  :where([data-tone="secondary"]) { --tone: var(--secondary); --tone-contrast: var(--secondary-on); }
+  :where([data-tone="success"])   { --tone: var(--success);   --tone-contrast: var(--success-on); }
+  :where([data-tone="info"])      { --tone: var(--info);      --tone-contrast: var(--info-on); }
+  :where([data-tone="warning"])   { --tone: var(--warning);   --tone-contrast: var(--warning-on); }
+  :where([data-tone="danger"])    { --tone: var(--danger);    --tone-contrast: var(--danger-on); }
+  :where([data-tone="neutral"])   { --tone: var(--neutral);   --tone-contrast: var(--neutral-on); }
+}
+
+@layer largen.modifiers {
+  /* -------------------------------------------------------------------------
+   * AXIS 2 — variant. Four fills derived from the one tone.
+   *
+   * 7 tones x 4 variants is 28 appearances from 11 rules, not 28 classes.
+   *
+   * Applies to the element it is on, and does NOT cascade to a subtree — unlike
+   * tone. With a universal paint rule there is no marker distinguishing a
+   * component from a bare <span>, so a descendant selector here would paint
+   * every text node's wrapper solid. Tone inherits; variant does not.
+   *
+   * Lives in a LATER layer than largen.components so an explicitly requested
+   * variant beats a component's default fill.
+   * ----------------------------------------------------------------------- */
+
+  :where([data-variant="solid"]) {
+    --bg: var(--tone);
+    --fg: var(--tone-contrast);
+    --border-color: var(--tone);
+    --border-width: var(--hairline);
+  }
+
+  :where([data-variant="soft"]) {
+    --bg: var(--tone-soft);
+    --fg: var(--tone-ink);
+    --border-color: var(--tone-line);
+    --border-width: var(--hairline);
+  }
+
+  :where([data-variant="outline"]) {
+    --bg: transparent;
+    --fg: var(--tone-ink);
+    --border-color: var(--tone);
+    --border-width: var(--hairline);
+  }
+
+  :where([data-variant="ghost"]) {
+    --bg: transparent;
+    --fg: var(--tone-ink);
+    --border-color: transparent;
+    --border-width: 0;
+  }
+
+  /* -------------------------------------------------------------------------
+   * AXIS 3 — size. Inherits, as one number.
+   *
+   * Components multiply by --scale where they care and express everything else
+   * in `em`, so padding and gap follow font-size for free. A container at
+   * data-size="sm" shrinks everything inside it.
+   * ----------------------------------------------------------------------- */
+
+  :where([data-size="xs"]) { --scale: 0.75; }
+  :where([data-size="sm"]) { --scale: 0.875; }
+  :where([data-size="md"]) { --scale: 1; }
+  :where([data-size="lg"]) { --scale: 1.125; }
+  :where([data-size="xl"]) { --scale: 1.25; }
+
+  /* -------------------------------------------------------------------------
+   * AXIS 4 — state. Taken from the browser, not from an attribute.
+   *
+   * The DOM already tracks disabled/invalid/checked/read-only. Mirroring that
+   * into data-state would be exactly the hand-transcription this design deletes.
+   *
+   * These resolve to the raw tokens rather than through --tone: a validation
+   * failure is an override, not a tone, and must read as an error even inside a
+   * section toned something else.
+   * ----------------------------------------------------------------------- */
+
+  :where(:disabled),
+  :where([aria-disabled="true"]) {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* :read-only matches ANY non-editable element per spec — including every
+     checkbox, radio, range and file input. Left unqualified it greys them all. */
+  :where(textarea, input:not(
+    [type="checkbox"], [type="radio"], [type="range"], [type="file"],
+    [type="button"], [type="submit"], [type="reset"], [type="color"]
+  )):read-only:not(:focus) {
+    --bg: var(--surface);
+  }
+
+  :where(input, select, textarea):user-invalid,
+  :where([aria-invalid="true"]) {
+    --border-color: var(--danger);
+    --fg: var(--danger);
+  }
+
+  /* One focus ring for the whole library, tinted by whatever tone is in scope. */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--tone) 55%, transparent);
+    outline-offset: 2px;
+  }
+}

@@ -1,0 +1,32 @@
+/* largen — the paint rule.
+ *
+ * One rule. It applies to every element, and that is what removes the need for a
+ * build step: nothing has to tell largen which elements are components.
+ *
+ * It is safe to apply universally only because of how the slots are registered
+ * (see properties.css). An unset slot is guaranteed-invalid, so `var(…,
+ * revert-layer)` fires and hands the property straight back to the UA
+ * stylesheet. A <ul> keeps its indent, an <h1> keeps its size, a <button> keeps
+ * its padding. Nothing is reset; the rule is inert until a component opts in by
+ * setting a slot.
+ *
+ * `revert-layer` is the whole trick, and it only works because this rule lives
+ * in a layer. Move it out and every element on the page loses its UA defaults.
+ */
+
+@layer largen.paint {
+  * {
+    color: var(--fg, revert-layer);
+    background-color: var(--bg, revert-layer);
+    border-width: var(--border-width, revert-layer);
+    border-style: var(--border-style, revert-layer);
+    border-color: var(--border-color, revert-layer);
+    border-radius: var(--radius, revert-layer);
+    padding: var(--pad, revert-layer);
+    gap: var(--gap, revert-layer);
+    font-size: var(--font-size, revert-layer);
+    font-weight: var(--weight, revert-layer);
+    box-shadow: var(--shadow, revert-layer);
+    transition: var(--transition, revert-layer);
+  }
+}
