@@ -298,4 +298,88 @@
 
   .tip:is(:hover, :focus-visible)::after,
   l-tip:is(:hover, :focus-visible)::after { opacity: 1 }
+
+  /* --- Forms ------------------------------------------------------------
+   *
+   * The controls themselves are not here. `input`, `select`, `textarea` and
+   * `button` are themed in src/elements.css and already answer to tone, variant,
+   * size and every real DOM state, so a component class for them would be a
+   * worse copy of something the platform provides. What was missing is the
+   * grouping: a label, a control, and the hint or error that belongs to it.
+   */
+
+  .field, l-field {
+    --gap: 0.35em;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .field-label, l-field-label {
+    --font-size: calc(0.875rem * var(--scale));
+    --weight: var(--weight-medium);
+    display: block;
+  }
+
+  .field-hint, l-field-hint {
+    --fg: var(--ink-muted);
+    --font-size: calc(0.8125rem * var(--scale));
+    display: block;
+  }
+
+  /* Sets --tone rather than reading --danger directly. That is how a component
+     chooses the tone its own subtree resolves against; reaching past --tone* to
+     a raw semantic token is the thing the contract forbids, and this is not it. */
+  .field-error, l-field-error {
+    --tone: var(--danger);
+    --fg: var(--tone-ink);
+    --font-size: calc(0.8125rem * var(--scale));
+    display: block;
+  }
+
+  /* --- Containers -------------------------------------------------------- */
+
+  /* A themed <table> still overflows a narrow screen. This is the scroll box,
+     and it is deliberately not a table component: the table is already themed. */
+  .table-wrap, l-table-wrap {
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    display: block;
+    overflow-x: auto;
+    max-inline-size: 100%;
+  }
+
+  .toolbar, l-toolbar {
+    --gap: 0.5em;
+    --pad: 0.5em;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* --- Empty state ------------------------------------------------------- */
+
+  .empty, l-empty {
+    --gap: 0.4em;
+    --pad: 2.5em 1.5em;
+    --fg: var(--ink-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .empty-title, l-empty-title {
+    --fg: var(--ink);
+    --weight: var(--weight-medium);
+    --font-size: calc(1rem * var(--scale));
+    display: block;
+  }
+
+  .empty-note, l-empty-note {
+    --font-size: calc(0.875rem * var(--scale));
+    display: block;
+    max-inline-size: 40ch;
+  }
 }

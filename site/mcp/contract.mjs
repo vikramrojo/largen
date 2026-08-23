@@ -267,17 +267,19 @@ export const OVERVIEW = {
 }
 
 export const COMMANDS = [
-  { command: 'npx largen verify', does: 'check components against the contract above' },
+  { command: 'npx largen verify [css...]', does: "check your components against the contract above" },
   { command: 'npx largen build', does: 'bundle + minify to dist/ — optional, for CDN' },
   { command: 'npx largen gen', does: 'regenerate genai artifacts from genai/manifest.json' },
-  { command: 'npx largen manifest <css…>', does: "derive a component manifest from a project's CSS" },
-  { command: 'npx largen contract', does: 'regenerate SKILL.md, llms.txt and llms-compact.txt' },
-  { command: 'npx largen release', does: 'freeze dist/ at an immutable versioned path' },
+  { command: 'npx largen manifest <css...>', does: "derive a component manifest from a project's CSS" },
 ]
 
 export const COMMANDS_CAVEAT =
-  '`verify` is static only. It has passed clean on visibly broken components before; ' +
-  'render the demo pages in a browser too.'
+  '`verify` lints the files you point it at, or the component stylesheets it finds ' +
+  'under the working directory — a stylesheet is a component file when it declares ' +
+  'inside `@layer largen.components`. Run inside a clone of largen it additionally ' +
+  'checks the library\'s own invariants.\n\n' +
+  'All of it is static. It has passed clean on visibly broken components before; ' +
+  'render the result in a browser, in both themes.'
 
 export const GENERATIVE_UI =
   '`genai/manifest.json` is the approved-component allowlist; `schema.json` and ' +

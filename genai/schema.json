@@ -34,7 +34,16 @@
         "row",
         "cluster",
         "grid",
-        "center"
+        "center",
+        "field",
+        "field-label",
+        "field-hint",
+        "field-error",
+        "table-wrap",
+        "toolbar",
+        "empty",
+        "empty-title",
+        "empty-note"
       ],
       "description": "Which approved component to render."
     },

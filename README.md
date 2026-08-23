@@ -51,7 +51,7 @@ COMPONENTS  whatever your project needs                         ← you write th
 | `largen.css` — algebra + layout utilities | **2.35kb** |
 | reference components (optional) | 1.89kb |
 | a dark theme | 0.40kb |
-| a whole site (algebra + prose + theme + a project's own components) | **3.84kb** |
+| a whole site (algebra + prose + theme + a project's own components) | **3.95kb** |
 
 Zero runtime JavaScript.
 
@@ -113,11 +113,36 @@ and size keep going. If a variant isn't applying, check this first.
 
 ## Use
 
+No install needed — it is a stylesheet:
+
+```html
+<link rel="stylesheet" href="https://largen.dev/largen.css">
+<link rel="stylesheet" href="https://largen.dev/v/0.2.0/largen.css">  <!-- pinned, immutable -->
+```
+
+Or through a bundler:
+
+```sh
+npm install largen
+```
+
 ```css
 @import "largen";                      /* the algebra + layout utilities */
 @import "largen/components";           /* optional reference components */
 @import "largen/themes/dark.css";
 ```
+
+The package exists mainly for two JavaScript modules, which are the only part of
+largen there is a real reason to depend on:
+
+```js
+import { safeValidateNode } from 'largen/validate'  // reject malformed model output
+import { lintComponentCss } from 'largen/lint'      // the authoring contract, in CI
+```
+
+Both are zero-dependency ESM, and both are the same modules the hosted MCP server
+runs — so a spec that validates locally validates hosted, by construction rather
+than by coincidence.
 
 Components are addressable as a class or a custom element — `.alert` and
 `<l-alert>` both work, with nothing to register. Use custom elements for
@@ -138,9 +163,10 @@ layer this project argues is convenience without insight.
 ## Tooling — all optional
 
 ```
-npx largen verify   # check components against the authoring contract
-npx largen build    # bundle + minify to dist/, for CDN
-npx largen gen      # regenerate genai artifacts
+npx largen verify [css...]     # check your components against the contract
+npx largen build               # bundle + minify to dist/, for CDN
+npx largen gen                 # regenerate genai artifacts
+npx largen manifest <css...>   # derive a component manifest from your CSS
 ```
 
 `verify` is static only. It has passed clean on visibly broken components before;

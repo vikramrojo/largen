@@ -249,6 +249,95 @@
       "contains": [
         "*"
       ]
+    },
+    {
+      "name": "field",
+      "for": "Groups a label, a control and its hint or error.",
+      "element": "div",
+      "slots": [
+        "gap"
+      ],
+      "contains": [
+        "field-label",
+        "field-hint",
+        "field-error",
+        "*"
+      ]
+    },
+    {
+      "name": "field-label",
+      "for": "The label above a form control.",
+      "element": "label",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "field-hint",
+      "for": "Guidance under a form control.",
+      "element": "div",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "field-error",
+      "for": "A validation message under a form control. Carries the danger tone itself.",
+      "element": "div",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "table-wrap",
+      "for": "A scroll container for a wide table. The table itself is already themed.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "*"
+      ]
+    },
+    {
+      "name": "toolbar",
+      "for": "A wrapping row of controls.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "*"
+      ]
+    },
+    {
+      "name": "empty",
+      "for": "An empty state. Wraps empty-title and empty-note.",
+      "element": "div",
+      "slots": [
+        "content"
+      ],
+      "contains": [
+        "empty-title",
+        "empty-note",
+        "*"
+      ]
+    },
+    {
+      "name": "empty-title",
+      "for": "The headline of an empty state.",
+      "element": "div",
+      "slots": [
+        "content"
+      ]
+    },
+    {
+      "name": "empty-note",
+      "for": "The explanation under an empty state's headline.",
+      "element": "div",
+      "slots": [
+        "content"
+      ]
     }
   ]
 }

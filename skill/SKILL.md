@@ -187,16 +187,19 @@ bypasses the tokens is simply not part of that mechanism.
 ## Commands
 
 ```
-npx largen verify            # check components against the contract above
-npx largen build             # bundle + minify to dist/ — optional, for CDN
-npx largen gen               # regenerate genai artifacts from genai/manifest.json
-npx largen manifest <css…>   # derive a component manifest from a project's CSS
-npx largen contract          # regenerate SKILL.md, llms.txt and llms-compact.txt
-npx largen release           # freeze dist/ at an immutable versioned path
+npx largen verify [css...]     # check your components against the contract above
+npx largen build               # bundle + minify to dist/ — optional, for CDN
+npx largen gen                 # regenerate genai artifacts from genai/manifest.json
+npx largen manifest <css...>   # derive a component manifest from a project's CSS
 ```
 
-`verify` is static only. It has passed clean on visibly broken components
-before; render the demo pages in a browser too.
+`verify` lints the files you point it at, or the component stylesheets it finds
+under the working directory — a stylesheet is a component file when it declares
+inside `@layer largen.components`. Run inside a clone of largen it additionally
+checks the library's own invariants.
+
+All of it is static. It has passed clean on visibly broken components before;
+render the result in a browser, in both themes.
 
 ## Layer order
 

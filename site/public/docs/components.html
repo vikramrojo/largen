@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Reference components — largen</title>
-<meta name="description" content="largen's twenty-three optional reference components. Copy them into your project or ignore them.">
+<meta name="description" content="largen's reference components, each shown rendered with its source. Copy them into your project or ignore them.">
 <link rel="stylesheet" href="/largen.css">
 <link rel="stylesheet" href="/largen.components.css">
 <link rel="stylesheet" href="/theme-dark.css">
@@ -34,96 +34,706 @@
 
 <main class="page">
 <div class="stack" style="--gap:.4rem">
-    <h1 class="page-title">Reference components</h1>
-    <p class="page-desc">Optional, and copy-in rather than imported. largen ships an
-    algebra, not a dependency — take the source and it is yours to edit.</p>
-  </div>
-  
-  <section class="stack" style="--gap:.5rem">
-    <p class="spec-note">Every one of these is six or so lines, because the tones, the
-    variants, the sizes and both themes come from the layers underneath. Fetch any of
-    them over MCP with <span class="tok">get_component_source</span>, or read
-    <a href="/components/reference.css">reference.css</a> directly.</p>
-  </section>
-  
-  <section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">Feedback</h2>
-    <div class="stack" style="--gap:0">
-      <div class="spec-row"><span class="spec-name">alert</span><span class="spec-note">A message reporting a state. Use with a tone.</span></div>
-    <div class="spec-row"><span class="spec-name">badge</span><span class="spec-note">A short inline label or count.</span></div>
-    <div class="spec-row"><span class="spec-name">dot</span><span class="spec-note">A bare status dot. No content.</span></div>
-    <div class="spec-row"><span class="spec-name">spinner</span><span class="spec-note">An indeterminate activity indicator.</span></div>
-    <div class="spec-row"><span class="spec-name">skeleton</span><span class="spec-note">A loading placeholder occupying a future element's box.</span></div>
-    </div>
-  </section>
+  <h1 class="page-title">Reference components</h1>
+  <p class="page-desc">32 components, each about six lines.
+  Optional, and copy-in rather than imported — largen ships an algebra, not a
+  dependency, so take the source and it is yours to edit.</p>
+</div>
 
 <section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">Surfaces</h2>
-    <div class="stack" style="--gap:0">
-      <div class="spec-row"><span class="spec-name">card</span><span class="spec-note">A container grouping related content on a surface.</span></div>
-    <div class="spec-row"><span class="spec-name">panel</span><span class="spec-note">A surface with no border.</span></div>
-    <div class="spec-row"><span class="spec-name">divider</span><span class="spec-note">A labelled or bare horizontal rule.</span></div>
+  <p class="spec-note">There is no button here, and no input, select or table. Those are
+  elements, and <span class="tok">src/elements.css</span> already themes them — they
+  answer to <span class="tok">data-tone</span>, <span class="tok">data-variant</span> and
+  <span class="tok">data-size</span> exactly like everything below. A component class
+  duplicating them would be a worse copy of something the platform provides.</p>
+  <p class="spec-note">Each example below is rendered from a validated spec by the same
+  validator and renderer the <a href="/docs/mcp.html">MCP server</a> uses, so nothing on
+  this page is something <span class="tok">validate_spec</span> would reject. Fetch any
+  source with <span class="tok">get_component_source</span>, or read
+  <a href="/components/reference.css">reference.css</a> whole.</p>
+  <p class="spec-note"><strong>Every component below answers to all four axes</strong> —
+  <span class="tok">data-tone</span>, <span class="tok">data-variant</span>,
+  <span class="tok">data-size</span> and real DOM state — without naming any of them.
+  That is not stated per component because it does not vary: it is the whole point of the
+  algebra. Set <span class="tok">data-tone</span> on any ancestor and everything below
+  re-tones.</p>
+  <p class="spec-note">Entries marked <em>fragment</em> are meant to sit inside a parent;
+  shown alone they are a piece, not a demonstration.</p>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Feedback</h2>
+  <section class="component" id="alert">
+    <div class="component-head">
+      <span class="component-name">alert</span>
+      <span class="component-for">A message reporting a state. Use with a tone.</span>
     </div>
+    <div class="component-demo">
+      <div class="alert" data-tone="success">Your export finished.</div>
+    </div>
+    <pre class="code component-source">.alert, l-alert {
+    --bg: var(--tone-soft);
+    --fg: var(--tone-ink);
+    --border-color: var(--tone-line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: 0.85em 1em;
+    --gap: 0.75em;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+}</pre>
   </section>
+  <section class="component" id="badge">
+    <div class="component-head">
+      <span class="component-name">badge</span>
+      <span class="component-for">A short inline label or count.</span>
+    </div>
+    <div class="component-demo">
+      <span class="badge" data-tone="info" data-variant="soft">beta</span>
+    </div>
+    <pre class="code component-source">.badge, l-badge {
+    --bg: var(--tone-soft);
+    --fg: var(--tone-ink);
+    --border-color: var(--tone-line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: 2em;
+    --pad: 0.15em 0.6em;
+    --gap: 0.3em;
+    --font-size: calc(0.78rem * var(--scale));
+    --weight: var(--weight-medium);
+    display: inline-flex;
+    align-items: center;
+    inline-size: fit-content;
+    white-space: nowrap;
+}</pre>
+  </section>
+  <section class="component" id="dot">
+    <div class="component-head">
+      <span class="component-name">dot</span>
+      <span class="component-for">A bare status dot. No content.</span>
+    </div>
+    <div class="component-demo">
+      <span class="dot" data-tone="success"></span>
+    </div>
+    <pre class="code component-source">.dot, l-dot {
+    --bg: var(--tone);
+    --radius: 50%;
+    display: inline-block;
+    inline-size: calc(0.55em * var(--scale));
+    block-size: calc(0.55em * var(--scale));
+    vertical-align: middle;
+}</pre>
+  </section>
+  <section class="component" id="spinner">
+    <div class="component-head">
+      <span class="component-name">spinner</span>
+      <span class="component-for">An indeterminate activity indicator.</span>
+    </div>
+    <div class="component-demo">
+      <span class="spinner"></span>
+    </div>
+    <pre class="code component-source">.spinner, l-spinner {
+    --fg: var(--tone);
+    display: inline-block;
+    inline-size: calc(1.15em * var(--scale));
+    block-size: calc(1.15em * var(--scale));
+    border: 2px solid currentcolor;
+    border-block-start-color: transparent;
+    border-radius: 50%;
+    animation: largen-spin 0.6s linear infinite;
+}
+
+.spinner, l-spinner, .skeleton, l-skeleton {
+      animation-duration: 0.01ms;
+      animation-iteration-count: 1;
+}</pre>
+  </section>
+  <section class="component" id="skeleton">
+    <div class="component-head">
+      <span class="component-name">skeleton</span>
+      <span class="component-for">A loading placeholder occupying a future element's box.</span>
+    </div>
+    <div class="component-demo">
+      <div class="skeleton"></div>
+    </div>
+    <pre class="code component-source">.skeleton, l-skeleton {
+    --bg: var(--surface);
+    --radius: var(--radius-sm);
+    display: block;
+    min-block-size: 1em;
+    background-image: linear-gradient(90deg, transparent,
+      color-mix(in oklab, var(--ink) 6%, transparent), transparent);
+    background-size: 200% 100%;
+    animation: largen-sweep 1.4s linear infinite;
+}
+
+.spinner, l-spinner, .skeleton, l-skeleton {
+      animation-duration: 0.01ms;
+      animation-iteration-count: 1;
+}</pre>
+  </section>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Surfaces</h2>
+  <section class="component" id="card">
+    <div class="component-head">
+      <span class="component-name">card</span>
+      <span class="component-for">A container grouping related content on a surface.</span>
+    </div>
+    <div class="component-demo">
+      <div class="card">
+        <div class="stat-label">Storage used</div>
+        <div class="stat-value">48.6 GB</div>
+      </div>
+    </div>
+    <pre class="code component-source">.card, l-card {
+    --bg: var(--surface);
+    --fg: var(--ink);
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    --pad: 1rem;
+    --gap: 0.5rem;
+    display: flex;
+    flex-direction: column;
+}</pre>
+  </section>
+  <section class="component" id="panel">
+    <div class="component-head">
+      <span class="component-name">panel</span>
+      <span class="component-for">A surface with no border.</span>
+    </div>
+    <div class="component-demo">
+      <div class="panel">
+        <span class="badge">panel content</span>
+      </div>
+    </div>
+    <pre class="code component-source">.panel, l-panel {
+    --bg: var(--surface);
+    --radius: var(--radius-md);
+    --pad: 1rem;
+    --gap: 0.75rem;
+    display: flex;
+    flex-direction: column;
+}</pre>
+  </section>
+  <section class="component" id="divider">
+    <div class="component-head">
+      <span class="component-name">divider</span>
+      <span class="component-for">A labelled or bare horizontal rule.</span>
+    </div>
+    <div class="component-demo">
+      <div class="divider">or</div>
+    </div>
+    <pre class="code component-source">.divider, l-divider {
+    --fg: var(--ink-muted);
+    --gap: 0.75em;
+    --font-size: calc(0.8rem * var(--scale));
+    display: flex;
+    align-items: center;
+}
+
+.divider::before, .divider::after, l-divider::before, l-divider::after {
+    content: "";
+    flex: 1;
+    border-block-start: var(--hairline) solid var(--line);
+}
+
+.divider::before, .divider::after, l-divider::before, l-divider::after {
+    content: "";
+    flex: 1;
+    border-block-start: var(--hairline) solid var(--line);
+}</pre>
+  </section>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Data</h2>
+  <section class="component" id="stat">
+    <div class="component-head">
+      <span class="component-name">stat</span>
+      <span class="component-for">A figure with a label. Wraps stat-label and stat-value.</span>
+    </div>
+    <div class="component-demo">
+      <div class="stat">
+        <div class="stat-label">Requests today</div>
+        <div class="stat-value">18,204</div>
+      </div>
+    </div>
+    <pre class="code component-source">.stat, l-stat {
+    --gap: 0.15em;
+    display: flex;
+    flex-direction: column;
+}</pre>
+  </section>
+  <section class="component" id="stat-label">
+    <div class="component-head">
+      <span class="component-name">stat-label</span>
+      <span class="component-for">The label above a figure.</span>
+    </div>
+    <div class="component-demo" data-fragment="true">
+      <div class="stat-label">Requests today</div>
+    </div>
+    <pre class="code component-source">.stat-label, l-stat-label {
+    --fg: var(--ink-muted);
+    --font-size: calc(0.72rem * var(--scale));
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}</pre>
+  </section>
+  <section class="component" id="stat-value">
+    <div class="component-head">
+      <span class="component-name">stat-value</span>
+      <span class="component-for">The figure itself. Renders tabular-nums.</span>
+    </div>
+    <div class="component-demo" data-fragment="true">
+      <div class="stat-value">18,204</div>
+    </div>
+    <pre class="code component-source">.stat-value, l-stat-value {
+    --fg: var(--tone-ink);
+    --font-size: calc(1.75rem * var(--scale));
+    --weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}</pre>
+  </section>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Forms</h2>
+  <section class="component" id="field">
+    <div class="component-head">
+      <span class="component-name">field</span>
+      <span class="component-for">Groups a label, a control and its hint or error.</span>
+    </div>
+    <div class="component-demo">
+      <div class="field">
+        <label class="field-label">Workspace name</label>
+        <div class="field-hint">Lowercase letters and hyphens.</div>
+      </div>
+    </div>
+    <pre class="code component-source">.field, l-field {
+    --gap: 0.35em;
+    display: flex;
+    flex-direction: column;
+}</pre>
+  </section>
+  <section class="component" id="field-label">
+    <div class="component-head">
+      <span class="component-name">field-label</span>
+      <span class="component-for">The label above a form control.</span>
+    </div>
+    <div class="component-demo" data-fragment="true">
+      <label class="field-label">Workspace name</label>
+    </div>
+    <pre class="code component-source">.field-label, l-field-label {
+    --font-size: calc(0.875rem * var(--scale));
+    --weight: var(--weight-medium);
+    display: block;
+}</pre>
+  </section>
+  <section class="component" id="field-hint">
+    <div class="component-head">
+      <span class="component-name">field-hint</span>
+      <span class="component-for">Guidance under a form control.</span>
+    </div>
+    <div class="component-demo" data-fragment="true">
+      <div class="field-hint">Lowercase letters and hyphens.</div>
+    </div>
+    <pre class="code component-source">.field-hint, l-field-hint {
+    --fg: var(--ink-muted);
+    --font-size: calc(0.8125rem * var(--scale));
+    display: block;
+}</pre>
+  </section>
+  <section class="component" id="field-error">
+    <div class="component-head">
+      <span class="component-name">field-error</span>
+      <span class="component-for">A validation message under a form control. Carries the danger tone itself.</span>
+    </div>
+    <div class="component-demo" data-fragment="true">
+      <div class="field-error">That name is already taken.</div>
+    </div>
+    <pre class="code component-source">.field-error, l-field-error {
+    --tone: var(--danger);
+    --fg: var(--tone-ink);
+    --font-size: calc(0.8125rem * var(--scale));
+    display: block;
+}</pre>
+  </section>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Containers</h2>
+  <section class="component" id="table-wrap">
+    <div class="component-head">
+      <span class="component-name">table-wrap</span>
+      <span class="component-for">A scroll container for a wide table. The table itself is already themed.</span>
+    </div>
+    <div class="component-demo">
+      <div class="table-wrap">
+        <span class="badge">a wide table goes here</span>
+      </div>
+    </div>
+    <pre class="code component-source">.table-wrap, l-table-wrap {
+    --border-color: var(--line);
+    --border-width: var(--hairline);
+    --border-style: solid;
+    --radius: var(--radius-md);
+    display: block;
+    overflow-x: auto;
+    max-inline-size: 100%;
+}</pre>
+  </section>
+  <section class="component" id="toolbar">
+    <div class="component-head">
+      <span class="component-name">toolbar</span>
+      <span class="component-for">A wrapping row of controls.</span>
+    </div>
+    <div class="component-demo">
+      <div class="toolbar">
+        <span class="badge" data-tone="primary" data-variant="soft">All</span>
+        <span class="badge">Open</span>
+        <span class="badge">Closed</span>
+      </div>
+    </div>
+    <pre class="code component-source">.toolbar, l-toolbar {
+    --gap: 0.5em;
+    --pad: 0.5em;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}</pre>
+  </section>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Empty state</h2>
+  <section class="component" id="empty">
+    <div class="component-head">
+      <span class="component-name">empty</span>
+      <span class="component-for">An empty state. Wraps empty-title and empty-note.</span>
+    </div>
+    <div class="component-demo">
+      <div class="empty">
+        <div class="empty-title">No deployments yet</div>
+        <div class="empty-note">When you ship something, it will show up here.</div>
+      </div>
+    </div>
+    <pre class="code component-source">.empty, l-empty {
+    --gap: 0.4em;
+    --pad: 2.5em 1.5em;
+    --fg: var(--ink-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}</pre>
+  </section>
+  <section class="component" id="empty-title">
+    <div class="component-head">
+      <span class="component-name">empty-title</span>
+      <span class="component-for">The headline of an empty state.</span>
+    </div>
+    <div class="component-demo" data-fragment="true">
+      <div class="empty-title">No deployments yet</div>
+    </div>
+    <pre class="code component-source">.empty-title, l-empty-title {
+    --fg: var(--ink);
+    --weight: var(--weight-medium);
+    --font-size: calc(1rem * var(--scale));
+    display: block;
+}</pre>
+  </section>
+  <section class="component" id="empty-note">
+    <div class="component-head">
+      <span class="component-name">empty-note</span>
+      <span class="component-for">The explanation under an empty state's headline.</span>
+    </div>
+    <div class="component-demo" data-fragment="true">
+      <div class="empty-note">When you ship something, it will show up here.</div>
+    </div>
+    <pre class="code component-source">.empty-note, l-empty-note {
+    --font-size: calc(0.875rem * var(--scale));
+    display: block;
+    max-inline-size: 40ch;
+}</pre>
+  </section>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Navigation</h2>
+  <section class="component" id="menu">
+    <div class="component-head">
+      <span class="component-name">menu</span>
+      <span class="component-for">A vertical list of navigation or action items.</span>
+    </div>
+    <div class="component-demo">
+      <ul class="menu"></ul>
+    </div>
+    <pre class="code component-source">.menu, l-menu {
+    --gap: 0.1rem;
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+    margin: 0;
+    --pad: 0;
+}</pre>
+  </section>
+  <section class="component" id="crumbs">
+    <div class="component-head">
+      <span class="component-name">crumbs</span>
+      <span class="component-for">An ancestry trail.</span>
+    </div>
+    <div class="component-demo">
+      <ol class="crumbs"></ol>
+    </div>
+    <pre class="code component-source">.crumbs, l-crumbs {
+    --fg: var(--ink-muted);
+    --gap: 0.5em;
+    --font-size: calc(0.85rem * var(--scale));
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    --pad: 0;
+}</pre>
+  </section>
+  <section class="component" id="steps">
+    <div class="component-head">
+      <span class="component-name">steps</span>
+      <span class="component-for">A numbered sequence. Mark position with aria-current.</span>
+    </div>
+    <div class="component-demo">
+      <ol class="steps"></ol>
+    </div>
+    <pre class="code component-source">.steps, l-steps {
+    --gap: 0;
+    display: flex;
+    counter-reset: largen-step;
+    list-style: none;
+    margin: 0;
+    --pad: 0;
+}</pre>
+  </section>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Conversation</h2>
+  <section class="component" id="bubble">
+    <div class="component-head">
+      <span class="component-name">bubble</span>
+      <span class="component-for">A conversation bubble. data-side="end" for the user's own turn.</span>
+    </div>
+    <div class="component-demo">
+      <div class="bubble">Is the deploy finished?</div>
+    </div>
+    <pre class="code component-source">.bubble, l-bubble {
+    --bg: var(--surface);
+    --fg: var(--ink);
+    --radius: var(--radius-lg);
+    --pad: 0.5em 0.8em;
+    display: block;
+    inline-size: fit-content;
+    max-inline-size: 46ch;
+}
+
+.bubble[data-side="end"], l-bubble[data-side="end"] {
+    --bg: var(--tone);
+    --fg: var(--tone-contrast);
+    margin-inline-start: auto;
+}</pre>
+  </section>
+  <section class="component" id="avatar">
+    <div class="component-head">
+      <span class="component-name">avatar</span>
+      <span class="component-for">A person's image or initials.</span>
+    </div>
+    <div class="component-demo">
+      <span class="avatar">VR</span>
+    </div>
+    <pre class="code component-source">.avatar, l-avatar {
+    --bg: var(--surface);
+    --fg: var(--ink-muted);
+    --radius: 50%;
+    --font-size: calc(0.75rem * var(--scale));
+    display: inline-grid;
+    place-items: center;
+    inline-size: calc(2.25rem * var(--scale));
+    block-size: calc(2.25rem * var(--scale));
+    overflow: hidden;
+    vertical-align: middle;
+}</pre>
+  </section>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Overlay</h2>
+  <section class="component" id="tip">
+    <div class="component-head">
+      <span class="component-name">tip</span>
+      <span class="component-for">Wraps a child; hint text goes in data-tip.</span>
+    </div>
+    <div class="component-demo">
+      <span class="tip">hover me</span>
+    </div>
+    <pre class="code component-source">.tip, l-tip {
+    position: relative;
+    display: inline-block;
+}
+
+.tip::after, l-tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    inset-block-end: 100%;
+    inset-inline-start: 50%;
+    translate: -50% -0.35em;
+    padding: 0.35em 0.55em;
+    border-radius: var(--radius-sm);
+    background-color: var(--ink);
+    color: var(--canvas);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--speed);
+}
+
+.tip:is(:hover, :focus-visible)::after, l-tip:is(:hover, :focus-visible)::after { opacity: 1
+}</pre>
+  </section>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Text</h2>
+  <section class="component" id="prose">
+    <div class="component-head">
+      <span class="component-name">prose</span>
+      <span class="component-for">Long-form rendered text. Wrap markdown output in this.</span>
+    </div>
+    <div class="component-demo">
+      <div class="prose">Long-form text, with its own vertical rhythm.</div>
+    </div>
+    <pre class="code component-source">.prose, l-prose {
+    --fg: var(--ink);
+    --measure: 68ch;
+    --flow: 1.25em;
+    --font-size: calc(1rem * var(--scale));
+    line-height: 1.7;
+    max-inline-size: var(--measure);
+    text-wrap: pretty;
+}</pre>
+  </section>
+</section>
+
+<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">Layout utilities</h2>
+  <section class="component" id="stack">
+    <div class="component-head">
+      <span class="component-name">stack</span>
+      <span class="component-for">Vertical layout. Set --gap.</span>
+    </div>
+    <div class="component-demo">
+      <div class="stack">
+        <span class="badge">first</span>
+        <span class="badge">second</span>
+        <span class="badge">third</span>
+      </div>
+    </div>
+    <pre class="code component-source">.stack {
+    --gap: 1rem;
+    display: flex;
+    flex-direction: column;
+}</pre>
+  </section>
+  <section class="component" id="row">
+    <div class="component-head">
+      <span class="component-name">row</span>
+      <span class="component-for">Horizontal layout, no wrap.</span>
+    </div>
+    <div class="component-demo">
+      <div class="row">
+        <span class="badge">left</span>
+        <span class="badge">right</span>
+      </div>
+    </div>
+    <pre class="code component-source">.row {
+    --gap: 1rem;
+    display: flex;
+    align-items: center;
+}</pre>
+  </section>
+  <section class="component" id="cluster">
+    <div class="component-head">
+      <span class="component-name">cluster</span>
+      <span class="component-for">Horizontal layout that wraps. Tag lists, icon groups.</span>
+    </div>
+    <div class="component-demo">
+      <div class="cluster">
+        <span class="badge">css</span>
+        <span class="badge">design</span>
+        <span class="badge">largen</span>
+      </div>
+    </div>
+    <pre class="code component-source">.cluster {
+    --gap: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}</pre>
+  </section>
+  <section class="component" id="grid">
+    <div class="component-head">
+      <span class="component-name">grid</span>
+      <span class="component-for">As many columns as fit at --min-item.</span>
+    </div>
+    <div class="component-demo">
+      <div class="grid">
+        <div class="panel">one</div>
+        <div class="panel">two</div>
+        <div class="panel">three</div>
+      </div>
+    </div>
+    <pre class="code component-source">.grid {
+    --gap: 1rem;
+    --min-item: 16rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(var(--min-item), 100%), 1fr));
+}</pre>
+  </section>
+  <section class="component" id="center">
+    <div class="component-head">
+      <span class="component-name">center</span>
+      <span class="component-for">Constrained measure, centred.</span>
+    </div>
+    <div class="component-demo">
+      <div class="center">
+        <span class="badge">centred, at a measure</span>
+      </div>
+    </div>
+    <pre class="code component-source">.center {
+    --measure: 56rem;
+    --pad: 0 1rem;
+    inline-size: 100%;
+    max-inline-size: var(--measure);
+    margin-inline: auto;
+}</pre>
+  </section>
+</section>
 
 <section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">Data</h2>
-    <div class="stack" style="--gap:0">
-      <div class="spec-row"><span class="spec-name">stat</span><span class="spec-note">A figure with a label. Wraps stat-label and stat-value.</span></div>
-    <div class="spec-row"><span class="spec-name">stat-label</span><span class="spec-note">The label above a figure.</span></div>
-    <div class="spec-row"><span class="spec-name">stat-value</span><span class="spec-note">The figure itself. Renders tabular-nums.</span></div>
-    </div>
-  </section>
-
-<section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">Navigation</h2>
-    <div class="stack" style="--gap:0">
-      <div class="spec-row"><span class="spec-name">menu</span><span class="spec-note">A vertical list of navigation or action items.</span></div>
-    <div class="spec-row"><span class="spec-name">crumbs</span><span class="spec-note">An ancestry trail.</span></div>
-    <div class="spec-row"><span class="spec-name">steps</span><span class="spec-note">A numbered sequence. Mark position with aria-current.</span></div>
-    </div>
-  </section>
-
-<section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">Conversation</h2>
-    <div class="stack" style="--gap:0">
-      <div class="spec-row"><span class="spec-name">bubble</span><span class="spec-note">A conversation bubble. data-side="end" for the user's own turn.</span></div>
-    <div class="spec-row"><span class="spec-name">avatar</span><span class="spec-note">A person's image or initials.</span></div>
-    </div>
-  </section>
-
-<section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">Overlay</h2>
-    <div class="stack" style="--gap:0">
-      <div class="spec-row"><span class="spec-name">tip</span><span class="spec-note">Wraps a child; hint text goes in data-tip.</span></div>
-    </div>
-  </section>
-
-<section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">Text</h2>
-    <div class="stack" style="--gap:0">
-      <div class="spec-row"><span class="spec-name">prose</span><span class="spec-note">Long-form rendered text. Wrap markdown output in this.</span></div>
-    </div>
-  </section>
-
-<section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">Layout utilities</h2>
-    <div class="stack" style="--gap:0">
-      <div class="spec-row"><span class="spec-name">stack</span><span class="spec-note">Vertical layout. Set --gap.</span></div>
-    <div class="spec-row"><span class="spec-name">row</span><span class="spec-note">Horizontal layout, no wrap.</span></div>
-    <div class="spec-row"><span class="spec-name">cluster</span><span class="spec-note">Horizontal layout that wraps. Tag lists, icon groups.</span></div>
-    <div class="spec-row"><span class="spec-name">grid</span><span class="spec-note">As many columns as fit at --min-item.</span></div>
-    <div class="spec-row"><span class="spec-name">center</span><span class="spec-note">Constrained measure, centred.</span></div>
-    </div>
-  </section>
-  
-  <section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">Using them</h2>
-    <pre class="code">&lt;link rel="stylesheet" href="https://largen.dev/largen.css"&gt;
-  &lt;link rel="stylesheet" href="https://largen.dev/largen.components.css"&gt;</pre>
-    <p class="spec-note">Or copy one component's source and skip the file. That is the
-    intended path — the reference set exists to be read and taken from, not depended on.</p>
-  </section>
+  <h2 class="section-title">Using them</h2>
+  <pre class="code">&lt;link rel="stylesheet" href="https://largen.dev/largen.css"&gt;
+&lt;link rel="stylesheet" href="https://largen.dev/largen.components.css"&gt;</pre>
+  <p class="spec-note">Or copy one component's source and skip the file entirely. That is
+  the intended path — the set exists to be read and taken from, not depended on.</p>
+</section>
 </main>
 
 <footer class="site-footer">

@@ -108,55 +108,115 @@ export async function pages() {
   </section>`,
   }))
   
-  /* ── Reference components ─────────────────────────────────────────────── */
-  
-  const groups = [
+  /* ── Reference components ─────────────────────────────────────────────
+   *
+   * Rendered, not listed. The page this replaces was a table of names that
+   * showed nothing, which is a poor advertisement for a set whose whole pitch is
+   * "read two of these and you know how to write the rest".
+   *
+   * Every example is validated before it is rendered, so this page cannot show
+   * something `validate_spec` would reject, and a component missing an example
+   * fails generation rather than quietly vanishing from the catalogue. */
+  const { EXAMPLES, FRAGMENTS } = await import('../../components/examples.js')
+  const { SOURCE } = await import('../../site/mcp/source.mjs')
+  const { createValidator } = await import('../../genai/validate.js')
+  const { renderNode } = await import('../../site/mcp/render.mjs')
+  const { safeValidateNode } = createValidator(manifest)
+
+  const uncovered = manifest.components.filter((c) => !EXAMPLES[c.name])
+  if (uncovered.length) {
+    throw new Error(
+      `no example for: ${uncovered.map((c) => c.name).join(', ')}\n` +
+      '  Every component in genai/manifest.json needs one in components/examples.js,\n' +
+      '  or the page silently under-reports the catalogue.')
+  }
+
+  const GROUPS = [
     ['Feedback', ['alert', 'badge', 'dot', 'spinner', 'skeleton']],
     ['Surfaces', ['card', 'panel', 'divider']],
     ['Data', ['stat', 'stat-label', 'stat-value']],
+    ['Forms', ['field', 'field-label', 'field-hint', 'field-error']],
+    ['Containers', ['table-wrap', 'toolbar']],
+    ['Empty state', ['empty', 'empty-title', 'empty-note']],
     ['Navigation', ['menu', 'crumbs', 'steps']],
     ['Conversation', ['bubble', 'avatar']],
     ['Overlay', ['tip']],
     ['Text', ['prose']],
     ['Layout utilities', ['stack', 'row', 'cluster', 'grid', 'center']],
   ]
+
+  const grouped = new Set(GROUPS.flatMap(([, names]) => names))
+  const ungrouped = manifest.components.filter((c) => !grouped.has(c.name))
+  if (ungrouped.length) {
+    throw new Error(`not in any group on the components page: ${ungrouped.map((c) => c.name).join(', ')}`)
+  }
+
   const byName = new Map(manifest.components.map((c) => [c.name, c]))
-  
+  const componentBlock = (name) => {
+    const spec = EXAMPLES[name]
+    const result = safeValidateNode(spec)
+    if (!result.ok) throw new Error(`example for ${name} is invalid: ${result.error}`)
+    const c = byName.get(name)
+    const source = SOURCE.get(name)
+    return `  <section class="component" id="${name}">
+    <div class="component-head">
+      <span class="component-name">${name}</span>
+      <span class="component-for">${esc(c.for ?? '')}</span>
+    </div>
+    <div class="component-demo"${FRAGMENTS.has(name) ? ' data-fragment="true"' : ''}>
+${renderNode(result.value, 3)}
+    </div>
+    <pre class="code component-source">${esc(source ? source.css : '/* no source found */')}</pre>
+  </section>`
+  }
+
+  const componentsBody = `<div class="stack" style="--gap:.4rem">
+  <h1 class="page-title">Reference components</h1>
+  <p class="page-desc">${manifest.components.length} components, each about six lines.
+  Optional, and copy-in rather than imported — largen ships an algebra, not a
+  dependency, so take the source and it is yours to edit.</p>
+</div>
+
+<section class="stack" style="--gap:.5rem">
+  <p class="spec-note">There is no button here, and no input, select or table. Those are
+  elements, and <span class="tok">src/elements.css</span> already themes them — they
+  answer to <span class="tok">data-tone</span>, <span class="tok">data-variant</span> and
+  <span class="tok">data-size</span> exactly like everything below. A component class
+  duplicating them would be a worse copy of something the platform provides.</p>
+  <p class="spec-note">Each example below is rendered from a validated spec by the same
+  validator and renderer the <a href="/docs/mcp.html">MCP server</a> uses, so nothing on
+  this page is something <span class="tok">validate_spec</span> would reject. Fetch any
+  source with <span class="tok">get_component_source</span>, or read
+  <a href="/components/reference.css">reference.css</a> whole.</p>
+  <p class="spec-note"><strong>Every component below answers to all four axes</strong> —
+  <span class="tok">data-tone</span>, <span class="tok">data-variant</span>,
+  <span class="tok">data-size</span> and real DOM state — without naming any of them.
+  That is not stated per component because it does not vary: it is the whole point of the
+  algebra. Set <span class="tok">data-tone</span> on any ancestor and everything below
+  re-tones.</p>
+  <p class="spec-note">Entries marked <em>fragment</em> are meant to sit inside a parent;
+  shown alone they are a piece, not a demonstration.</p>
+</section>
+
+${GROUPS.map(([label, names]) => `<section class="stack" style="--gap:.6rem">
+  <h2 class="section-title">${label}</h2>
+${names.map(componentBlock).join('\n')}
+</section>`).join('\n\n')}
+
+<section class="stack" style="--gap:.5rem">
+  <h2 class="section-title">Using them</h2>
+  <pre class="code">${esc(`<link rel="stylesheet" href="https://largen.dev/largen.css">
+<link rel="stylesheet" href="https://largen.dev/largen.components.css">`)}</pre>
+  <p class="spec-note">Or copy one component's source and skip the file entirely. That is
+  the intended path — the set exists to be read and taken from, not depended on.</p>
+</section>`
+
   record('site/public/docs/components.html', page({
     title: 'Reference components — largen', current: 'components', version: v,
-    description: 'largen\'s twenty-three optional reference components. Copy them into your project or ignore them.',
-    body: `<div class="stack" style="--gap:.4rem">
-    <h1 class="page-title">Reference components</h1>
-    <p class="page-desc">Optional, and copy-in rather than imported. largen ships an
-    algebra, not a dependency — take the source and it is yours to edit.</p>
-  </div>
-  
-  <section class="stack" style="--gap:.5rem">
-    <p class="spec-note">Every one of these is six or so lines, because the tones, the
-    variants, the sizes and both themes come from the layers underneath. Fetch any of
-    them over MCP with <span class="tok">get_component_source</span>, or read
-    <a href="/components/reference.css">reference.css</a> directly.</p>
-  </section>
-  
-  ${groups.map(([label, names]) => `<section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">${label}</h2>
-    <div class="stack" style="--gap:0">
-  ${names.map((n) => {
-    const c = byName.get(n)
-    return `    <div class="spec-row"><span class="spec-name">${n}</span><span class="spec-note">${esc(c?.for ?? '')}</span></div>`
-  }).join('\n')}
-    </div>
-  </section>`).join('\n\n')}
-  
-  <section class="stack" style="--gap:.5rem">
-    <h2 class="section-title">Using them</h2>
-    <pre class="code">${esc(`<link rel="stylesheet" href="https://largen.dev/largen.css">
-  <link rel="stylesheet" href="https://largen.dev/largen.components.css">`)}</pre>
-    <p class="spec-note">Or copy one component's source and skip the file. That is the
-    intended path — the reference set exists to be read and taken from, not depended on.</p>
-  </section>`,
+    description: "largen's reference components, each shown rendered with its source. Copy them into your project or ignore them.",
+    body: componentsBody,
   }))
-  
+
   /* ── MCP ──────────────────────────────────────────────────────────────── */
   
   record('site/public/docs/mcp.html', page({

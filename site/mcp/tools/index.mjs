@@ -20,46 +20,12 @@ import { lintComponentCss, registeredSlots } from '../../../genai/lint.js'
 import { getSection, SECTIONS } from '../contract.mjs'
 import { validateManifest, ManifestError } from '../manifest-schema.mjs'
 import { renderNode, renderDocument } from '../render.mjs'
+import { SOURCE } from '../source.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const read = (p) => readFileSync(join(root, p), 'utf8')
 
 const SLOTS = registeredSlots(read('src/properties.css'))
-
-/* --- Reference component source ------------------------------------------
- *
- * Built once, at startup, by slicing the reference stylesheets. The map is the
- * security boundary for get_component_source: a name arriving over the network
- * is looked up here and never joined onto a path. There is no name a caller can
- * send that reaches a file, because names are not how files are found.
- */
-const SOURCE_FILES = ['components/reference.css', 'components/prose.css', 'src/layout.css']
-
-function buildSourceMap() {
-  const map = new Map()
-  for (const file of SOURCE_FILES) {
-    const css = read(file)
-    /* Match a rule whose selector list starts with `.name` and capture the whole
-       rule, so a component's own block comes back intact and copy-pasteable. */
-    const re = /(^[ \t]*)((?:\.[\w-]+|[\w-]+)(?:[^{};]*?))\{([^{}]*)\}/gm
-    for (const m of css.matchAll(re)) {
-      const selector = m[2].trim().replace(/\s+/g, ' ')
-      if (selector.startsWith('@')) continue
-      for (const part of selector.split(',').map((s) => s.trim())) {
-        const base = part.replace(/[:[].*$/s, '')
-        const nm = base.match(/^\.([a-zA-Z][\w-]*)$/)
-        if (!nm) continue
-        const name = nm[1]
-        const block = `${selector} {${m[3].replace(/\s+$/, '')}\n}`
-        const prev = map.get(name)
-        map.set(name, prev ? { ...prev, css: `${prev.css}\n\n${block}` } : { name, file, css: block })
-      }
-    }
-  }
-  return map
-}
-
-const SOURCE = buildSourceMap()
 
 /* --- Shared helpers ------------------------------------------------------- */
 

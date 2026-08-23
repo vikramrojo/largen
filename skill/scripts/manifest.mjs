@@ -12,6 +12,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { at } from './paths.mjs'
 import { detectComponents } from './detect.mjs'
+import { registeredSlots } from '../../genai/lint.js'
 
 export async function manifest(args = []) {
   const out = (() => {
@@ -26,8 +27,10 @@ export async function manifest(args = []) {
       '  e.g. largen manifest src/components.css --out largen.manifest.json')
   }
 
-  const { readSlots } = await import('../../site/mcp/contract.mjs')
-  const slots = readSlots().fixed
+  /* registeredSlots() from genai/lint.js, not readSlots() from site/mcp — the
+     same parse of the same file, but genai/ ships and site/ does not, so this is
+     what lets `largen manifest` work from an installed copy. */
+  const slots = registeredSlots(readFileSync(at('src/properties.css'), 'utf8'))
   const base = JSON.parse(readFileSync(at('genai/manifest.json'), 'utf8'))
 
   const all = new Map()

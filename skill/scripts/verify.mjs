@@ -1,12 +1,30 @@
-/* Check largen and its components against the authoring contract.
+/* Check components against the authoring contract.
  *
- * Optional. These are static checks; they cannot see whether anything actually
- * renders. That gap is real and has bitten before — a previous build passed
- * every static check while six components were visibly broken. Screenshots are
- * the other half of verification, not an optional extra.
+ * Two different jobs used to live here under one name, both reading files
+ * resolved from the package root. That was wrong in a way worth spelling out:
+ * run from another project, `largen verify` reported on largen's own stylesheets
+ * and said nothing about the caller's — the command SKILL.md advertises as
+ * "check components against the contract" checked the wrong components, and said
+ * "ok" while doing it.
+ *
+ * So:
+ *
+ *   contract checks   run against the CALLER's files, always. The rules come from
+ *                     genai/lint.js, which the MCP server's check_component_css
+ *                     also uses, so a component cannot pass locally and fail
+ *                     hosted.
+ *
+ *   library invariants run only when the package root IS the working directory,
+ *                     which is true exactly when someone is developing largen.
+ *                     They are assertions about src/, and meaningless elsewhere.
+ *
+ * These are static checks either way. They cannot see whether anything renders,
+ * and a previous build passed every one of them while six components were
+ * visibly broken. Screenshots are the other half, not an optional extra.
  */
-import { readFileSync, readdirSync, existsSync } from 'node:fs'
-import { at } from './paths.mjs'
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
+import { join, relative, resolve } from 'node:path'
+import { at, root } from './paths.mjs'
 import { lintComponentCss, registeredSlots } from '../../genai/lint.js'
 
 const read = (p) => readFileSync(at(p), 'utf8')
@@ -24,25 +42,36 @@ const check = (name, fn) => {
 }
 const assert = (c, m) => { if (!c) throw new Error(m) }
 
-/* Every file that declares components: the library's optional ones, plus any
-   site component sets. */
-const componentFiles = [
-  ...readdirSync(at('components')).filter((f) => f.endsWith('.css') && f !== 'index.css')
-    .map((f) => `components/${f}`),
-  ...(existsSync(at('sites')) ? readdirSync(at('sites')).flatMap((s) =>
-    readdirSync(at('sites', s)).filter((f) => f === 'components.css').map((f) => `sites/${s}/${f}`)) : []),
-]
+/** Developing largen itself, rather than consuming it. */
+const inLibraryRepo = () => resolve(process.cwd()) === resolve(root) && existsSync(at('src/properties.css'))
 
-export async function verify() {
-  console.log('\n  largen verify\n')
+const SKIP = new Set(['node_modules', '.git', 'dist', '.previews'])
 
-  /* --- The invariant the whole design rests on -------------------------- */
+/** CSS under a directory, for when no paths were given. Bounded depth, because
+ *  scanning a whole project tree to lint four files is a poor trade. */
+function discover(dir, depth = 0) {
+  if (depth > 4) return []
+  const out = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (SKIP.has(entry.name) || entry.name.startsWith('.')) continue
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) out.push(...discover(full, depth + 1))
+    else if (entry.name.endsWith('.css')) out.push(full)
+  }
+  return out
+}
+
+/* --- The library's own invariants ---------------------------------------- */
+
+function libraryInvariants() {
   check('no slot declares an initial-value', () => {
     const props = strip(read('src/properties.css'))
     const offenders = []
     for (const m of props.matchAll(/@property\s+(--[\w-]+)\s*\{([^}]*)\}/g)) {
       const [, name, body] = m
-      if (name === '--scale') continue // inheriting, and legitimately has one
+      /* --scale is the documented exception: it is a multiplier rather than a
+         paint slot, so it must always resolve to a number. */
+      if (name === '--scale') continue
       if (/initial-value/.test(body)) offenders.push(name)
     }
     assert(offenders.length === 0,
@@ -76,32 +105,6 @@ export async function verify() {
     return `${decls.length} properties`
   })
 
-  /* --- The authoring contract -------------------------------------------
-   *
-   * These rules are defined in genai/lint.js rather than here, because the MCP
-   * server's check_component_css has to apply exactly the same ones to a snippet
-   * a model just wrote. Two implementations would eventually give two answers.
-   */
-  const slots = registeredSlots(read('src/properties.css'))
-
-  check('components satisfy the authoring contract', () => {
-    const errors = [], warnings = []
-    for (const f of componentFiles) {
-      const { findings } = lintComponentCss(read(f), { slots })
-      for (const x of findings) {
-        const where = `${f}${x.line ? `:${x.line}` : ''}`
-        ;(x.severity === 'error' ? errors : warnings).push(`${where} — ${x.message}`)
-      }
-    }
-    if (warnings.length) {
-      console.log(warnings.map((w) => `        note: ${w}`).join('\n'))
-    }
-    assert(errors.length === 0, errors.join('\n        '))
-    return `${componentFiles.length} component files clean` +
-      (warnings.length ? ` (${warnings.length} note(s))` : '')
-  })
-
-  /* --- Cascade discipline ----------------------------------------------- */
   check('layer order puts modifiers last', () => {
     const decl = strip(read('src/largen.css')).match(/@layer\s+([^;]+);/)
     assert(decl, 'no @layer statement in largen.css')
@@ -114,11 +117,8 @@ export async function verify() {
   })
 
   check('no !important anywhere', () => {
-    const all = [...componentFiles, ...readdirSync(at('src')).map((f) => `src/${f}`)]
-      .filter((f) => f.endsWith('.css'))
-    // Strip comments first — largen.css's own docs mention !important to say
-    // you never need it, and matching that would be an own goal.
-    const bad = all.filter((f) => strip(read(f)).includes('!important'))
+    const files = readdirSync(at('src')).filter((f) => f.endsWith('.css')).map((f) => `src/${f}`)
+    const bad = files.filter((f) => strip(read(f)).includes('!important'))
     assert(bad.length === 0, `found in ${bad.join(', ')}`)
     return 'consumer CSS always wins'
   })
@@ -130,22 +130,96 @@ export async function verify() {
     return 'revert-layer is meaningful'
   })
 
-  /* The static checks above can prove paint.css is layered; they cannot prove
-     an engine honours revert-layer. Only demo/conformance.html can, and only
-     when actually opened. Keep it from rotting. */
   check('the conformance page still exists and links the real stylesheet', () => {
     assert(existsSync(at('demo/conformance.html')), 'demo/conformance.html is missing')
     const html = read('demo/conformance.html')
-    assert(html.includes('../src/largen.css'),
+    assert(/src\/largen\.css/.test(html),
       'conformance.html must test src/largen.css, not a copy or a bundle')
-    assert(html.includes('window.__largen'),
-      'conformance.html must expose its results on window.__largen')
+    assert(/__largen/.test(html), 'conformance.html must expose its results on window.__largen')
     return 'open it in Safari, Firefox and Chrome — this check cannot run it'
   })
+}
+
+/* --- The contract, against whatever the caller pointed at ---------------- */
+
+export async function verify(args = []) {
+  const paths = args.filter((a) => !a.startsWith('--'))
+  const self = inLibraryRepo()
+
+  console.log('\n  largen verify\n')
+
+  const files = paths.length
+    ? paths.map((p) => resolve(p))
+    : discover(process.cwd())
+
+  const missing = files.filter((f) => !existsSync(f) || !statSync(f).isFile())
+  if (missing.length) {
+    console.log(`  FAIL  no such file: ${missing.map((f) => relative(process.cwd(), f)).join(', ')}\n`)
+    return 1
+  }
+
+  if (!files.length) {
+    console.log('  No CSS found. Pass paths explicitly:\n')
+    console.log('      largen verify src/components.css\n')
+    return 1
+  }
+
+  const slots = registeredSlots(read('src/properties.css'))
+  let errors = 0, warnings = 0, clean = 0
+
+  /* Discovery finds every stylesheet; only some declare components. A theme, a
+     token file or a reset is not a component and judging it by component rules
+     would report confident nonsense. Explicit paths are always checked — if you
+     named a file, you meant it. */
+  /* The block, not the name. `src/largen.css` lists largen.components in its
+     @layer *statement* without opening one, and a substring test calls that a
+     component file and then faults it for being unlayered. */
+  const declares = (f) => /@layer\s+largen\.components\s*\{/.test(readFileSync(f, 'utf8'))
+
+  /* Minified output is not source. Every finding in it would carry line 1, and
+     the file it was built from is already being checked. */
+  const minified = (f) => {
+    const text = readFileSync(f, 'utf8')
+    return text.length > 500 && !text.slice(0, 2000).includes('\n')
+  }
+
+  const wanted = (f) => declares(f) && !minified(f)
+  const skipped = paths.length ? [] : files.filter((f) => !wanted(f))
+  const checking = paths.length ? files.filter((f) => !minified(f)) : files.filter(wanted)
+
+  if (!checking.length) {
+    console.log(`  No component stylesheets found among ${files.length} CSS file(s).`)
+    console.log('  A component is declared inside `@layer largen.components`.\n')
+    return failures ? 1 : 0
+  }
+
+  for (const file of checking) {
+    const rel = relative(process.cwd(), file) || file
+    const { findings } = lintComponentCss(readFileSync(file, 'utf8'), { slots })
+    /* A stylesheet with no components is not a failure — a theme file has none.
+       Only report a file that declares something and gets it wrong. */
+    if (!findings.length) { clean++; continue }
+    for (const f of findings) {
+      const where = `${rel}${f.line ? `:${f.line}` : ''}`
+      if (f.severity === 'error') { errors++; console.log(`  FAIL  ${where}\n        ${f.message}\n        ${f.why}`) }
+      else { warnings++; console.log(`  note  ${where} — ${f.message}`) }
+    }
+  }
+
+  if (!errors) {
+    console.log(`  ok    the authoring contract — ${checking.length} component file(s), ${clean} clean` +
+      (skipped.length ? ` (${skipped.length} non-component file(s) skipped)` : ''))
+  }
+
+  if (self) {
+    console.log()
+    libraryInvariants()
+  }
 
   console.log()
-  if (failures) { console.log(`  ${failures} check(s) failed\n`); return 1 }
-  console.log('  all static checks passed')
-  console.log('  (static only — run the demo pages through a browser too)\n')
+  const total = errors + failures
+  if (total) { console.log(`  ${total} problem(s)\n`); return 1 }
+  console.log(`  all static checks passed${warnings ? ` (${warnings} note(s))` : ''}`)
+  console.log('  (static only — render the result in a browser, in both themes)\n')
   return 0
 }

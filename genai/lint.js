@@ -41,11 +41,35 @@ const NON_SLOT_ALLOWED = new Set([
  * @param {string[]} options.slots  registered slot names
  * @returns {{ok: boolean, findings: object[]}}
  */
+/* The region of a snippet that actually declares components.
+ *
+ * The content rules below — no colour literals, no reaching past --tone*, only
+ * registered slots — are rules about *components*. A theme legitimately contains
+ * `oklch()` and legitimately sets `--canvas`, and judging it by component rules
+ * produces confident nonsense. So the content rules see only what is inside
+ * `@layer largen.components`; when there is no such block the snippet is treated
+ * as a bare component, which is what a caller passing one to check_component_css
+ * means. */
+const LAYER_BLOCK = /@layer\s+largen\.components\s*\{/
+
+function componentRegion(clean) {
+  const m = clean.match(LAYER_BLOCK)
+  if (!m) return clean
+  const open = m.index + m[0].length - 1
+  let depth = 0
+  for (let i = open; i < clean.length; i++) {
+    if (clean[i] === '{') depth++
+    else if (clean[i] === '}') { depth--; if (depth === 0) return clean.slice(0, i + 1) }
+  }
+  return clean
+}
+
 export function lintComponentCss(css, { slots = [] } = {}) {
   const findings = []
   const SLOTS = new Set(slots)
   const clean = strip(css)
-  const lines = clean.split('\n')
+  const region = componentRegion(clean)
+  const lines = region.split('\n')
 
   const at = (i) => i + 1
   const add = (rule, severity, line, message, why) =>

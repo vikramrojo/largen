@@ -42,6 +42,15 @@ and `size`. Anything outside these lists is rejected before it reaches the page.
 - `cluster` — Horizontal layout that wraps. Tag lists, icon groups.
 - `grid` — As many columns as fit at --min-item.
 - `center` — Constrained measure, centred.
+- `field` — Groups a label, a control and its hint or error.
+- `field-label` — The label above a form control.
+- `field-hint` — Guidance under a form control.
+- `field-error` — A validation message under a form control. Carries the danger tone itself.
+- `table-wrap` — A scroll container for a wide table. The table itself is already themed.
+- `toolbar` — A wrapping row of controls.
+- `empty` — An empty state. Wraps empty-title and empty-note.
+- `empty-title` — The headline of an empty state.
+- `empty-note` — The explanation under an empty state's headline.
 
 ## Notes
 

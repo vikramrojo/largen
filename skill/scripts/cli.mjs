@@ -4,53 +4,71 @@
  * largen is plain CSS; nothing here is required to use it. These are dev-time
  * conveniences:
  *
+ *   largen verify   lint your components against the authoring contract.
  *   largen build    concatenate + minify for CDN. NOT compilation — the same
  *                   stylesheet works unbuilt.
- *   largen verify   lint your components against the authoring contract.
  *   largen gen      regenerate the generative-UI artifacts from a manifest.
- *
- * Three more are repository-development commands. They reach into site/, which
- * is not part of the published package, and say so plainly if it is absent:
- *
- *   largen contract regenerate SKILL.md and the llms.txt files from the contract.
  *   largen manifest derive a component manifest from a project's CSS.
- *   largen release  freeze the current dist/ at an immutable versioned path.
- *   largen pages    regenerate the site's hand-written pages.
+ *
+ * Three more exist only for developing largen itself — `contract`, `pages` and
+ * `release` — and are not part of the published package.
+ *
+ * Commands are loaded on demand rather than imported at the top. That is not a
+ * startup optimisation: the repository-only commands are absent from the
+ * published package, and a static import of a missing module fails at load, so
+ * every command including the shipped ones would break. Lazily, a missing module
+ * is one command reporting why.
  */
-import { build } from './build.mjs'
-import { verify } from './verify.mjs'
-import { gen } from './gen.mjs'
-import { contract } from './contract.mjs'
-import { manifest } from './manifest.mjs'
-import { release } from './release.mjs'
-import { pages } from './pages.mjs'
+const COMMANDS = {
+  verify: { load: () => import('./verify.mjs'), blurb: 'check components against the authoring contract' },
+  build: { load: () => import('./build.mjs'), blurb: 'bundle + minify to dist/ — optional, for CDN' },
+  gen: { load: () => import('./gen.mjs'), blurb: 'regenerate genai artifacts from genai/manifest.json' },
+  manifest: { load: () => import('./manifest.mjs'), blurb: "derive a manifest from a project's CSS" },
+  contract: { load: () => import('./contract.mjs'), blurb: 'regenerate SKILL.md + llms.txt', repoOnly: true },
+  pages: { load: () => import('./pages.mjs'), blurb: "regenerate the site's hand-written pages", repoOnly: true },
+  release: { load: () => import('./release.mjs'), blurb: 'freeze dist/ at an immutable versioned path', repoOnly: true },
+}
 
 const [cmd, ...rest] = process.argv.slice(2)
-const commands = { build, verify, gen, contract, manifest, release, pages }
 
-if (!cmd || cmd === '--help' || cmd === '-h' || !commands[cmd]) {
+const usage = () => {
+  const width = Math.max(...Object.keys(COMMANDS).map((k) => k.length))
+  const line = ([name, c]) => `    largen ${name.padEnd(width)}  ${c.blurb}`
+  const entries = Object.entries(COMMANDS)
   console.log(`
   largen — a property algebra for CSS
 
-    largen build    bundle + minify to dist/ (optional; largen works unbuilt)
-    largen verify   check components against the authoring contract
-    largen gen      regenerate genai artifacts from genai/manifest.json
+${entries.filter(([, c]) => !c.repoOnly).map(line).join('\n')}
 
-  Repository-development commands (need site/, not shipped on npm):
+  For developing largen itself (not part of the published package):
 
-    largen contract regenerate SKILL.md + llms.txt from the authoring contract
-    largen manifest <css...>   derive a component manifest from a project's CSS
-    largen release  freeze dist/ at site/public/v/<version>/
-    largen pages    regenerate the site's hand-written pages + migrating.html
+${entries.filter(([, c]) => c.repoOnly).map(line).join('\n')}
 
   Nothing here is required. largen is a stylesheet.
 `)
-  process.exit(cmd && !commands[cmd] ? 1 : 0)
+}
+
+if (!cmd || cmd === '--help' || cmd === '-h' || !COMMANDS[cmd]) {
+  usage()
+  process.exit(cmd && !COMMANDS[cmd] ? 1 : 0)
+}
+
+const entry = COMMANDS[cmd]
+let run
+try {
+  run = (await entry.load())[cmd]
+} catch (error) {
+  if (entry.repoOnly) {
+    console.error(
+      `\n  \`largen ${cmd}\` is for developing largen itself and is not part of the\n` +
+      `  published package. Run it from a clone of the repository.\n`)
+    process.exit(1)
+  }
+  throw error
 }
 
 try {
-  const code = await commands[cmd](rest)
-  process.exit(code ?? 0)
+  process.exit((await run(rest)) ?? 0)
 } catch (error) {
   console.error(`\n  ${cmd} failed: ${error.message}\n`)
   process.exit(1)

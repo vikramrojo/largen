@@ -13,8 +13,20 @@
     "components",
     "themes",
     "genai",
-    "skill",
-    "dist"
+    "skill/SKILL.md",
+    "skill/scripts/cli.mjs",
+    "skill/scripts/verify.mjs",
+    "skill/scripts/gen.mjs",
+    "skill/scripts/manifest.mjs",
+    "skill/scripts/detect.mjs",
+    "skill/scripts/build.mjs",
+    "skill/scripts/paths.mjs",
+    "dist/largen.css",
+    "dist/largen.components.css",
+    "dist/theme-dark.css",
+    "LICENSE",
+    "README.md",
+    "MIGRATING.md"
   ],
   "exports": {
     ".": "./src/largen.css",
@@ -24,7 +36,8 @@
     "./themes/*": "./themes/*.css",
     "./manifest": "./genai/manifest.json",
     "./validate": "./genai/validate.js",
-    "./lint": "./genai/lint.js"
+    "./lint": "./genai/lint.js",
+    "./package.json": "./package.json"
   },
   "bin": {
     "largen": "./skill/scripts/cli.mjs"
@@ -36,5 +49,24 @@
   },
   "devDependencies": {
     "lightningcss": "^1.33.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vikramrojo/largen.git"
+  },
+  "homepage": "https://largen.dev",
+  "bugs": {
+    "url": "https://github.com/vikramrojo/largen/issues"
+  },
+  "keywords": [
+    "css",
+    "design-system",
+    "custom-properties",
+    "cascade-layers",
+    "no-build",
+    "theming",
+    "dark-mode",
+    "generative-ui",
+    "mcp"
+  ]
 }
