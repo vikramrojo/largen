@@ -128,11 +128,11 @@ To pin, use one of the three things that actually identify bytes:
 
 ```html
 <!-- a frozen path: these bytes, forever -->
-<link rel="stylesheet" href="https://largen.dev/v/0.2.0/largen.css">
+<link rel="stylesheet" href="https://largen.dev/v/0.3.0/largen.css">
 
 <!-- or the live path with an integrity check, which fails loudly if it moves -->
 <link rel="stylesheet" href="https://largen.dev/largen.css"
-      integrity="sha384-…" crossorigin="anonymous">
+      integrity="sha384-eSa+rgcEcoLY5nN7vr5TEn9JE/M8OKlhAfpPVVdRtSkP45bbgaUBIQpb+IUJhRc3" crossorigin="anonymous">
 ```
 
 `https://largen.dev/build.json` publishes, for every stylesheet: byte length, `sha256` of
@@ -143,6 +143,10 @@ bundle before the banner was added; it names the build but is not the file's dig
 
 `ETag` is served on the unversioned paths, so `curl -I` answers "has it moved?" without
 downloading.
+
+[RELEASES.md](RELEASES.md) records what changed in each version. Every entry there is
+checked against the bytes that version actually froze, so it is a claim with a witness
+rather than a note written from memory.
 
 Or through a bundler:
 
@@ -191,7 +195,19 @@ npx largen verify [css...]     # check your components against the contract
 npx largen build               # bundle + minify to dist/, for CDN
 npx largen gen                 # regenerate genai artifacts
 npx largen manifest <css...>   # derive a component manifest from your CSS
+
+npx largen cascade --property --weight --at "html body p.prose kbd" <css...>
+                               # which declaration wins, and which cascade step decided it
+npx largen slot --slot --fg --at "html body a.link" <css...>
+                               # whether the paint rule applies a slot, or it reverts
+npx largen probe --page ./index.html --select .badge --prop line-height
+                               # a browser harness for what static checks cannot see
 ```
+
+`cascade` and `slot` answer "why is this computing as that" without a browser. They take
+the element as an ancestor chain, which carries no siblings and no interaction state — so
+rules turning on `:hover` or `:last-child` come back as *undecidable* rather than being
+quietly dropped. `probe` settles those.
 
 `verify` is static only. It has passed clean on visibly broken components before;
 render the demo pages in a browser too.

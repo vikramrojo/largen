@@ -16,7 +16,10 @@ import { registeredSlots } from '../../genai/lint.js'
 let pass = 0, fail = 0
 const results = []
 
-const check = (name, fn) => {
+const check = (name, fn, isAsync = false) => {
+  if (isAsync) return fn().then(
+    (detail) => { pass++; results.push(['ok', name, detail ?? '']) },
+    (e) => { fail++; results.push(['FAIL', name, e.message]) })
   try { const detail = fn(); pass++; results.push(['ok', name, detail ?? '']) }
   catch (e) { fail++; results.push(['FAIL', name, e.message]) }
 }
@@ -353,6 +356,247 @@ check('get_contract carries the build id, since the version does not identify on
   eq(contract.data.build, build.data.build, 'contract build vs get_build')
   return contract.data.build
 })
+
+/* --- the verification tools ---------------------------------------------- */
+
+/* The stylesheets behind the field report's worst bug: a component layer that
+   loses to a sublayer of a framework declared afterwards. */
+const BUG = [
+  { name: 'main.css', css: '@import url("largen.css");\n@import url("site.css");' },
+  { name: 'largen.css', css: '@layer largen.reset, largen.tokens, largen.components;\n@layer largen.components { .prose :where(kbd) { --weight: 500 } }' },
+  { name: 'site.css', css: '@layer site.base { * { --weight: 300 } }\n@layer site.overrides { }' },
+]
+const KBD = [{ tag: 'html' }, { tag: 'body' }, { tag: 'p', classes: ['prose'] }, { tag: 'kbd' }]
+
+const cascade = await call('resolve_cascade', { files: BUG, entry: 'main.css', path: KBD, property: '--weight' })
+check('resolve_cascade reproduces --weight: 900 computing as 300', () => {
+  assert(!cascade.isError, cascade.text)
+  eq(cascade.data.winner.value, '300', 'the wrong declaration was reported as winning')
+  eq(cascade.data.winner.layer, 'site.base', 'winner came from the wrong layer')
+  return `${cascade.data.declarations.length} declarations, winner 300`
+})
+
+check('resolve_cascade names sublayer parenting, which is what makes it invisible', () => {
+  assert(/layer order/i.test(cascade.data.reason), `reason did not mention layer order: ${cascade.data.reason}`)
+  assert(/sublayer/i.test(cascade.data.reason), 'reason did not explain the sublayer rule')
+  return cascade.data.reason.slice(0, 48) + '…'
+})
+
+check('resolve_cascade wins on specificity when the layer is the same', async () => {
+  const r = await call('resolve_cascade', {
+    files: [{ name: 'a.css', css: '@layer one { .t { --gap: 1px } div.t.u { --gap: 2px } :where(.t) { --gap: 9px } }' }],
+    path: [{ tag: 'div', classes: ['t', 'u'] }], property: '--gap',
+  })
+  eq(r.data.winner.value, '2px', 'specificity was not applied')
+  return 'specificity ' + r.data.winner.specificity.join(',')
+}, true)
+
+const undecided = await call('resolve_cascade', {
+  files: [{ name: 'a.css', css: '@layer one { .t { --gap: 1px } .t:last-child { --gap: 2px } }' }],
+  path: [{ tag: 'div', classes: ['t'] }], property: '--gap',
+})
+check('resolve_cascade reports what an ancestor chain cannot decide', () => {
+  eq(undecided.data.undecidable.length, 1, 'the :last-child rule was not reported as undecidable')
+  assert(/sibling position/.test(undecided.data.undecidable[0].why[0].reason), 'no reason given')
+  assert(undecided.data.notes.some((n) => /emit_probe/.test(n)), 'did not point at emit_probe')
+  return ':last-child — reported, not dropped'
+})
+
+check('resolve_cascade does not silently drop the rule it cannot evaluate', () => {
+  /* The failure this guards against is the undecidable rule vanishing into
+     "no match", which reads as "there is no rule here". */
+  const seen = undecided.data.declarations.map((d) => d.selector)
+  assert(!seen.includes('.t:last-child'), 'an undecidable rule was ranked as if decided')
+  assert(undecided.data.undecidable.some((u) => u.selector === '.t:last-child'), 'the rule disappeared entirely')
+  return 'present under `undecidable`, absent from the ranking'
+})
+
+const PAINT_FILES = [
+  { name: 'l.css', css: '@layer largen.paint, largen.components;\n@layer largen.paint { * { color: var(--fg, revert-layer) } }' },
+  { name: 's.css', css: '@layer largen.components { :where(.link) { --fg: inherit } }' },
+]
+const LINK = [{ tag: 'html' }, { tag: 'body' }, { tag: 'a', classes: ['link'] }]
+
+const inherit = await call('explain_slot', { files: PAINT_FILES, path: LINK, slot: '--fg' })
+check('explain_slot catches `--fg: inherit`, which reads as inheriting and is not', () => {
+  assert(!inherit.data.applies, 'reported the slot as applying')
+  assert(/invalidated/.test(inherit.data.state), `state was ${inherit.data.state}`)
+  eq(inherit.data.warnings.length, 1, 'no warning raised')
+  assert(/currentColor/.test(inherit.data.warnings[0].fix), 'did not recommend currentColor')
+  return inherit.data.warnings[0].message
+})
+
+check('explain_slot separates what it derived from what it measured elsewhere', () => {
+  assert(inherit.data.revertsTo.illustrative === true, 'the UA value was not flagged illustrative')
+  assert(inherit.data.revertsTo.engine, 'the UA value did not name an engine')
+  assert(/certain/.test(inherit.data.caveat), 'no caveat separating the two')
+  return `${inherit.data.revertsTo.value} — labelled ${inherit.data.revertsTo.engine}`
+})
+
+check('explain_slot does not warn on the recipe that works', async () => {
+  const r = await call('explain_slot', {
+    files: [PAINT_FILES[0], { name: 's.css', css: '@layer largen.components { :where(.link) { --fg: currentColor } }' }],
+    path: LINK, slot: '--fg',
+  })
+  assert(r.data.applies, 'currentColor was not reported as applying')
+  eq(r.data.warnings.length, 0, 'warned about a correct declaration')
+  return 'no warning — a check that always fires is not a check'
+}, true)
+
+check('explain_slot names the un-styling idiom rather than reporting nothing', async () => {
+  const r = await call('explain_slot', {
+    files: [{ name: 'l.css', css: '@layer largen.paint;\n@layer largen.paint { * { background-color: var(--bg, revert-layer) } }' },
+      { name: 's.css', css: '.card { --bg: initial }' }],
+    path: [{ tag: 'div', classes: ['card'] }], slot: '--bg',
+  })
+  assert(/invalidated/.test(r.data.state), `state was ${r.data.state}`)
+  assert(r.data.notes.some((n) => /un-styling/.test(n)), 'did not name the idiom')
+  return r.data.state
+}, true)
+
+const probe = await call('emit_probe', {
+  kind: 'computed', pages: ['/'], selectors: ['.badge'], properties: ['line-height'], themes: ['light', 'dark'],
+})
+check('emit_probe returns a self-contained document', () => {
+  assert(!probe.isError, probe.text)
+  assert(/^<!doctype html>/i.test(probe.data.document), 'not an HTML document')
+  assert(!/<(script|link)[^>]+(src|href)=/.test(probe.data.document), 'the document pulls in something external')
+  return `${probe.data.bytes} bytes`
+})
+
+check('emit_probe refuses an interaction probe that asserts nothing', async () => {
+  const r = await call('emit_probe', { kind: 'interaction', pages: ['/'], steps: [{ click: '.x' }] })
+  assert(r.isError, 'accepted steps with no assertions')
+  return 'steps with nothing asserted verify nothing'
+}, true)
+
+check('emit_probe escapes caller strings into the document', () => {
+  const r = probe.data.document
+  assert(!r.includes('</script><'), 'a closing script tag survived into the document')
+  return 'script-closing sequences neutralised'
+})
+
+check('check_layer_order derives load order rather than trusting the given order', async () => {
+  const shuffled = [BUG[2], BUG[1], BUG[0]]
+  const trusted = await call('check_layer_order', { files: shuffled })
+  const derived = await call('check_layer_order', { files: shuffled, entry: 'main.css' })
+  assert(JSON.stringify(trusted.data.order) !== JSON.stringify(derived.data.order),
+    'deriving the order made no difference, so this proves nothing')
+  eq(derived.data.order[derived.data.order.length - 1], 'site.overrides', 'derived order is wrong')
+  return `${trusted.data.order[0]} first when trusted, ${derived.data.order[0]} when derived`
+}, true)
+
+check('check_layer_order says what it could not resolve', async () => {
+  const r = await call('check_layer_order', {
+    files: [{ name: 'm.css', css: '@import url("gone.css");\n@layer a { }' }], entry: 'm.css',
+  })
+  assert(r.data.caveats.some((c) => /gone\.css/.test(c)), 'an unresolved import was not reported')
+  return 'unresolved imports reported, not guessed'
+}, true)
+
+check('classification does not swallow a component that forgot its layer', async () => {
+  /* The near-miss this guards: classifying by "declares inside the components
+     layer" alone throws out the unlayered component, which is the one finding
+     that matters most. */
+  const r = await call('check_component_css', {
+    files: [
+      { name: 'oops.css', css: '.badge { --bg: var(--tone); --pad: 2px }' },
+      { name: 'algebra.css', css: '@layer largen.tone { :where([data-variant="solid"]) { --bg: var(--tone) } }' },
+    ],
+  })
+  const oops = r.data.results.find((x) => x.name === 'oops.css')
+  eq(oops.kind, 'component', 'an unlayered component was classified away')
+  assert(oops.findings.some((f) => f.rule === 'layer'), 'the missing layer was not reported')
+  eq(r.data.results.find((x) => x.name === 'algebra.css').kind, 'not-component',
+    "the library's own algebra was judged by component rules")
+  return 'unlayered component linted, library algebra skipped'
+}, true)
+
+check('a banner does not make a minified bundle look like source', async () => {
+  /* The banner added in 0.3.0 put a newline at byte 54, which defeated a
+     minified test that looked for the absence of newlines. Every frozen release
+     then read as source and was linted as one 9kb line of component CSS. */
+  const bundle = '/*! largen 0.0.0+test | MIT */\n' + '@layer largen.components{' + '.a{--bg:#fff}'.repeat(80) + '}'
+  const r = await call('check_component_css', { files: [{ name: 'dist.css', css: bundle }] })
+  eq(r.data.results[0].kind, 'minified', 'a banner-prefixed bundle was treated as source')
+  eq(r.data.results[0].findings.length, 0, 'built output produced findings')
+  return 'detected by line length, not by absence of newlines'
+}, true)
+
+check('check_component_css classifies a token sheet instead of flooding it', async () => {
+  const r = await call('check_component_css', {
+    files: [
+      { name: 'button.css', css: '@layer largen.components { .btn { --bg: var(--tone) } }' },
+      { name: 'theme.css', css: ':root { --canvas: oklch(1 0 0); --ink: oklch(0.2 0 0) }' },
+    ],
+  })
+  eq(r.data.checked, 1, 'linted the wrong number of files')
+  eq(r.data.skipped, 1, 'did not skip the token sheet')
+  const theme = r.data.results.find((x) => x.name === 'theme.css')
+  eq(theme.kind, 'not-component', 'token sheet was misclassified')
+  eq(theme.findings.length, 0, 'token sheet produced findings')
+  return 'one component linted, one token sheet explained'
+}, true)
+
+/* --- the release log ------------------------------------------------------ */
+
+const { checkReleases, renderReleases } = await import('../../skill/scripts/releases.mjs')
+const { readFileSync: rf } = await import('node:fs')
+const releaseData = JSON.parse(rf(new URL('../../genai/releases.json', import.meta.url), 'utf8')).releases
+
+check('every entry in the release log matches the bytes that version froze', () => {
+  const r = checkReleases()
+  const errors = r.findings.filter((f) => f.severity === 'error')
+  assert(!errors.length, errors.map((f) => `${f.version} ${f.message}`).join('; '))
+  assert(r.checked.length >= 2, 'nothing was actually checked')
+  return `${r.checked.length} published version(s), ${r.checked.reduce((a, c) => a + c.signals, 0)} signals`
+})
+
+check('the release check fails on a claim that was never true', () => {
+  /* A check that cannot fail is not a check. Two lies, one in each direction. */
+  const lying = JSON.parse(JSON.stringify(releaseData))
+  const published = lying.find((r) => r.version === '0.1.0')
+  published.signals.present.push('--container-queries')
+  published.signals.absent.push('revert-layer')
+  const r = checkReleases(lying)
+  assert(!r.ok, 'the check passed on two false claims')
+  eq(r.findings.filter((f) => f.severity === 'error').length, 2, 'wrong number of errors')
+  return 'both directions caught'
+})
+
+check('a published version with no entry is an error', () => {
+  const r = checkReleases(releaseData.filter((x) => x.version !== '0.1.0'))
+  assert(r.findings.some((f) => f.version === '0.1.0' && /no entry/.test(f.message)),
+    'a published version vanished from the log without complaint')
+  return 'the log cannot silently omit a release'
+})
+
+check('the published log is generated, not maintained', () => {
+  const onDisk = rf(new URL('../../RELEASES.md', import.meta.url), 'utf8')
+  eq(onDisk, renderReleases(), 'RELEASES.md differs from what the generator produces')
+  return `${releaseData.length} release(s), regenerated identically`
+})
+
+check('the newest entry is the version being shipped', () => {
+  const pkg = JSON.parse(rf(new URL('../../package.json', import.meta.url), 'utf8'))
+  eq(releaseData[0].version, pkg.version, 'the log and package.json disagree')
+  return pkg.version
+})
+
+check('the frozen release matches the checksums it publishes', async () => {
+  const { createHash } = await import('node:crypto')
+  const pkg = JSON.parse(rf(new URL('../../package.json', import.meta.url), 'utf8'))
+  const base = new URL(`../public/v/${pkg.version}/`, import.meta.url)
+  const manifest = JSON.parse(rf(new URL('build.json', base), 'utf8'))
+  let n = 0
+  for (const [name, entry] of Object.entries(manifest.files)) {
+    const bytes = rf(new URL(name, base))
+    eq(createHash('sha256').update(bytes).digest('hex'), entry.sha256, `${name} sha256`)
+    eq(bytes.length, entry.bytes, `${name} byte length`)
+    n++
+  }
+  return `${n} file(s) at /v/${pkg.version}/ verified against their own build.json`
+}, true)
 
 /* --- statelessness -------------------------------------------------------- */
 

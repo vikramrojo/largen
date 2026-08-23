@@ -51,3 +51,12 @@ falling back to `revert-layer`, and SHALL be declared inside a cascade layer.
 - **THEN** the paint rule SHALL consult it
 - **AND** documentation stating how many slots exist SHALL derive that count from
   the registrations rather than restating it
+
+#### Scenario: An element sets a slot
+- **WHEN** an element sets `--pad: 30px`
+- **THEN** that element SHALL receive 30px padding
+
+#### Scenario: The paint rule is not layered
+- **WHEN** the paint rule is not inside a cascade layer
+- **THEN** verification SHALL fail, because `revert-layer` is meaningless
+  outside a layer

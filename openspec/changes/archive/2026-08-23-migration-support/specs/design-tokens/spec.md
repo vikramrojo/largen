@@ -22,3 +22,8 @@ the slot carrying the property's name.
 - **THEN** it SHALL use a value that inherits, so descendants recompute it
 - **AND** SHALL NOT use a slot, because a slot does not inherit and descendants
   would revert to the user-agent value instead
+
+#### Scenario: A token is added
+- **WHEN** a token is introduced with the same name as a slot
+- **THEN** it SHALL be renamed, because the slot would be shadowed and the
+  universal paint rule would read the token

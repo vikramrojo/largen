@@ -24,9 +24,13 @@ const COMMANDS = {
   build: { load: () => import('./build.mjs'), blurb: 'bundle + minify to dist/ — optional, for CDN' },
   gen: { load: () => import('./gen.mjs'), blurb: 'regenerate genai artifacts from genai/manifest.json' },
   manifest: { load: () => import('./manifest.mjs'), blurb: "derive a manifest from a project's CSS" },
+  probe: { load: () => import('./probe.mjs'), blurb: 'emit a browser harness for what static checks cannot see' },
+  cascade: { load: () => import('./cascade.mjs'), blurb: 'which declaration wins for a property, and why' },
+  slot: { load: () => import('./cascade.mjs'), blurb: 'does the paint rule apply this slot, or does it revert?' },
   contract: { load: () => import('./contract.mjs'), blurb: 'regenerate SKILL.md + llms.txt', repoOnly: true },
   pages: { load: () => import('./pages.mjs'), blurb: "regenerate the site's hand-written pages", repoOnly: true },
   release: { load: () => import('./release.mjs'), blurb: 'freeze dist/ at an immutable versioned path', repoOnly: true },
+  releases: { load: () => import('./releases.mjs'), blurb: 'the release log, and the check that it is true', repoOnly: true },
 }
 
 const [cmd, ...rest] = process.argv.slice(2)

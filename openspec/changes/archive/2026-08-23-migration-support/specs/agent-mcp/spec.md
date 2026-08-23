@@ -24,6 +24,15 @@ authoring contract, accepting either one stylesheet or several at once.
 - **WHEN** submitted CSS contains a hex, `rgb()`, `hsl()` or `oklch()` value
 - **THEN** the tool SHALL report it
 
+#### Scenario: A component bypasses the tone axis
+- **WHEN** submitted CSS references a raw semantic token such as `--danger`
+  instead of `--tone` or one of its derivations
+- **THEN** the tool SHALL report it
+
+#### Scenario: A component uses an unregistered slot
+- **WHEN** submitted CSS sets a custom property that is not a registered slot
+- **THEN** the tool SHALL report it as having no effect on paint
+
 #### Scenario: A correct component is submitted
 - **WHEN** submitted CSS satisfies every rule
 - **THEN** the tool SHALL report success with no findings

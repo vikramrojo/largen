@@ -1,6 +1,6 @@
 {
   "name": "largen",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A property algebra for CSS. Primitives, a handful of layout utilities, and components you write yourself.",
   "author": "Vikram Babu",
   "license": "MIT",
@@ -20,13 +20,17 @@
     "skill/scripts/manifest.mjs",
     "skill/scripts/detect.mjs",
     "skill/scripts/build.mjs",
+    "skill/scripts/bundle.mjs",
+    "skill/scripts/probe.mjs",
+    "skill/scripts/cascade.mjs",
     "skill/scripts/paths.mjs",
     "dist/largen.css",
     "dist/largen.components.css",
     "dist/theme-dark.css",
     "LICENSE",
     "README.md",
-    "MIGRATING.md"
+    "MIGRATING.md",
+    "RELEASES.md"
   ],
   "exports": {
     ".": "./src/largen.css",

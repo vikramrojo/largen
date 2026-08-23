@@ -356,16 +356,27 @@ bypasses the tokens is simply not part of that mechanism.
 ## Commands
 
 ```
-npx largen verify [css...]     # check your components against the contract above
-npx largen build               # bundle + minify to dist/ — optional, for CDN, no dependencies
-npx largen gen                 # regenerate genai artifacts from genai/manifest.json
-npx largen manifest <css...>   # derive a component manifest from a project's CSS
+npx largen verify [css...]                            # check your components against the contract above
+npx largen build                                      # bundle + minify to dist/ — optional, for CDN, no dependencies
+npx largen gen                                        # regenerate genai artifacts from genai/manifest.json
+npx largen manifest <css...>                          # derive a component manifest from a project's CSS
+npx largen cascade --property P --at CHAIN <css...>   # which declaration wins for a property on an element, and why — no browser
+npx largen slot --slot S --at CHAIN <css...>          # whether the paint rule applies a slot, or it reverts, and to what
+npx largen probe --page URL --select SEL --prop P     # emit a browser harness for what static checks cannot see
 ```
 
 `verify` lints the files you point it at, or the component stylesheets it finds
 under the working directory — a stylesheet is a component file when it declares
-inside `@layer largen.components`. Run inside a clone of largen it additionally
-checks the library's own invariants.
+inside `@layer largen.components`, or sets paint slots without using a largen
+layer at all, which is a component that forgot the layer. Run inside a clone of
+largen it additionally checks the library's own invariants.
+
+`cascade` and `slot` take the element as an ancestor chain written like a
+selector — `--at "html body p.prose kbd"`. A chain carries no siblings and no
+interaction state, so rules turning on `:hover`, `:last-child`, `:nth-*` or a
+sibling combinator cannot be decided from it. Those are reported as undecidable
+rather than dropped, because an omission reads as "no rule here" and any one of
+them could be the rule that actually wins. `probe` settles those.
 
 All of it is static. It has passed clean on visibly broken components before;
 render the result in a browser, in both themes.

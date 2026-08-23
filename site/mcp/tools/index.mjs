@@ -16,8 +16,11 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 import { createValidator, manifest as referenceManifest } from '../../../genai/validate.js'
-import { lintComponentCss, registeredSlots } from '../../../genai/lint.js'
-import { checkLayerOrder } from '../../../genai/layers.js'
+import { lintComponentCss, registeredSlots, classifySheet } from '../../../genai/lint.js'
+import { checkLayerOrder, orderFromImports } from '../../../genai/layers.js'
+import { buildProbe } from '../../../genai/probe.js'
+import { resolveProperty } from '../../../genai/cascade.js'
+import { explainSlot, paintMap } from '../../../genai/slots.js'
 import { getSection, SECTIONS } from '../contract.mjs'
 import { validateManifest, ManifestError } from '../manifest-schema.mjs'
 import { renderNode, renderDocument } from '../render.mjs'
@@ -171,17 +174,37 @@ export const check_component_css = guard(({ css, files }) => {
       if (!f || typeof f.name !== 'string' || typeof f.css !== 'string') {
         return fail(`files[${i}] must be { name: string, css: string }`)
       }
-      results.push({ name: f.name, ...lintOne(f.css) })
+      /* Classify before linting. You pass a file, you tend to pass the
+         directory, and the directory holds the theme — one reporter did exactly
+         that and got 130 findings, every token flagged as a colour literal in an
+         undeclared component. The content rules are rules about components;
+         judging a theme by them produces confident nonsense. `largen verify` has
+         always skipped these during discovery and this form did not, which made
+         two surfaces of one linter disagree. Reported, not silently dropped:
+         a caller who meant to lint that file needs to see why it was not. */
+      const { kind, why } = classifySheet(f.css, SLOTS)
+      if (kind !== 'component') {
+        results.push({ name: f.name, kind, ok: true, findings: [], skipped: why })
+        continue
+      }
+      results.push({ name: f.name, kind, ...lintOne(f.css) })
     }
+    const linted = results.filter((r) => r.kind === 'component')
+    const skipped = results.filter((r) => r.kind !== 'component')
     const bad = results.filter((r) => !r.ok)
     return ok({
       ok: bad.length === 0,
       slots: SLOTS,
-      checked: results.length,
+      checked: linted.length,
+      skipped: skipped.length,
       results,
-      summary: bad.length
-        ? `${bad.length} of ${results.length} stylesheet(s) have errors: ${bad.map((r) => r.name).join(', ')}`
-        : `${results.length} stylesheet(s) clean. Static checks cannot see rendering.`,
+      summary: (bad.length
+        ? `${bad.length} of ${linted.length} component stylesheet(s) have errors: ${bad.map((r) => r.name).join(', ')}`
+        : `${linted.length} component stylesheet(s) clean. Static checks cannot see rendering.`) +
+        (skipped.length
+          ? ` ${skipped.length} file(s) declare no components and were not linted: ` +
+            `${skipped.map((r) => r.name).join(', ')}.`
+          : ''),
     })
   }
   if (typeof css !== 'string' || !css.trim()) {
@@ -190,20 +213,142 @@ export const check_component_css = guard(({ css, files }) => {
   return ok({ slots: SLOTS, ...lintOne(css) })
 })
 
+/* --- resolve_cascade and explain_slot ---------------------------------------
+ *
+ * The pair that answers "which rule decided this?" with no browser at all. Both
+ * take an ancestor chain rather than a document: a list of {tag, classes, attrs}
+ * with no children, no text and no scripts. There is nothing to parse as markup
+ * and nothing to execute, which is what makes them safe on a public endpoint
+ * where a rendering engine would not be.
+ *
+ * Both can answer "undecidable", and that answer is load-bearing. A chain has no
+ * siblings and no interaction state, so :hover, :last-child, :nth-* and the
+ * sibling combinators cannot be evaluated against it. Reporting those explicitly
+ * rather than dropping them is the difference between a diagnostic instrument
+ * and a confident one. */
+
+const checkFiles = (files) => {
+  if (!Array.isArray(files) || !files.length) return 'files must be a non-empty array of { name, css }'
+  for (const [i, f] of files.entries()) {
+    if (!f || typeof f.name !== 'string' || typeof f.css !== 'string') return `files[${i}] must be { name: string, css: string }`
+  }
+  return null
+}
+
+const checkPath = (path) => {
+  if (!Array.isArray(path) || !path.length) return 'path must be a non-empty ancestor chain, outermost first'
+  for (const [i, n] of path.entries()) {
+    if (!n || typeof n !== 'object') return `path[${i}] must be { tag, classes?, attrs?, id? }`
+    if (n.tag !== undefined && typeof n.tag !== 'string') return `path[${i}].tag must be a string`
+    if (n.classes !== undefined && !Array.isArray(n.classes)) return `path[${i}].classes must be an array of strings`
+  }
+  return null
+}
+
+const undecidableNote = (list) => list.length
+  ? `${list.length} rule(s) could not be decided from an ancestor chain — they depend on ` +
+    'siblings, child position or interaction state. They are listed under `undecidable`, ' +
+    'not dropped: any one of them could be the rule that actually wins. Use emit_probe to settle it.'
+  : null
+
+export const resolve_cascade = guard(({ files, entry, path, property, viewport }) => {
+  const bad = checkFiles(files) || checkPath(path)
+  if (bad) return fail(bad)
+  if (typeof property !== 'string' || !property.trim()) return fail('property must be a CSS property name, such as `--weight` or `font-weight`')
+  try {
+    const r = resolveProperty({ files, entry, path, property })
+    return ok({
+      ...r,
+      viewport: viewport ?? null,
+      notes: [
+        undecidableNote(r.undecidable),
+        r.conditional
+          ? `${r.conditional} matching declaration(s) sit inside @media or @supports. Those conditions ` +
+            'are reported on each declaration and are NOT evaluated — the winner shown assumes they all apply.'
+          : null,
+        r.winner && /\b(var|calc|color-mix|clamp|min|max)\(/.test(r.winner.value)
+          ? 'The winning value is an expression and is returned as written. Reducing it is a second ' +
+            'engine\'s worth of work; emit_probe will give you the computed result.'
+          : null,
+        !r.winner && !r.undecidable.length
+          ? `No rule sets \`${property}\` on this element. If it is a custom property registered ` +
+            '`inherits: false` — every largen slot is — then nothing arrives by inheritance either, ' +
+            'and it is guaranteed-invalid here.'
+          : null,
+      ].filter(Boolean),
+    })
+  } catch (error) {
+    return fail(error.message)
+  }
+})
+
+export const explain_slot = guard(({ files, entry, path, slot }) => {
+  const bad = checkFiles(files) || checkPath(path)
+  if (bad) return fail(bad)
+  if (typeof slot !== 'string' || !slot.startsWith('--')) return fail('slot must be a custom property name such as `--fg`')
+  if (!SLOTS.includes(slot)) {
+    return fail(`\`${slot}\` is not a registered slot`, { slots: SLOTS })
+  }
+  try {
+    const r = explainSlot({ files, entry, path, slot, paintCss: PAINT_CSS })
+    return ok({ ...r, note: undecidableNote(r.undecidable) })
+  } catch (error) {
+    return fail(error.message)
+  }
+})
+
+/* --- emit_probe -------------------------------------------------------------
+ *
+ * The one tool here that answers a question needing a rendering engine, and it
+ * answers it by not having one. The server builds a document and never opens
+ * it: no parsing, no evaluation, no execution, nothing to sandbox. The caller
+ * serves it from their own build and their own browser does the work.
+ *
+ * That inversion is the whole design. A hosted endpoint taking arbitrary markup
+ * is remote code execution; taking a validated spec instead removes the use
+ * case, because the markup a migration needs to ask about already exists. Moving
+ * the execution rather than restricting the input keeps both. */
+export const emit_probe = guard((args = {}) => {
+  const { kind = 'computed', pages, html, selectors, properties, steps, assertions, themes, viewport, timeout } = args
+  try {
+    const document = buildProbe({
+      kind, pages, html, selectors, properties, steps, assertions, themes, viewport, timeout,
+    })
+    return ok({
+      kind,
+      document,
+      bytes: document.length,
+      usage:
+        'Save this as an .html file inside the build you want to measure, serve that ' +
+        'build, and open the file. The frames it opens must be same-origin, which they ' +
+        'are if you serve it alongside the pages.',
+      reading:
+        'Results appear as a table, on `window.__largenProbeResults`, and as JSON text ' +
+        'in the hidden `#json` element — the last so a headless driver can read them ' +
+        'with --dump-dom and no script evaluation.',
+      caveats: [
+        'CSS :hover cannot be synthesised. Dispatching events does not set it; use a ' +
+          'driver that moves a real pointer, or assert on a class the code sets instead.',
+        'A selector that matches nothing is reported as a failure, not skipped. A ' +
+          'harness whose targets never rendered passes everything.',
+      ],
+    })
+  } catch (error) {
+    return fail(error.message)
+  }
+})
+
 /* --- property -> slot ------------------------------------------------------
  *
  * Parsed from the paint rule, which is the only authoritative statement of which
  * property each slot drives. Deriving it means adding a slot needs no edit here —
  * and the question this answers ("is line-height a slot?") is one a reporter got
  * wrong four times in a row by having nowhere to ask it. */
-const PROPERTY_SLOT = (() => {
-  const map = new Map()
-  const paint = read('src/paint.css').replace(/\/\*[\s\S]*?\*\//g, '')
-  for (const m of paint.matchAll(/([a-z-]+)\s*:\s*var\(\s*(--[\w-]+)\s*,\s*revert-layer\s*\)/g)) {
-    map.set(m[1], m[2])
-  }
-  return map
-})()
+const PAINT_CSS = read('src/paint.css')
+/* One parser of the paint rule, in genai/slots.js, shared with explain_slot.
+   A second copy here is how check_component_css and `largen verify` came to
+   disagree about what a component file is. */
+const PROPERTY_SLOT = paintMap(PAINT_CSS).propertyToSlot
 
 export const lookup_property = guard(({ property }) => {
   if (typeof property !== 'string' || !property.trim()) return fail('property must be a string')
@@ -231,7 +376,7 @@ export const lookup_property = guard(({ property }) => {
  * that could have caught the two most expensive bugs reported from the field.
  * Both were cross-file: a linter reading one stylesheet structurally cannot see
  * that a layer it believes is losing actually sorts later. */
-export const check_layer_order = guard(({ files }) => {
+export const check_layer_order = guard(({ files, entry }) => {
   if (!Array.isArray(files) || !files.length) {
     return fail('files must be a non-empty array of { name, css }, in document load order')
   }
@@ -240,14 +385,67 @@ export const check_layer_order = guard(({ files }) => {
       return fail(`files[${i}] must be { name: string, css: string }`)
     }
   }
-  const result = checkLayerOrder(files)
+  /* Without `entry` this believes the order it was given, which is the one place
+     the answer can be silently wrong. With it, the order is derived from the
+     entry's @import graph and the assumption disappears. */
+  let ordered = files
+  let derived = null
+  if (entry !== undefined) {
+    if (typeof entry !== 'string' || !entry.trim()) return fail('entry must be the name of one of the files')
+    try {
+      const walked = orderFromImports(files, entry)
+      ordered = walked.order
+      derived = {
+        from: entry,
+        order: walked.order.map((f) => f.name),
+        unresolved: walked.unresolved,
+        layered: walked.layered,
+        unreached: walked.unreached,
+      }
+    } catch (error) {
+      return fail(error.message)
+    }
+  }
+
+  const result = checkLayerOrder(ordered)
+
+  /* A derivation with holes is worse than no derivation if the holes are not
+     said out loud: an unresolved @import is a stylesheet whose layers are absent
+     from this answer, and the caller reads their absence as "no layers there". */
+  const caveats = []
+  if (derived) {
+    if (derived.unresolved.length) {
+      caveats.push(
+        `${derived.unresolved.length} @import(s) could not be resolved within the files provided ` +
+        `(${derived.unresolved.map((u) => u.spec).join(', ')}). Any layer they declare is missing ` +
+        'from this answer — pass those files too.')
+    }
+    if (derived.layered.length) {
+      caveats.push(
+        `${derived.layered.length} @import(s) carry a layer() condition ` +
+        `(${derived.layered.map((l) => `${l.spec} ${l.condition}`).join('; ')}). That wraps the ` +
+        'imported sheet in a layer it never mentions, so its layers are attributed to the file, ' +
+        'not to that wrapper.')
+    }
+    if (derived.unreached.length) {
+      caveats.push(
+        `${derived.unreached.length} file(s) provided are never imported by \`${entry}\` ` +
+        `(${derived.unreached.join(', ')}) and were left out of the order.`)
+    }
+  }
+
   return ok({
     ...result,
-    note: result.ok
-      ? 'The declared order is achievable. Note this reads text: it assumes the ' +
-        'files are given in the order the document loads them, and cannot check that.'
+    derivedFrom: derived,
+    caveats,
+    note: (result.ok
+      ? 'The declared order is achievable.'
       : 'Layer order beats specificity, so no selector weight recovers these. Fix ' +
-        'the order rather than the selectors.',
+        'the order rather than the selectors.') + ' ' + (derived
+      ? 'Load order was derived by following @import from the entry, not taken on trust.'
+      : 'This reads text: it assumes the files are given in the order the document ' +
+        'loads them, and cannot check that. Pass `entry` to have the order derived ' +
+        'from the @import graph instead.'),
   })
 })
 
@@ -403,12 +601,18 @@ export const TOOL_DEFINITIONS = [
       properties: {
         files: {
           type: 'array',
-          description: 'Stylesheets in the order the document loads them.',
+          description: 'The stylesheets. In document load order, unless you pass `entry`.',
           items: {
             type: 'object',
             required: ['name', 'css'],
             properties: { name: { type: 'string' }, css: { type: 'string' } },
           },
+        },
+        entry: {
+          type: 'string',
+          description: 'Name of the entry stylesheet. Given one, load order is derived by ' +
+            'following its @import graph rather than trusting the order of `files` — which ' +
+            'is the only part of this answer that can otherwise be silently wrong.',
         },
       },
     },
@@ -441,6 +645,148 @@ export const TOOL_DEFINITIONS = [
       },
     },
     handler: (ctx) => makeRenderSpec(ctx),
+  },
+  {
+    name: 'emit_probe',
+    title: 'Emit a browser harness you run against your own build',
+    description:
+      'Returns a self-contained HTML file that measures computed styles, or drives an ' +
+      'interaction and asserts on the result, in your own browser against your own ' +
+      'build. Use it for the questions static analysis cannot reach — a scroll mask ' +
+      'that only engages once content overflows, a scroll-spy that sets an attribute ' +
+      'part-way down, a theme observer. For "which rule set this property and why", ' +
+      'use resolve_cascade or explain_slot instead: those need no browser at all. ' +
+      'The server generates the file and never executes anything.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['computed', 'interaction'], description: 'Measure values, or drive steps and assert.' },
+        pages: {
+          type: 'array', items: { type: 'string' },
+          description: 'Same-origin URLs in your build. Relative paths work if you save the probe beside them.',
+        },
+        html: { type: 'string', description: 'An inline fixture instead of `pages` — for a case your real pages do not produce, such as content long enough to overflow.' },
+        selectors: { type: 'array', items: { type: 'string' }, description: 'What to measure. A selector matching nothing is a reported failure.' },
+        properties: { type: 'array', items: { type: 'string' }, description: 'CSS properties to read, computed.' },
+        steps: {
+          type: 'array',
+          description: 'Interaction steps, in order.',
+          items: {
+            type: 'object',
+            properties: {
+              scroll: { type: 'string', description: 'Selector of the scroll container.' },
+              to: { description: '"end", "start", or a pixel offset.' },
+              click: { type: 'string', description: 'Selector to click.' },
+              set: { type: 'string', description: 'Selector whose attribute to set.' },
+              attr: { type: 'string' },
+              value: { type: 'string' },
+              wait: { type: 'number', description: 'Milliseconds.' },
+            },
+          },
+        },
+        assertions: {
+          type: 'array',
+          description: 'Required for an interaction probe — steps with nothing asserted verify nothing.',
+          items: {
+            type: 'object',
+            required: ['selector'],
+            properties: {
+              selector: { type: 'string' },
+              property: { type: 'string', description: 'A computed CSS property to compare.' },
+              attribute: { type: 'string', description: 'An attribute to compare instead.' },
+              equals: { type: 'string' },
+              not: { type: 'string' },
+              contains: { type: 'string' },
+            },
+          },
+        },
+        themes: { type: 'array', items: { type: 'string' }, description: '`data-theme` values to run each page under.' },
+        viewport: {
+          type: 'object',
+          properties: { width: { type: 'number' }, height: { type: 'number' } },
+          description: 'Frame size. Matters for anything that depends on overflow.',
+        },
+        timeout: { type: 'number', description: 'Milliseconds to wait for a page before reporting it as unreachable.' },
+      },
+    },
+    handler: () => emit_probe,
+  },
+  {
+    name: 'resolve_cascade',
+    title: 'Resolve which declaration wins for one property on one element',
+    description:
+      'Given stylesheets and an element\'s ancestor chain, returns every matching ' +
+      'declaration of a property in cascade order, the winner, and which cascade step ' +
+      'decided it — layer order, importance, specificity or source order. This is the ' +
+      'tool for "why is this computing as that": it answers without a browser, and it ' +
+      'names sublayer parenting, which is the cause that looks like nothing at all. ' +
+      'Rules it cannot decide from an ancestor chain are reported, never dropped.',
+    inputSchema: {
+      type: 'object',
+      required: ['files', 'path', 'property'],
+      properties: {
+        files: { type: 'array', description: 'The stylesheets, in load order unless you pass `entry`.', items: {
+            type: 'object',
+            required: ['name', 'css'],
+            properties: { name: { type: 'string' }, css: { type: 'string' } },
+          }, },
+        entry: { type: 'string', description: 'Derive load order from this file\'s @import graph instead of trusting the order of `files`.' },
+        path: {
+          type: 'array',
+          description: 'The element\'s ancestor chain, outermost first; the last entry is the element itself.',
+          items: {
+            type: 'object',
+            properties: {
+              tag: { type: 'string', description: 'Element name, e.g. "kbd".' },
+              id: { type: 'string' },
+              classes: { type: 'array', items: { type: 'string' } },
+              attrs: { type: 'object', description: 'Attribute name to value, e.g. { "data-theme": "dark" }.' },
+            },
+          },
+        },
+        property: { type: 'string', description: 'A slot such as `--weight`, or a plain property such as `font-weight`.' },
+        viewport: { type: 'object', properties: { width: { type: 'number' } }, description: 'Recorded, not evaluated: @media conditions are reported per declaration rather than decided.' },
+      },
+    },
+    handler: () => resolve_cascade,
+  },
+  {
+    name: 'explain_slot',
+    title: 'Explain whether the paint rule applies a slot, or it reverts',
+    description:
+      'The largen-specific question: for one slot on one element, is it set, and does ' +
+      'the paint rule paint it — or does it resolve guaranteed-invalid so `revert-layer` ' +
+      'fires and the property goes back to the user-agent stylesheet? Catches ' +
+      '`--fg: inherit`, which reads as "use the surrounding colour" and does the ' +
+      'opposite, and `--bg: initial`, which strips a slot deliberately and looks like a ' +
+      'class that is not applying.',
+    inputSchema: {
+      type: 'object',
+      required: ['files', 'path', 'slot'],
+      properties: {
+        files: { type: 'array', description: 'The stylesheets, in load order unless you pass `entry`.', items: {
+            type: 'object',
+            required: ['name', 'css'],
+            properties: { name: { type: 'string' }, css: { type: 'string' } },
+          }, },
+        entry: { type: 'string', description: 'Derive load order from this file\'s @import graph.' },
+        path: {
+          type: 'array',
+          description: 'The element\'s ancestor chain, outermost first.',
+          items: {
+            type: 'object',
+            properties: {
+              tag: { type: 'string', description: 'Element name, e.g. "kbd".' },
+              id: { type: 'string' },
+              classes: { type: 'array', items: { type: 'string' } },
+              attrs: { type: 'object', description: 'Attribute name to value, e.g. { "data-theme": "dark" }.' },
+            },
+          },
+        },
+        slot: { type: 'string', description: 'A registered slot, such as `--fg`.' },
+      },
+    },
+    handler: () => explain_slot,
   },
 ]
 

@@ -23,7 +23,7 @@
  */
 import { gzipSync } from 'node:zlib'
 import { createHash } from 'node:crypto'
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { root } from './paths.mjs'
 import { bundle } from './bundle.mjs'
@@ -49,6 +49,14 @@ export async function build() {
   let buildId = null
 
   for (const [out, entry, note] of PROFILES) {
+    /* The last profile bundles sites/example, which is a demonstration and is
+       deliberately absent from the published package. Skipping a missing entry
+       keeps `largen build` working from an install; failing on it would make a
+       shipped command depend on a file the package does not ship. */
+    if (!existsSync(join(root, entry))) {
+      console.log(`  ${out.padEnd(24)} ${'skipped'.padStart(9)}             not in this package (${entry})`)
+      continue
+    }
     const body = bundle(join(root, entry))
     /* The entry point's body hash names the build. Deterministic: identical
        source gives an identical id, so a rebuild that changes nothing is

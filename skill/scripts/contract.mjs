@@ -344,11 +344,23 @@ export async function contract(args = []) {
   const skill = skillMarkdown(c)
   const index = llmsTxt(c)
   const compact = llmsCompact(c)
+  const { renderReleases } = await import('./releases.mjs')
+  const releaseLog = renderReleases()
 
   if (check) {
-    const current = readFileSync(at('skill/SKILL.md'), 'utf8')
-    if (current !== skill) {
-      throw new Error('skill/SKILL.md is out of date — run `largen contract`')
+    /* Every generated surface, not just the first one. A --check that covers a
+       subset reports "all current" while something it never opened is stale,
+       which is worse than no check because it is believed. */
+    const stale = [
+      ['skill/SKILL.md', skill],
+      ['site/public/llms.txt', index],
+      ['site/public/llms-compact.txt', compact],
+      ['RELEASES.md', releaseLog],
+    ].filter(([rel, want]) => {
+      try { return readFileSync(at(rel), 'utf8') !== want } catch { return true }
+    })
+    if (stale.length) {
+      throw new Error(`out of date — run \`largen contract\`:\n${stale.map(([f]) => `    ${f}`).join('\n')}`)
     }
     console.log('\n  contract: all generated surfaces are current\n')
     return 0
@@ -357,6 +369,7 @@ export async function contract(args = []) {
   const a = write('skill/SKILL.md', skill)
   const b = write('site/public/llms.txt', index)
   const d = write('site/public/llms-compact.txt', compact)
+  write('RELEASES.md', releaseLog)
 
   const { page, inline, esc } = await import('../../site/mcp/page.mjs')
   const pages = contractPages(c, page, inline, esc)

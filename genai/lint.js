@@ -64,6 +64,83 @@ function componentRegion(clean) {
   return clean
 }
 
+/**
+ * Classify a stylesheet without linting it.
+ *
+ * The content rules are rules about components, so pointing them at a theme
+ * produces confident nonsense — a theme legitimately contains `oklch()` and
+ * legitimately sets `--canvas`. `largen verify` has always known this and
+ * skipped non-component files during discovery. The batched MCP form did not,
+ * and the difference was not theoretical: a caller passed a components directory
+ * plus one token sheet and got 130 findings, every token flagged as a colour
+ * literal in an undeclared component. Two surfaces of the same linter cannot be
+ * allowed to disagree, so both now ask this function.
+ *
+ * The single-string form deliberately does NOT consult this. Passing one snippet
+ * means "check this component I just wrote", and answering "that is not a
+ * component" instead of "you forgot the layer" would lose the most valuable
+ * finding the linter has.
+ *
+ * WHAT COUNTS AS A COMPONENT
+ *
+ * Not "declares inside @layer largen.components" alone. A component that forgot
+ * the layer is still a component, and the missing layer is the single most
+ * valuable thing this linter reports — `data-variant` stops applying while tone
+ * and size keep working, so it looks like a partial success rather than a
+ * mistake. Classifying that file away as "not a component" would throw the
+ * finding out on the strength of the very error being looked for.
+ *
+ * So a file is a component if it declares in the layer, OR sets a registered
+ * paint slot while using no largen layer at all. The slots are what largen paints
+ * from, so setting one is authoring a component wherever you wrote it — but a
+ * file that sets slots inside `largen.tone` or `largen.modifiers` is the library's
+ * own algebra, not a component that forgot its layer, and judging it by the
+ * component rules is the same confident nonsense in a different costume. A theme
+ * sets tokens — `--canvas`, `--ink` — which are not slots, so it classifies out
+ * either way.
+ *
+ * @param {string} css
+ * @param {string[]} [slots] registered slot names; without them only the layer counts
+ * @returns {{kind: 'component'|'not-component'|'minified', why: string|null}}
+ */
+export function classifySheet(css, slots = []) {
+  const text = String(css)
+
+  /* Minified output is not source. Every finding in it would carry line 1, and
+     the file it was built from is already being checked.
+     
+     Detected by line LENGTH, not by absence of newlines. The earlier test — no
+     newline in the first 2kb — was defeated the moment builds gained a banner
+     comment, which ends in a newline at byte 54. Every frozen release then read
+     as source, and the linter judged a whole minified bundle as one 9kb line of
+     component CSS. A run of a few hundred characters with no line break is the
+     actual signal; largen's own source never exceeds 200. */
+  const longestLine = text.split('\n').reduce((m, l) => (l.length > m ? l.length : m), 0)
+  if (longestLine > 500) {
+    return { kind: 'minified', why: 'built output, not source — check the file it was built from' }
+  }
+
+  /* The block, not the name. `src/largen.css` lists largen.components in its
+     @layer *statement* without opening one, and a substring test calls that a
+     component file and then faults it for being unlayered. */
+  if (LAYER_BLOCK.test(text)) return { kind: 'component', why: null }
+
+  const clean = strip(text)
+  const inLargenLayer = /@layer\s+largen\.[\w-]+\s*\{/.test(clean)
+  const sets = inLargenLayer
+    ? []
+    : slots.filter((slot) => new RegExp(`(^|[;{\\s])${slot}\\s*:`).test(clean))
+  if (sets.length) return { kind: 'component', why: null, unlayered: sets }
+
+  return {
+    kind: 'not-component',
+    why: inLargenLayer
+      ? 'declares inside another largen layer, not `largen.components` — library or system CSS'
+      : 'declares nothing inside `@layer largen.components` and sets no paint slot — ' +
+        'a theme, token or reset sheet',
+  }
+}
+
 export function lintComponentCss(css, { slots = [] } = {}) {
   const findings = []
   const SLOTS = new Set(slots)

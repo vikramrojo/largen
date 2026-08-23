@@ -1,0 +1,79 @@
+{
+ "$comment": "The release log, as data rather than prose, for two reasons. RELEASES.md is generated from it by `largen contract`, so the published log cannot drift from this file. And every entry carries `signals` — strings that must be present in, or absent from, the frozen bytes at site/public/v/<version>/ — so a claim about a release is checked against the artifact that release actually shipped rather than believed. `largen releases --check` runs that. `signals` is also the machine-readable delta list a per-project upgrade check needs: given a project's CSS and the version it vendored, the `present` strings of every later release are exactly what to grep for.",
+ "releases": [
+  {
+   "version": "0.3.0",
+   "date": "2026-08-23",
+   "summary": "Two more slots, themes that no longer outrank you, and tools that answer why a rule lost.",
+   "breaking": [
+    {
+     "change": "`--leading` is now `--line-height-base`.",
+     "why": "The slot-shaped name was taken by a token. `--line-height` is now a real per-component slot, and having a token beside it called `--leading` invited setting the wrong one.",
+     "migration": "Rename any `--leading` you set to `--line-height-base`. To set leading on one component, use the new `--line-height` slot instead."
+    }
+   ],
+   "added": [
+    "`--line-height` and `--letter-spacing` slots. Twelve paint slots become fourteen, so a component that changes its font size can say what leading it wants.",
+    "largen declares its own layer order in one `@layer` statement, rather than leaving it to the order the blocks happen to appear in.",
+    "`<progress>` and `<meter>` are themed.",
+    "Every built file carries a banner with a build id, and `build.json` records sha256 and SRI for each — the version string alone never identified a build."
+   ],
+   "fixed": [
+    {
+     "change": "Themes are layered.",
+     "why": "`themes/light.css` and `themes/dark.css` were unlayered while `src/tokens.css` was not. An unlayered theme outranks every layer, so a consumer's own overrides written inside `@layer largen.tokens` lost to it silently. Invisible in light mode, where the layered defaults were the only competition, and total in dark."
+    },
+    {
+     "change": "Tone derivations apply wherever `--tone` is set, not only on `[data-tone]`.",
+     "why": "Setting `--tone` directly in a component's own rule left the derived `--tone-soft`, `--tone-ink` and `--tone-line` at their previous values."
+    },
+    "The last row of a table no longer draws a bottom border against the table's own edge."
+   ],
+   "tooling": [
+    "`resolve_cascade` — which declaration wins for a property on an element, and which cascade step decided it. No browser.",
+    "`explain_slot` — whether the paint rule applies a slot or it reverts, and to what. Catches `--fg: inherit`, which reads as inheriting and does the opposite.",
+    "`emit_probe` — a self-contained browser harness for the questions static analysis cannot reach.",
+    "`check_layer_order` can derive load order from an entry file's `@import` graph instead of taking it on trust.",
+    "`check_component_css` classifies each file in a batch, so pointing it at a directory containing a theme no longer reports every token as a colour literal.",
+    "`largen cascade`, `largen slot` and `largen probe` expose the first three on the command line."
+   ],
+   "signals": {
+    "present": ["--line-height", "--letter-spacing", "--line-height-base"],
+    "absent": ["--leading"]
+   }
+  },
+  {
+   "version": "0.2.0",
+   "date": "2026-08-22",
+   "summary": "The reference component set and the documentation site.",
+   "breaking": [],
+   "added": [
+    "An optional reference component set, shipped separately as `largen.components.css` so the algebra stays usable without it.",
+    "A neutral example site build in place of the author's own."
+   ],
+   "fixed": [],
+   "tooling": [
+    "The MCP server and the generated contract surfaces — `SKILL.md`, `llms.txt`, `llms-compact.txt`."
+   ],
+   "signals": {
+    "present": ["largen.components"],
+    "absent": ["--line-height"]
+   }
+  },
+  {
+   "version": "0.1.0",
+   "date": "2026-08-21",
+   "summary": "First published build: the algebra, twelve slots, one paint rule.",
+   "breaking": [],
+   "added": [
+    "Twelve registered slots, the universal paint rule, and the four axes — tone, variant, size, state."
+   ],
+   "fixed": [],
+   "tooling": [],
+   "signals": {
+    "present": ["--bg", "--fg", "revert-layer"],
+    "absent": ["--line-height", "--letter-spacing"]
+   }
+  }
+ ]
+}

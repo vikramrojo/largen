@@ -155,3 +155,113 @@ export function checkLayerOrder(files) {
 }
 
 export default checkLayerOrder
+
+/* ---------------------------------------------------------------------------
+ * Deriving load order instead of taking it on trust.
+ *
+ * The header above admits the one place this module can be silently wrong: it
+ * is handed files in an order and believes it. For the common setup that order
+ * is derivable — a single entry stylesheet whose `@import` sequence IS the load
+ * order — so believing the caller is a choice, not a necessity.
+ *
+ * Everything here works on the provided set of {name, css}. Nothing touches a
+ * filesystem: the MCP server receives strings, and a resolver that reached for
+ * disk would work in the CLI and fail over the wire.
+ */
+
+/* `@import` has more spellings than the url() form. All five of these load a
+   stylesheet, and a regex that knows only the first quietly derives a short
+   order and calls it complete:
+       @import url("a.css");   @import url('a.css');   @import url(a.css);
+       @import "a.css";        @import 'a.css';
+   The trailing group captures anything before the semicolon — layer(), supports()
+   and media conditions — because an import can carry them and they change what
+   the import means. */
+const IMPORT_ANY =
+  /@import\s+(?:url\(\s*(?:"([^"]*)"|'([^']*)'|([^)"'\s]*))\s*\)|"([^"]*)"|'([^']*)')([^;]*);/g
+
+/** Resolve a specifier against the importing file's directory, posix-style.
+ *  Deliberately not node:path — these are stylesheet names carried in a payload,
+ *  not paths on this machine, and on Windows node:path would join with a
+ *  backslash and match nothing. */
+function resolveSpec(fromName, spec) {
+  if (/^(https?:)?\/\//.test(spec)) return null /* remote: not in the set, by definition */
+  const base = fromName.includes('/') ? fromName.slice(0, fromName.lastIndexOf('/')) : ''
+  /* `base` is empty when the importing file has no directory in its name, which
+     is the common case for stylesheets passed over the wire as `main.css`.
+     Joining unconditionally would produce `/largen.css` and make a relative name
+     spuriously absolute, so it would then match nothing. */
+  const joined = spec.startsWith('/') ? spec : (base ? `${base}/${spec}` : spec)
+  /* Keep the leading slash. Normalising by dropping empty segments erases it,
+     and then an absolute name never matches the absolute name it was resolved
+     from — which is exactly the shape the CLI passes, where the files are named
+     by their real paths. */
+  const absolute = joined.startsWith('/')
+  const out = []
+  for (const p of joined.split('/')) {
+    if (!p || p === '.') continue
+    if (p === '..') out.pop()
+    else out.push(p)
+  }
+  return (absolute ? '/' : '') + out.join('/')
+}
+
+/**
+ * Walk an entry stylesheet's `@import` graph and return the files in load order.
+ *
+ * A file imported twice loads once, at its first position, and a cycle
+ * terminates — same reasoning as the bundler's inlineImports, and the same
+ * situation arises here because two entry points can reach one shared partial.
+ *
+ * @param {Array<{name: string, css: string}>} files  the available set, any order
+ * @param {string} entry  the name of the entry stylesheet within that set
+ * @returns {{order: Array<{name,css}>, unresolved: object[], layered: object[], unreached: string[]}}
+ */
+export function orderFromImports(files, entry) {
+  const byName = new Map(files.map((f) => [f.name, f]))
+  if (!byName.has(entry)) {
+    const err = new Error(`entry \`${entry}\` is not among the ${files.length} file(s) provided`)
+    err.code = 'ENTRY_NOT_FOUND'
+    throw err
+  }
+
+  const order = []
+  const seen = new Set()
+  const unresolved = []
+  const layered = []
+
+  const walk = (name) => {
+    if (seen.has(name)) return
+    seen.add(name)
+    const file = byName.get(name)
+    const clean = String(file.css).replace(/\/\*[\s\S]*?\*\//g, '')
+
+    /* Depth-first, and the importing file is appended AFTER its imports — which
+       is what the cascade sees. `@import` must precede every other rule, so a
+       file's own declarations always follow everything it pulled in. */
+    for (const m of clean.matchAll(IMPORT_ANY)) {
+      const spec = m[1] ?? m[2] ?? m[3] ?? m[4] ?? m[5]
+      const trailing = (m[6] || '').trim()
+      const target = resolveSpec(name, spec)
+
+      /* `@import … layer(x)` wraps the imported sheet in a layer that the
+         imported file never mentions. Reporting it beats guessing: the order
+         this returns would be right and the layer attribution wrong. */
+      if (/\blayer\s*\(/.test(trailing) || /\blayer\b/.test(trailing)) {
+        layered.push({ in: name, spec, condition: trailing })
+      }
+
+      if (target === null) { unresolved.push({ in: name, spec, why: 'remote stylesheet, not in the provided set' }); continue }
+      if (!byName.has(target)) { unresolved.push({ in: name, spec, resolved: target, why: 'no file with that name was provided' }); continue }
+      walk(target)
+    }
+    order.push(file)
+  }
+
+  walk(entry)
+
+  /* A file in the set the entry never reaches is not part of this load order.
+     Saying so beats appending it somewhere plausible. */
+  const unreached = files.map((f) => f.name).filter((n) => !seen.has(n))
+  return { order, unresolved, layered, unreached }
+}

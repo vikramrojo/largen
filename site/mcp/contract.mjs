@@ -405,13 +405,23 @@ export const COMMANDS = [
   { command: 'npx largen build', does: 'bundle + minify to dist/ — optional, for CDN, no dependencies' },
   { command: 'npx largen gen', does: 'regenerate genai artifacts from genai/manifest.json' },
   { command: 'npx largen manifest <css...>', does: "derive a component manifest from a project's CSS" },
+  { command: 'npx largen cascade --property P --at CHAIN <css...>', does: 'which declaration wins for a property on an element, and why — no browser' },
+  { command: 'npx largen slot --slot S --at CHAIN <css...>', does: 'whether the paint rule applies a slot, or it reverts, and to what' },
+  { command: 'npx largen probe --page URL --select SEL --prop P', does: 'emit a browser harness for what static checks cannot see' },
 ]
 
 export const COMMANDS_CAVEAT =
   '`verify` lints the files you point it at, or the component stylesheets it finds ' +
   'under the working directory — a stylesheet is a component file when it declares ' +
-  'inside `@layer largen.components`. Run inside a clone of largen it additionally ' +
-  'checks the library\'s own invariants.\n\n' +
+  'inside `@layer largen.components`, or sets paint slots without using a largen ' +
+  'layer at all, which is a component that forgot the layer. Run inside a clone of ' +
+  'largen it additionally checks the library\'s own invariants.\n\n' +
+  '`cascade` and `slot` take the element as an ancestor chain written like a ' +
+  'selector — `--at "html body p.prose kbd"`. A chain carries no siblings and no ' +
+  'interaction state, so rules turning on `:hover`, `:last-child`, `:nth-*` or a ' +
+  'sibling combinator cannot be decided from it. Those are reported as undecidable ' +
+  'rather than dropped, because an omission reads as "no rule here" and any one of ' +
+  'them could be the rule that actually wins. `probe` settles those.\n\n' +
   'All of it is static. It has passed clean on visibly broken components before; ' +
   'render the result in a browser, in both themes.\n\n' +
   '`build` needs nothing installed — it inlines imports, strips comments and ' +

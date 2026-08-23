@@ -25,7 +25,7 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { at, root } from './paths.mjs'
-import { lintComponentCss, registeredSlots } from '../../genai/lint.js'
+import { lintComponentCss, registeredSlots, classifySheet } from '../../genai/lint.js'
 
 const read = (p) => readFileSync(at(p), 'utf8')
 const strip = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '')
@@ -198,19 +198,13 @@ export async function verify(args = []) {
      token file or a reset is not a component and judging it by component rules
      would report confident nonsense. Explicit paths are always checked — if you
      named a file, you meant it. */
-  /* The block, not the name. `src/largen.css` lists largen.components in its
-     @layer *statement* without opening one, and a substring test calls that a
-     component file and then faults it for being unlayered. */
-  const declares = (f) => /@layer\s+largen\.components\s*\{/.test(readFileSync(f, 'utf8'))
+  /* Shared with the MCP server's batched check_component_css, so the two cannot
+     drift. See classifySheet in genai/lint.js for why the block matters and the
+     @layer statement does not. */
+  const kindOf = (f) => classifySheet(readFileSync(f, 'utf8'), slots).kind
 
-  /* Minified output is not source. Every finding in it would carry line 1, and
-     the file it was built from is already being checked. */
-  const minified = (f) => {
-    const text = readFileSync(f, 'utf8')
-    return text.length > 500 && !text.slice(0, 2000).includes('\n')
-  }
-
-  const wanted = (f) => declares(f) && !minified(f)
+  const minified = (f) => kindOf(f) === 'minified'
+  const wanted = (f) => kindOf(f) === 'component'
   const skipped = paths.length ? [] : files.filter((f) => !wanted(f))
   const checking = paths.length ? files.filter((f) => !minified(f)) : files.filter(wanted)
 
