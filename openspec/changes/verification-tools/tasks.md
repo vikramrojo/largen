@@ -163,17 +163,15 @@ and the log can be checked instead of trusted.
 - [x] 10.8 Publish: deployed at 6b1e9d0. `/v/0.1.0/`, `/v/0.2.0/` and `/v/0.3.0/`
       all serve, and 0.3.0's served bytes reproduce the `sha256` its own
       `build.json` publishes.
-- [ ] 10.9 `npm publish` — blocked, not declined. The registry now requires
-      interactive browser authentication for a publish; the cached token in
-      `~/.npmrc` is read-only, which is why `npm whoami` succeeds and `npm publish`
-      does not. The package is otherwise ready: `npm publish --dry-run` is clean at
-      45 files / 86.6 kB, the name `largen` is unregistered, and `dist/largen.css`
-      in the tarball is byte-identical to the pinned `/v/0.3.0/largen.css`, so a
-      registry CDN and largen.dev will serve the same bytes under the same SRI.
-      Run `npm login` then `npm publish --access public`.
-
-**This unblocks T5.** `check_upgrade` was deferred because it needed a
-machine-readable list of behavioural deltas keyed by version, which `build.json`
-did not carry. `signals` is that list: given a project's CSS and the version it
-vendored, the `present` strings of every later release are exactly what to grep
-for. T5 is now a tool to write rather than a prerequisite to invent.
+- [x] 10.9 `npm publish` — published as `largen@0.3.0`. Verified end to end: the
+      registry tarball's `dist/` is byte-identical to the pinned `/v/0.3.0/`, and
+      jsdelivr, unpkg and the site all serve those same bytes under one `integrity`
+      string. (The publish itself needed a human: the registry requires interactive
+      browser auth, and the cached `~/.npmrc` token is read-only — which is why
+      `npm whoami` succeeded while `npm publish` did not.)
+- [x] 10.10 Guard the two channels against divergence. `largen releases --check`
+      now fails if `dist/` differs from the frozen `/v/<version>/`, because
+      rebuilding after a freeze would put different bytes on the registry than at
+      a path whose whole promise is that its bytes never change. Proved it fails.
+- [x] 10.11 Document the npm and CDN routes in the README, and state that one
+      `integrity` string validates all three origins — which is checked, not assumed.

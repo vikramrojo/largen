@@ -583,6 +583,16 @@ check('the newest entry is the version being shipped', () => {
   return pkg.version
 })
 
+check('what npm ships and what the site pins are the same bytes', () => {
+  /* Two distribution channels, one version number. dist/ goes to the registry and
+     /v/<version>/ is served by the site; a version whose bytes differ between them
+     breaks the one promise a pinned path makes. */
+  const r = checkReleases()
+  const drift = r.findings.filter((f) => /differs from the frozen/.test(f.message))
+  assert(!drift.length, drift.map((f) => f.message).join('; '))
+  return 'dist/ matches the frozen release'
+})
+
 check('the frozen release matches the checksums it publishes', async () => {
   const { createHash } = await import('node:crypto')
   const pkg = JSON.parse(rf(new URL('../../package.json', import.meta.url), 'utf8'))

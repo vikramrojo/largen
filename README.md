@@ -119,6 +119,25 @@ No install needed — it is a stylesheet:
 <link rel="stylesheet" href="https://largen.dev/largen.css">
 ```
 
+It is also on npm, which gives you the same bytes from a registry CDN with no
+dependency on largen.dev staying up:
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.3.0/dist/largen.css">
+<link rel="stylesheet" href="https://unpkg.com/largen@0.3.0/dist/largen.css">
+```
+
+```
+npm install largen        # for the CSS, the linter and the importable modules
+```
+
+`largen.dev/v/0.3.0/largen.css`, `largen@0.3.0/dist/largen.css` on either CDN, and
+`node_modules/largen/dist/largen.css` are byte-identical, so **one `integrity`
+string validates all of them** — the release check enforces that rather than
+assuming it. Nothing here is a dependency in the build sense: installing gets you a
+stylesheet and some optional dev-time commands, not a step between your source and
+your page.
+
 **That path is not versioned, and the version in its banner does not identify it.**
 `/largen.css` is a live read of the current build; it changes whenever the library does,
 while still printing whatever `version` says. Two builds can call themselves the same

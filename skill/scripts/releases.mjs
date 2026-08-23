@@ -109,6 +109,34 @@ export function checkReleases(releases = load()) {
     }
   }
 
+  /* dist/ is what npm ships; site/public/v/<version>/ is what the site pins. They
+     are produced by the same build and must not diverge, but nothing forced that
+     until now: editing src/, rebuilding, and publishing would put different bytes
+     on the registry than at the pinned path — under a version whose whole promise
+     is that its bytes never change. Two distribution channels make this a real
+     hazard rather than a theoretical one.
+
+     Only checked when dist/ exists. It is gitignored and built on demand, so a
+     fresh clone has none and that is not a failure. */
+  const current = JSON.parse(readFileSync(at('package.json'), 'utf8')).version
+  const frozenDir = at('site/public/v', current)
+  if (existsSync(at('dist')) && existsSync(frozenDir)) {
+    for (const f of readdirSync(at('dist')).filter((x) => x.endsWith('.css'))) {
+      const pinned = at('site/public/v', current, f)
+      if (!existsSync(pinned)) continue
+      if (!readFileSync(at('dist', f)).equals(readFileSync(pinned))) {
+        findings.push({
+          version: current,
+          severity: 'error',
+          message: `dist/${f} differs from the frozen /v/${current}/${f}. npm would ship ` +
+            'different bytes than the pinned path, under a version that promises it will not. ' +
+            'Bump the version, or re-freeze with `largen release --force` if nothing has ' +
+            'consumed it yet.',
+        })
+      }
+    }
+  }
+
   return { ok: !findings.some((f) => f.severity === 'error'), findings, checked }
 }
 
