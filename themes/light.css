@@ -1,11 +1,24 @@
 /* largen light theme. Matches src/tokens.css defaults; exists so a theme swap is
-   symmetrical. A theme sets tokens and nothing else. */
-:root,
-[data-theme="light"] {
-  --canvas: #ffffff;
-  --ink: #16181c;
-  --ink-muted: #5c636e;
-  --surface: #f4f5f7;
-  --line: #dfe2e7;
-  color-scheme: light;
+   symmetrical. A theme sets tokens and nothing else.
+ *
+ * Layered, like every other stylesheet largen ships. That is not a detail: an
+ * unlayered theme outranks every layer, so a consumer's own token overrides
+ * written inside `@layer largen.tokens` would lose to it silently. This file was
+ * unlayered while src/tokens.css was not, and the asymmetry was invisible in
+ * light mode — where the layered defaults were the only competition — and total
+ * in dark, where this file is the only way to get there at all.
+ *
+ * Override these from unlayered CSS, which beats every layer by design.
+ */
+
+@layer largen.tokens {
+  :root,
+  [data-theme="light"] {
+    --canvas: #ffffff;
+    --ink: #16181c;
+    --ink-muted: #5c636e;
+    --surface: #f4f5f7;
+    --line: #dfe2e7;
+    color-scheme: light;
+  }
 }

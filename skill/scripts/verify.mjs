@@ -123,6 +123,33 @@ function libraryInvariants() {
     return 'consumer CSS always wins'
   })
 
+  /* The bug this exists to prevent was reported from the outside, not caught
+     here: themes/*.css shipped unlayered while src/tokens.css was layered, so a
+     consumer's token overrides written inside `@layer largen.tokens` lost to
+     largen's own theme. It was invisible in light mode and total in dark. */
+  check('every stylesheet largen ships is layered', () => {
+    const files = [
+      ...readdirSync(at('src')).filter((f) => f.endsWith('.css')).map((f) => `src/${f}`),
+      ...readdirSync(at('themes')).filter((f) => f.endsWith('.css')).map((f) => `themes/${f}`),
+      ...readdirSync(at('components')).filter((f) => f.endsWith('.css')).map((f) => `components/${f}`),
+    ]
+    const unlayered = []
+    for (const f of files) {
+      const css = strip(read(f))
+      /* properties.css registers @property, which cannot live in a layer, and
+         largen.css is the entry point: imports and the order statement only. */
+      if (f === 'src/properties.css' || f === 'src/largen.css') continue
+      if (!/@layer\s+largen\.[a-z]+\s*\{/.test(css) && /[^\s]/.test(css.replace(/@import[^;]*;/g, ''))) {
+        unlayered.push(f)
+      }
+    }
+    assert(unlayered.length === 0,
+      `${unlayered.join(', ')} ship unlayered. Unlayered author CSS outranks every ` +
+      `layer, so these would beat a consumer's own overrides written inside a largen ` +
+      `layer — silently, and only in whichever mode the file governs.`)
+    return `${files.length - 2} files, all inside a largen layer`
+  })
+
   check('paint.css is inside a cascade layer', () => {
     assert(/@layer largen\.paint\s*\{/.test(strip(read('src/paint.css'))),
       'revert-layer only works from inside a layer; unlayered, this rule strips ' +
