@@ -18,14 +18,36 @@
  *                     which is true exactly when someone is developing largen.
  *                     They are assertions about src/, and meaningless elsewhere.
  *
- * These are static checks either way. They cannot see whether anything renders,
- * and a previous build passed every one of them while six components were
- * visibly broken. Screenshots are the other half, not an optional extra.
+ * WHAT CHANGED, AND WHY IT MATTERED MORE THAN IT LOOKED
+ *
+ * Every check here used to read one file at a time. That is enough for the local
+ * mistakes — a missing layer, a colour literal, an unregistered slot — and blind
+ * to the expensive ones, which are cross-file. A component sets `--weight: 500`
+ * inside `largen.components`, another file's sublayer sorts after it, and the
+ * declaration is correct, the file is correct, and the element paints 300.
+ * `largen verify` said `ok`.
+ *
+ * For a person that is a footnote to check in the browser. For an agent looping
+ * generate → validate → repair it is the whole thing, because the loop
+ * terminates when validate says clean. A verifier that returns clean on a broken
+ * component does not fail to help; it ends the loop with false confidence.
+ *
+ * So the cascade checks run here now, from genai/cascade.js. They need the order
+ * the document loads its stylesheets in, which a directory walk does not know, so
+ * it is derived from an entry file's @import graph — inferred when that is
+ * unambiguous, taken from --entry when it is not, and reported as NOT RUN when
+ * neither works. Guessing the order would produce confident answers about a
+ * cascade that does not exist, which is the failure this whole file exists to
+ * avoid.
+ *
+ * Still not covered: rendering. `largen probe` is that, and the summary says so.
  */
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { at, root } from './paths.mjs'
 import { lintComponentCss, registeredSlots, classifySheet } from '../../genai/lint.js'
+import { checkLayerOrder, orderFromImports } from '../../genai/layers.js'
+import { checkComponentsApply } from '../../genai/cascade.js'
 
 const read = (p) => readFileSync(at(p), 'utf8')
 const strip = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '')
@@ -169,8 +191,47 @@ function libraryInvariants() {
 
 /* --- The contract, against whatever the caller pointed at ---------------- */
 
+/* Which file does the document load first?
+ *
+ * Deriving the cascade needs the load order, and a directory walk is not it.
+ * An entry point is the file nothing else imports that imports something —
+ * exactly one such file means the graph is unambiguous and can be trusted. More
+ * than one, or none, and the honest answer is that we do not know. */
+function inferEntry(files) {
+  const IMPORT = /@import\s+(?:url\(\s*(?:"([^"]*)"|'([^']*)'|([^)"'\s]*))\s*\)|"([^"]*)"|'([^']*)')/g
+  const imported = new Set()
+  const importers = []
+  for (const f of files) {
+    const clean = String(f.css).replace(/\/\*[\s\S]*?\*\//g, '')
+    let any = false
+    for (const m of clean.matchAll(IMPORT)) {
+      const spec = m[1] ?? m[2] ?? m[3] ?? m[4] ?? m[5]
+      if (/^(https?:)?\/\//.test(spec)) continue
+      any = true
+      const base = f.name.includes('/') ? f.name.slice(0, f.name.lastIndexOf('/')) : ''
+      const joined = spec.startsWith('/') ? spec : (base ? `${base}/${spec}` : spec)
+      const out = []
+      for (const part of joined.split('/')) {
+        if (!part || part === '.') continue
+        if (part === '..') out.pop()
+        else out.push(part)
+      }
+      imported.add((joined.startsWith('/') ? '/' : '') + out.join('/'))
+    }
+    if (any) importers.push(f.name)
+  }
+  const roots = importers.filter((n) => !imported.has(n))
+  return roots.length === 1 ? roots[0] : null
+}
+
 export async function verify(args = []) {
-  const paths = args.filter((a) => !a.startsWith('--'))
+  /* `--entry main.css` takes a value, so a naive "not a flag" filter collects that
+     value as a file to lint. It did: `verify --entry src/largen.css` linted the
+     entry point as though it were a component, faulted it for having no components
+     layer, and then had one file to derive a cascade from. */
+  const flagIndex = args.indexOf('--entry')
+  const entryArg = flagIndex >= 0 ? args[flagIndex + 1] : null
+  const paths = args.filter((a, i) => !a.startsWith('--') && i !== flagIndex + 1)
   const self = inLibraryRepo()
 
   console.log('\n  largen verify\n')
@@ -232,6 +293,59 @@ export async function verify(args = []) {
       (skipped.length ? ` (${skipped.length} non-component file(s) skipped)` : ''))
   }
 
+  /* --- the cascade, across files ------------------------------------------
+   *
+   * Everything above reads one file. These read all of them together, which is
+   * where the failures that cost the most actually live. */
+  /* Every stylesheet, minified ones included. Skipping built output is right for
+     LINTING — every finding in a bundle would carry line 1, and the source it came
+     from is already being checked — and wrong here. A vendored dist/largen.css is
+     where the layer order and the paint rule come from; leaving it out resolves the
+     cascade of a document the project does not have. */
+  const all = files.map((f) => ({ name: relative(process.cwd(), f) || f, css: readFileSync(f, 'utf8') }))
+  const entry = entryArg ?? inferEntry(all)
+
+  console.log()
+  if (!entry) {
+    console.log('  NOT RUN  the cascade checks — no entry stylesheet')
+    console.log('           Which declaration wins depends on the order the document loads')
+    console.log('           these files in, and a directory walk does not know it. Pass')
+    console.log('           `--entry path/to/main.css` and largen will follow its @imports.')
+    console.log('           Guessing would answer confidently about a cascade you do not have.')
+  } else {
+    let derived = null
+    try { derived = orderFromImports(all, entry) } catch (e) {
+      console.log(`  NOT RUN  the cascade checks — ${e.message}`)
+    }
+
+    if (derived) {
+      const layers = checkLayerOrder(derived.order)
+      check('cascade layers resolve to the order they are declared in', () => {
+        if (layers.ok) return `${layers.order.length} layers, from ${entry}`
+        throw new Error(layers.findings.map((f) => `${f.message}\n        ${f.why}`).join('\n\n        '))
+      })
+
+      const applies = checkComponentsApply({ files: derived.order, slots })
+      check('every slot a component sets is the one that wins', () => {
+        if (applies.findings.length) {
+          throw new Error(applies.findings
+            .map((f) => `${f.file}:${f.line}\n        ${f.message}\n        ${f.why}`)
+            .join('\n\n        '))
+        }
+        return `${applies.checked} declaration(s) reach paint` +
+          (applies.undecidable.length
+            ? `, ${applies.undecidable.length} undecidable from a selector alone`
+            : '')
+      })
+
+      if (derived.unresolved.length) {
+        console.log(`  note  ${derived.unresolved.length} @import(s) were not among the files checked ` +
+          `(${derived.unresolved.map((u) => u.spec).join(', ')}) — any layer they declare is ` +
+          'missing from the answer above')
+      }
+    }
+  }
+
   if (self) {
     console.log()
     libraryInvariants()
@@ -240,7 +354,11 @@ export async function verify(args = []) {
   console.log()
   const total = errors + failures
   if (total) { console.log(`  ${total} problem(s)\n`); return 1 }
-  console.log(`  all static checks passed${warnings ? ` (${warnings} note(s))` : ''}`)
-  console.log('  (static only — render the result in a browser, in both themes)\n')
+  console.log(`  all checks passed${warnings ? ` (${warnings} note(s))` : ''}`)
+  /* Say what was checked and what was not, rather than one word that covers
+     both. "static only" was true of every check here and is no longer. */
+  console.log(entry
+    ? '  (the contract, and the cascade across files. Not rendering — `largen probe`.)\n'
+    : '  (the contract only. Not the cascade, and not rendering.)\n')
   return 0
 }

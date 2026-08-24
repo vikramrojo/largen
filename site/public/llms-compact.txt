@@ -274,7 +274,7 @@ wrong approved component.
 
 ## Commands
 
-npx largen verify [css...] — check your components against the contract above
+npx largen verify [css...] [--entry main.css] — check your components against the contract, and resolve the cascade across your files
 npx largen build — bundle + minify to dist/ — optional, for CDN, no dependencies
 npx largen gen — regenerate genai artifacts from genai/manifest.json
 npx largen manifest <css...> — derive a component manifest from a project's CSS
@@ -295,8 +295,14 @@ sibling combinator cannot be decided from it. Those are reported as undecidable
 rather than dropped, because an omission reads as "no rule here" and any one of
 them could be the rule that actually wins. `probe` settles those.
 
-All of it is static. It has passed clean on visibly broken components before;
-render the result in a browser, in both themes.
+`verify` also resolves the cascade across your files when it can work out the
+order they load in — inferred from an entry stylesheet, or given with `--entry`.
+That is the check that catches a component whose declaration is correct, whose
+file is correct, and which still never applies because another layer wins.
+Without an order it says so rather than guessing.
+
+What it still cannot see is rendering. It has passed clean on visibly broken
+components before; render the result in a browser, in both themes.
 
 `build` needs nothing installed — it inlines imports, strips comments and
 squeezes whitespace, which is all this stylesheet requires. If your own CSS

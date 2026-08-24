@@ -126,7 +126,20 @@ export function classifySheet(css, slots = []) {
   if (LAYER_BLOCK.test(text)) return { kind: 'component', why: null }
 
   const clean = strip(text)
-  const inLargenLayer = /@layer\s+largen\.[\w-]+\s*\{/.test(clean)
+  /* ANY layer block, not only a largen one.
+   *
+   * This used to ask whether the file declared inside a largen layer, and a file
+   * that set paint slots inside its own — `@layer site-base { * { --weight: 300 } }`,
+   * a framework default, exactly what a migration writes — came back as a component
+   * that had forgotten its layer. It had not; it was layered, deliberately, in a
+   * layer of its own.
+   *
+   * The heuristic existed because nothing could evaluate the real question, which
+   * is not "which layer is this in" but "does this declaration win". checkComponentsApply
+   * answers that now, across files, and answers it about the cascade rather than
+   * about a name. A file that sets slots and opens no layer at all is still the
+   * genuine forgot-the-layer case and is still caught here. */
+  const inLargenLayer = /@layer\s+[\w-]+(?:\.[\w-]+)*\s*\{/.test(clean)
   const sets = inLargenLayer
     ? []
     : slots.filter((slot) => new RegExp(`(^|[;{\\s])${slot}\\s*:`).test(clean))
@@ -135,7 +148,7 @@ export function classifySheet(css, slots = []) {
   return {
     kind: 'not-component',
     why: inLargenLayer
-      ? 'declares inside another largen layer, not `largen.components` — library or system CSS'
+      ? 'declares inside a cascade layer other than `largen.components` — framework, library or system CSS'
       : 'declares nothing inside `@layer largen.components` and sets no paint slot — ' +
         'a theme, token or reset sheet',
   }

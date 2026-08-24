@@ -677,3 +677,149 @@ function explainWin(winner, runnerUp) {
   if (s !== 0) return `specificity ${winner.specificity.join(',')} over ${runnerUp.specificity.join(',')}`
   return 'source order — same layer, same specificity, so the later declaration wins'
 }
+
+/* --- does the component's own declaration actually win? --------------------
+ *
+ * The check `largen verify` could not make, and the reason it could pass clean on
+ * a component that was visibly broken.
+ *
+ * The linter reads one file at a time. Every failure it can see is local: a
+ * missing layer, a colour literal, an unregistered slot. The failures that cost
+ * the most are not local — a component sets `--weight: 500` inside
+ * `largen.components` and something in another file wins, so the declaration is
+ * correct, the file is correct, and the element paints something else. Nothing
+ * about `--weight: 900` computing as `300` looks like a layer problem to anyone
+ * not already suspicious, which is exactly why a verifier should be the one to
+ * say it.
+ *
+ * For an agent this is the difference between a usable loop and a harmful one.
+ * generate → validate → repair terminates when validate says clean, so a
+ * verifier that returns clean on a broken component does not merely fail to
+ * help: it ends the loop with false confidence and hands back something wrong.
+ */
+
+/** Turn a selector into an ancestor chain, or null if it cannot be represented.
+ *
+ *  A chain has no siblings, no child indices and no interaction state, so a
+ *  selector that turns on any of those cannot be synthesised. Returning null and
+ *  counting it beats inventing an element that the rule would not match. */
+export function synthesizePath(selector) {
+  const parts = splitCombinators(selector)
+  if (parts.some((p) => p.type === 'combinator' && UNDECIDABLE_COMBINATOR[p.text])) return null
+
+  const path = []
+  for (const part of parts) {
+    if (part.type !== 'compound') continue
+    const c = parseCompound(part.text)
+
+    /* A subject written only as `:where(kbd)` or `:is(a, button)` still names an
+       element; take the first argument that is a bare compound. */
+    let tag = c.tag
+    const classes = [...c.classes]
+    /* Merge EVERY :where()/:is() on the compound, not the first one that names
+       something. `:where(ol, ul):is(.stack, .row)` carries the element in one and
+       the class in the other, and taking only the first produced an `<ol>` with no
+       class — an element the rule does not match, which then resolved to nothing
+       and was reported as a component that never applies. */
+    for (const fn of c.pseudos) {
+      if (fn.element || !(fn.name === 'where' || fn.name === 'is') || !fn.args) continue
+      const first = splitTopLevel(fn.args)[0]
+      if (!first || splitCombinators(first).length !== 1) continue
+      const inner = parseCompound(first)
+      if (!tag) tag = inner.tag
+      classes.push(...inner.classes)
+      for (const a of inner.attrs) c.attrs.push(a)
+    }
+
+    if (c.pseudos.some((p) => !p.element && UNDECIDABLE_PSEUDO[p.name])) return null
+
+    const attrs = {}
+    for (const a of c.attrs) {
+      const m = a.match(/^\s*([\w-]+)\s*(?:=\s*(?:"([^"]*)"|'([^']*)'|([^\s\]]*)))?\s*$/)
+      if (!m) return null
+      attrs[m[1]] = m[2] ?? m[3] ?? m[4] ?? ''
+    }
+
+    /* `*` and a bare `:where(...)` with nothing nameable inside describe no
+       particular element; a component rule is never written that way. */
+    if (!tag && !classes.length && !c.id && !Object.keys(attrs).length && !c.universal) return null
+
+    path.push({ tag: tag ?? 'div', id: c.id, classes, attrs })
+  }
+  return path.length ? path : null
+}
+
+/**
+ * For every slot a component sets, check that the component's own declaration is
+ * the one that wins on an element matching its selector.
+ *
+ * @param {object} options
+ * @param {Array<{name,css}>} options.files  in load order
+ * @param {string} [options.entry]           derive load order from @imports instead
+ * @param {string[]} options.slots           registered slot names
+ * @returns {{findings: object[], checked: number, undecidable: object[]}}
+ */
+export function checkComponentsApply({ files, entry, slots = [] }) {
+  let ordered = files
+  if (entry) ordered = orderFromImports(files, entry).order
+
+  const counter = { n: 0 }
+  const rules = ordered.flatMap((f) => parseStylesheet(f.css, f.name, counter))
+  const SLOTS = new Set(slots)
+
+  const findings = []
+  const undecidable = []
+  let checked = 0
+
+  for (const rule of rules) {
+    if (rule.layer !== 'largen.components') continue
+
+    for (const decl of rule.declarations) {
+      if (!SLOTS.has(decl.property)) continue
+
+      const selector = splitTopLevel(rule.selector)[0]
+      const path = synthesizePath(selector)
+      if (!path) {
+        undecidable.push({ file: rule.file, line: rule.line, selector: rule.selector, slot: decl.property })
+        continue
+      }
+
+      let resolved
+      try { resolved = resolveProperty({ files: ordered, path, property: decl.property }) }
+      catch { continue }
+
+      checked++
+      const winner = resolved.winner
+      /* Same file, same rule, same declaration — identified by source order,
+         which is unique across the whole run. */
+      if (winner && winner.file === rule.file && winner.order === rule.order) continue
+
+      if (!winner) {
+        /* Cannot happen for a rule that matches its own selector, so if it does,
+           something above is wrong and silence would hide it. */
+        findings.push({
+          rule: 'component-not-applied', severity: 'error', file: rule.file, line: rule.line,
+          message: `\`${decl.property}\` on \`${rule.selector}\` resolves to nothing`,
+          why: 'The component sets it, but no declaration wins for an element matching this ' +
+            'selector. That should be impossible; treat it as a bug in the check rather than ' +
+            'in your CSS, and report it.',
+        })
+        continue
+      }
+
+      findings.push({
+        rule: 'component-overridden', severity: 'error', file: rule.file, line: rule.line,
+        message:
+          `\`${decl.property}: ${decl.value}\` never applies — \`${winner.value}\` from ` +
+          `${winner.layer ? `\`${winner.layer}\`` : 'unlayered CSS'} wins on \`${rule.selector}\``,
+        why:
+          `${resolved.reason}\n        The declaration is correct and the file is correct; the ` +
+          'element still paints something else, which is why this does not look like a layer ' +
+          `problem. Winning declaration: ${winner.file}:${winner.line}.`,
+        winner: { file: winner.file, line: winner.line, layer: winner.layer, value: winner.value },
+      })
+    }
+  }
+
+  return { findings, checked, undecidable }
+}

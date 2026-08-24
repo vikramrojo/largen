@@ -234,11 +234,34 @@ export function orderFromImports(files, entry) {
     if (seen.has(name)) return
     seen.add(name)
     const file = byName.get(name)
-    const clean = String(file.css).replace(/\/\*[\s\S]*?\*\//g, '')
+    /* Blanked, not deleted: offsets into `clean` are used to slice the original
+       below, and removing the comments outright shifts every index after the
+       first one. largen's own stylesheets open with a 24-line comment, so the
+       slice landed inside it and the prelude came back empty. */
+    const clean = String(file.css).replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '))
 
     /* Depth-first, and the importing file is appended AFTER its imports — which
-       is what the cascade sees. `@import` must precede every other rule, so a
-       file's own declarations always follow everything it pulled in. */
+       is what the cascade sees for its declarations. `@import` must precede every
+       other rule, so a file's own rules follow everything it pulled in.
+     *
+     * With one exception, and it is the one that decides layer order. A `@layer`
+     * STATEMENT is allowed before `@import`, and that is where a stylesheet
+     * declares the order of its layers. Treating the file as atomic put that
+     * statement after every file it imports, so layers created by those files
+     * were already positioned and the statement appeared to be trying to move
+     * them. src/largen.css does exactly this — the statement, then the imports —
+     * and the check reported largen's own layer order as unachievable.
+     *
+     * So the leading statements are emitted as their own entry, before the
+     * imports, which is where the browser sees them. */
+    const firstImport = clean.search(IMPORT_ANY)
+    if (firstImport > 0) {
+      const prelude = String(file.css).slice(0, firstImport)
+      if (/@layer\s+[^{};]+;/.test(prelude.replace(/\/\*[\s\S]*?\*\//g, ''))) {
+        order.push({ name: `${name} (layer statement)`, css: prelude, prelude: true })
+      }
+    }
+
     for (const m of clean.matchAll(IMPORT_ANY)) {
       const spec = m[1] ?? m[2] ?? m[3] ?? m[4] ?? m[5]
       const trailing = (m[6] || '').trim()

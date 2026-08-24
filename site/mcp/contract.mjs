@@ -401,7 +401,7 @@ export const OVERVIEW = {
 }
 
 export const COMMANDS = [
-  { command: 'npx largen verify [css...]', does: "check your components against the contract above" },
+  { command: 'npx largen verify [css...] [--entry main.css]', does: "check your components against the contract, and resolve the cascade across your files" },
   { command: 'npx largen build', does: 'bundle + minify to dist/ — optional, for CDN, no dependencies' },
   { command: 'npx largen gen', does: 'regenerate genai artifacts from genai/manifest.json' },
   { command: 'npx largen manifest <css...>', does: "derive a component manifest from a project's CSS" },
@@ -422,7 +422,12 @@ export const COMMANDS_CAVEAT =
   'sibling combinator cannot be decided from it. Those are reported as undecidable ' +
   'rather than dropped, because an omission reads as "no rule here" and any one of ' +
   'them could be the rule that actually wins. `probe` settles those.\n\n' +
-  'All of it is static. It has passed clean on visibly broken components before; ' +
+  '`verify` also resolves the cascade across your files when it can work out the ' +
+  'order they load in — inferred from an entry stylesheet, or given with ' +
+  '`--entry`. That is the check that catches a component whose declaration is ' +
+  'correct, whose file is correct, and which still never applies because another ' +
+  'layer wins. Without an order it says so rather than guessing.\n\n' +
+  'What it still cannot see is rendering. It has passed clean on visibly broken components before; ' +
   'render the result in a browser, in both themes.\n\n' +
   '`build` needs nothing installed — it inlines imports, strips comments and ' +
   'squeezes whitespace, which is all this stylesheet requires. If your own CSS ' +
