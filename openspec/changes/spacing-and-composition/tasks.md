@@ -53,7 +53,7 @@
 - [x] 6.3 Full suite: 78 MCP, 17 discovery, 11 cascade-diff, 9 probe-theme,
       9 verify-cascade, 15 matrix, 11 conformance, 4 size-axis.
 - [x] 6.4 `contract --check` current; budget under 24kb at 18.09kb.
-- [ ] 6.5 Bump, freeze, deploy. First CSS change since 0.3.0 — build id moves
+- [x] 6.5 Bump, freeze, deploy. First CSS change since 0.3.0 — build id moves
       `b9fc348c` → `5445bbba`.
 - [ ] 6.6 Re-run the bake-off with the shipped contract and NO addendum. If the
       composition section works, run 3 should approach run 2 using only what largen
