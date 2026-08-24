@@ -2,6 +2,34 @@
  "$comment": "The release log, as data rather than prose, for two reasons. RELEASES.md is generated from it by `largen contract`, so the published log cannot drift from this file. And every entry carries `signals` — strings that must be present in, or absent from, the frozen bytes at site/public/v/<version>/ — so a claim about a release is checked against the artifact that release actually shipped rather than believed. `largen releases --check` runs that. `signals` is also the machine-readable delta list a per-project upgrade check needs: given a project's CSS and the version it vendored, the `present` strings of every later release are exactly what to grep for.",
  "releases": [
   {
+   "version": "0.3.5",
+   "date": "2026-08-24",
+   "summary": "`largen verify --entry` accepts an HTML file. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
+   "breaking": [],
+   "added": [
+    "`largen verify --entry index.html` derives the load order from the document's `<link>` sequence, alongside the existing `--entry main.css` which follows `@import`. `linkOrder` and `orderFromHtml` are exported from `genai/layers.js`.",
+    "`largen verify --help` prints usage."
+   ],
+   "fixed": [
+    {
+     "change": "The cascade checks reported NOT RUN for the arrangement most projects have.",
+     "why": "Which declaration wins depends on load order, and `--entry` could only follow `@import`. A page that links its framework and then its own stylesheet has no CSS entry point anywhere, so the most valuable check silently did not run. Two people found this independently within a day: the scoring harness, and an agent authoring a page, which reverse-engineered the requirement from an error message and hand-wrote a throwaway stylesheet of `@import`s mirroring its own `<link>` tags to get past it."
+    },
+    "`largen verify --help` re-ran verify against the working directory instead of printing usage, so a reader looking for the flag they needed got a clean pass and no answer."
+   ],
+   "tooling": [],
+   "signals": {
+    "present": [
+     "--line-height",
+     "--letter-spacing"
+    ],
+    "absent": [
+     "--leading"
+    ]
+   },
+   "package": "2ad98c1ce6826e1a153c56d6eeed1cbaead95a6f6d650e3cd6894faafa1d240c"
+  },
+  {
    "version": "0.3.4",
    "date": "2026-08-24",
    "summary": "The conformance assertions now run, the four-axes claim is checked, and `largen eval` scores authored components offline. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",

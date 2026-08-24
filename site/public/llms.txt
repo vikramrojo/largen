@@ -29,4 +29,4 @@ anything else.
 ## Stylesheet
 
 - Current: https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css
-- Pinned:  https://cdn.jsdelivr.net/npm/largen@0.3.4/dist/largen.css (immutable)
+- Pinned:  https://cdn.jsdelivr.net/npm/largen@0.3.5/dist/largen.css (immutable)

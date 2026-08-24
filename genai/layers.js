@@ -328,3 +328,79 @@ export function inferEntry(files) {
   const roots = importers.filter((name) => !imported.has(name))
   return roots.length === 1 ? roots[0] : null
 }
+
+/* Stylesheet hrefs, in the order the document links them.
+ *
+ * `@import` is one way a page states its load order. A `<link>` is the other, and
+ * it is the more common one — a page links its framework and then its own sheet,
+ * with no CSS entry point anywhere. Every tool here that needs an order was built
+ * to walk `@import` and therefore reported NOT RUN for exactly the arrangement
+ * most projects use.
+ *
+ * Two people found this independently within a day: the harness that scores
+ * authored pages, and an agent authoring one, which reverse-engineered the
+ * requirement from an error message and hand-built a throwaway entry file to get
+ * past it. Two independent discoveries of the same missing feature is the signal
+ * that it is missing.
+ *
+ * Remote hrefs are dropped: a CDN stylesheet is not in the set being reasoned
+ * about, and pretending otherwise would put a name in the order that resolves to
+ * nothing. */
+const LINK = /<link\b[^>]*>/gi
+
+export function linkOrder(html) {
+  const out = []
+  for (const tag of String(html).replace(/<!--[\s\S]*?-->/g, '').match(LINK) ?? []) {
+    if (!/\brel\s*=\s*["']?stylesheet\b/i.test(tag)) continue
+    const href = (tag.match(/\bhref\s*=\s*["']([^"']+)["']/i) ?? [])[1]
+    if (!href || /^(https?:)?\/\//.test(href) || href.startsWith('data:')) continue
+    out.push(href)
+  }
+  return out
+}
+
+/**
+ * Load order taken from a document's `<link>` sequence rather than an `@import`
+ * graph, returning the same shape as `orderFromImports` so callers treat them
+ * alike.
+ *
+ * A linked stylesheet may itself `@import` others, so each one is walked.
+ *
+ * @param {Array<{name,css}>} files  the available set
+ * @param {string} htmlName          name of the HTML file within it
+ */
+export function orderFromHtml(files, htmlName) {
+  const byName = new Map(files.map((f) => [f.name, f]))
+  const html = byName.get(htmlName)
+  if (!html) {
+    const err = new Error(`entry \`${htmlName}\` is not among the ${files.length} file(s) provided`)
+    err.code = 'ENTRY_NOT_FOUND'
+    throw err
+  }
+
+  const order = []
+  const seen = new Set()
+  const unresolved = []
+  const layered = []
+
+  for (const href of linkOrder(html.css)) {
+    const target = resolveSpec(htmlName, href)
+    if (target === null || !byName.has(target)) {
+      unresolved.push({ in: htmlName, spec: href, resolved: target, why: 'no file with that name was provided' })
+      continue
+    }
+    /* Each linked sheet may pull in more; walking it keeps a framework's own
+       @import graph in the order the browser would build it. */
+    const sub = orderFromImports([...files], target)
+    for (const f of sub.order) {
+      if (seen.has(f.name)) continue
+      seen.add(f.name)
+      order.push(f)
+    }
+    unresolved.push(...sub.unresolved)
+    layered.push(...sub.layered)
+  }
+
+  const unreached = files.map((f) => f.name).filter((n) => n !== htmlName && !seen.has(n))
+  return { order, unresolved, layered, unreached, from: 'link order' }
+}

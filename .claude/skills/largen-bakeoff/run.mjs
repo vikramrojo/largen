@@ -30,7 +30,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, copyFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { extname } from 'node:path'
-import { join, basename } from 'node:path'
+import { join, basename, resolve } from 'node:path'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
@@ -59,13 +59,12 @@ const THEME_LEVER = {
  *
  * The <link> order IS the load order. Deriving it beats guessing, which is the
  * rule `largen verify` already follows for the same reason. */
-function deriveEntry(dir) {
-  const html = readFileSync(join(dir, 'index.html'), 'utf8')
-  const hrefs = [...html.matchAll(/<link\b[^>]*>/gi)]
-    .filter((m) => /rel\s*=\s*["']?stylesheet/i.test(m[0]))
-    .map((m) => (m[0].match(/href\s*=\s*["']([^"']+)["']/i) ?? [])[1])
-    .filter(Boolean)
-    .filter((h) => !/^(https?:)?\/\//.test(h))
+async function deriveEntry(dir) {
+  /* `linkOrder` lives in genai/layers.js now. This file had the only copy while
+     `verify --entry` accepted CSS alone; both take an HTML entry directly today,
+     so the copy is gone rather than left to drift. */
+  const { linkOrder } = await import(join(repo, 'genai/layers.js'))
+  const hrefs = linkOrder(readFileSync(join(dir, 'index.html'), 'utf8'))
   if (!hrefs.length) return null
   writeFileSync(join(dir, '_entry.css'), hrefs.map((h) => `@import url("${h}");`).join('\n') + '\n')
   return { file: '_entry.css', order: hrefs }
@@ -239,7 +238,14 @@ async function evalArm(dir, entry) {
 
 /* --- run ------------------------------------------------------------------ */
 
-const runDir = process.argv[2]
+/* Absolute, always.
+ *
+ * A relative path reached `file://${page}` as `file://.claude/skills/...`, which
+ * is not a valid URL. Chrome rendered ERR_INVALID_URL, --screenshot saved that
+ * error page, and the run recorded two screenshots and no error — a harness
+ * reporting success for something that did not happen, which is the failure it
+ * exists to detect. The fixtures passed because /tmp is absolute. */
+const runDir = process.argv[2] ? resolve(process.argv[2]) : null
 if (!runDir || !existsSync(runDir)) {
   console.error('\n  usage: node run.mjs <runDir>   (containing largen/ and tailwind/)\n')
   process.exit(1)
@@ -267,14 +273,27 @@ for (const arm of ['largen', 'tailwind']) {
     }
   }
 
-  const entry = arm === 'largen' ? deriveEntry(dir) : null
+  const entry = arm === 'largen' ? await deriveEntry(dir) : null
+
+  /* Shot over HTTP rather than file://, from the same server the probe uses.
+     Not for origin reasons — a screenshot does not need one — but because a URL
+     that does not load is then detectable. `--screenshot` photographs whatever
+     Chrome renders, including its own error page, and reports no failure. */
   const shots = {}
-  for (const theme of PROBE.themes) {
-    const page = themedCopy(dir, arm, theme)
-    const out = join(dir, `shot-${theme}.png`)
-    try { await shoot(`file://${page}`, out); shots[theme] = { file: `${arm}/shot-${theme}.png`, bytes: statSync(out).size } }
-    catch (e) { shots[theme] = { error: e.message } }
-  }
+  const site = await serve(dir)
+  try {
+    for (const theme of PROBE.themes) {
+      const page = basename(themedCopy(dir, arm, theme))
+      const url = `http://127.0.0.1:${site.port}/${page}`
+      const out = join(dir, `shot-${theme}.png`)
+      try {
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`${url} returned ${res.status}`)
+        await shoot(url, out)
+        shots[theme] = { file: `${arm}/shot-${theme}.png`, bytes: statSync(out).size }
+      } catch (e) { shots[theme] = { error: e.message } }
+    }
+  } finally { site.close() }
 
   const probe = await probeArm(dir, arm)
 

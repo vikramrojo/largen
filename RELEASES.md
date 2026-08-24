@@ -9,6 +9,21 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.3.5 — 2026-08-24
+
+`largen verify --entry` accepts an HTML file. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.
+
+### Added
+
+- `largen verify --entry index.html` derives the load order from the document's `<link>` sequence, alongside the existing `--entry main.css` which follows `@import`. `linkOrder` and `orderFromHtml` are exported from `genai/layers.js`.
+- `largen verify --help` prints usage.
+
+### Fixed
+
+- The cascade checks reported NOT RUN for the arrangement most projects have.
+  Which declaration wins depends on load order, and `--entry` could only follow `@import`. A page that links its framework and then its own stylesheet has no CSS entry point anywhere, so the most valuable check silently did not run. Two people found this independently within a day: the scoring harness, and an agent authoring a page, which reverse-engineered the requirement from an error message and hand-wrote a throwaway stylesheet of `@import`s mirroring its own `<link>` tags to get past it.
+- `largen verify --help` re-ran verify against the working directory instead of printing usage, so a reader looking for the flag they needed got a clean pass and no answer.
+
 ## 0.3.4 — 2026-08-24
 
 The conformance assertions now run, the four-axes claim is checked, and `largen eval` scores authored components offline. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.

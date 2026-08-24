@@ -136,13 +136,13 @@ for a demo and wrong for production — and CDNs cache it for hours, so it is no
 either.
 
 A version is immutable in a way a URL convention cannot be: npm will not accept a second
-publish of a version that already exists, so `largen@0.3.4/dist/largen.css` is the same
+publish of a version that already exists, so `largen@0.3.5/dist/largen.css` is the same
 file forever.
 
 ```html
 <link rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/largen@0.3.4/dist/largen.css"
-      integrity="sha384-GJclGX2bDgjnq3BVC48kV/QwtXgif2xgwcAfGFvROYpw2Z8Fk5fQiwkkz2HTI3hE"
+      href="https://cdn.jsdelivr.net/npm/largen@0.3.5/dist/largen.css"
+      integrity="sha384-rwm6dJoOWT+eMmELiByCc1MThSXuNSC/vHybt2S9Mj88nVY8W2YMzrC5aqwBNzHj"
       crossorigin="anonymous">
 ```
 
@@ -153,7 +153,7 @@ you wanted. Pin the version if you want the check.
 To get the hash for any version, from the bytes you will actually be served:
 
 ```
-curl -s https://cdn.jsdelivr.net/npm/largen@0.3.4/dist/largen.css |
+curl -s https://cdn.jsdelivr.net/npm/largen@0.3.5/dist/largen.css |
   openssl dgst -sha384 -binary | openssl base64 -A
 ```
 
@@ -163,7 +163,7 @@ The release check enforces that rather than assuming it.
 
 The `+abcd1234` suffix in the banner is the *build id*: a hash of the bundle before the
 banner was added. It names the build but is not the file's digest, and two versions
-sharing one build id have identical CSS differing only in the version string — 0.3.4, 0.3.3, 0.3.2, 0.3.1 and
+sharing one build id have identical CSS differing only in the version string — 0.3.5, 0.3.4, 0.3.3, 0.3.2, 0.3.1 and
 0.3.0 are exactly that. [RELEASES.md](RELEASES.md) says when that happened, and every
 entry there is checked against the bytes that version shipped.
 

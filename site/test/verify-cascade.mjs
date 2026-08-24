@@ -136,5 +136,42 @@ await check('the summary states what was checked, not one word for both', async 
   return 'the contract, and the cascade; not rendering'
 })
 
+await check('an HTML entry supplies the load order via its <link> tags', async () => {
+  /* The arrangement most projects actually have: a page links its framework and
+     then its own sheet, and there is no CSS entry point anywhere. `--entry` only
+     walked @import, so the cascade checks reported NOT RUN for the common case.
+     Two people found it independently in a day — the scoring harness, and an agent
+     authoring a page, which reverse-engineered the requirement from an error
+     message and hand-wrote a throwaway stylesheet of @imports mirroring its own
+     <link> tags to get past it. */
+  const dir = mkdtempSync(join(tmpdir(), 'largen-html-entry-'))
+  try {
+    mkdirSync(join(dir, 'styles'), { recursive: true })
+    copyFileSync(DIST, join(dir, 'styles/largen.css'))
+    writeFileSync(join(dir, 'styles/components.css'), COMPONENTS)
+    writeFileSync(join(dir, 'styles/index.html'),
+      '<!doctype html><html><head>' +
+      '<link rel="stylesheet" href="largen.css">' +
+      '<link rel="stylesheet" href="components.css">' +
+      '</head><body><span class="kbd">k</span></body></html>')
+    const { stdout } = await run('node', [CLI, 'verify', '--entry', 'styles/index.html'],
+      { cwd: dir, timeout: 60_000 })
+    assert(!/NOT RUN/.test(stdout), `the cascade checks did not run:\n${stdout}`)
+    assert(/from styles\/index\.html/.test(stdout), 'did not report the html as the source of the order')
+    assert(/reach paint/.test(stdout), 'no declarations were checked')
+    return 'link order accepted, no hand-written entry stylesheet needed'
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+await check('`--help` prints usage instead of running', async () => {
+  /* It silently re-ran verify against the working directory, so a reader looking
+     for the flag they needed got a clean pass and no answer. */
+  const { stdout } = await run('node', [CLI, 'verify', '--help'], { timeout: 30_000 })
+  assert(/largen verify —/.test(stdout), 'no usage block')
+  assert(/--entry/.test(stdout) && /index\.html/.test(stdout), 'usage does not mention the html entry')
+  assert(!/the authoring contract —/.test(stdout), 'it ran the checks instead of printing usage')
+  return 'usage, and it names both entry kinds'
+})
+
 console.log(`\n  ${pass} passed, ${fail} failed\n`)
 process.exit(fail ? 1 : 0)

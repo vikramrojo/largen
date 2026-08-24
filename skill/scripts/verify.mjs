@@ -46,7 +46,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { at, root, discover } from './paths.mjs'
 import { lintComponentCss, registeredSlots, classifySheet } from '../../genai/lint.js'
-import { checkLayerOrder, orderFromImports, inferEntry } from '../../genai/layers.js'
+import { checkLayerOrder, orderFromImports, orderFromHtml, inferEntry } from '../../genai/layers.js'
 import { checkComponentsApply } from '../../genai/cascade.js'
 
 const read = (p) => readFileSync(at(p), 'utf8')
@@ -175,7 +175,28 @@ function libraryInvariants() {
 
 /* --- The contract, against whatever the caller pointed at ---------------- */
 
+const USAGE = `
+  largen verify — check components against the authoring contract, and resolve
+                  the cascade across your stylesheets
+
+    largen verify                      every stylesheet under the working directory
+    largen verify src/components.css   just these
+    largen verify --entry src/main.css   derive load order from its @imports
+    largen verify --entry index.html     derive it from the document's <link> order
+
+  Which declaration wins depends on the order the document loads its stylesheets
+  in, and a directory walk does not know it. largen infers an entry when exactly
+  one stylesheet imports others and is imported by none; otherwise pass --entry.
+  Without an order the cascade checks are reported as not run, rather than
+  answered against an order you do not have.
+
+  An HTML entry is usually the right one. A page links its framework and then its
+  own sheet, and there is no CSS entry point anywhere in that arrangement.
+`
+
 export async function verify(args = []) {
+  if (args.includes('--help') || args.includes('-h')) { console.log(USAGE); return 0 }
+
   /* `--entry main.css` takes a value, so a naive "not a flag" filter collects that
      value as a file to lint. It did: `verify --entry src/largen.css` linted the
      entry point as though it were a component, faulted it for having no components
@@ -261,11 +282,24 @@ export async function verify(args = []) {
     console.log('  NOT RUN  the cascade checks — no entry stylesheet')
     console.log('           Which declaration wins depends on the order the document loads')
     console.log('           these files in, and a directory walk does not know it. Pass')
-    console.log('           `--entry path/to/main.css` and largen will follow its @imports.')
+    console.log('           `--entry path/to/main.css` to follow its @imports, or')
+    console.log('           `--entry path/to/index.html` to follow the document\'s <link> order.')
     console.log('           Guessing would answer confidently about a cascade you do not have.')
   } else {
+    /* An HTML entry states its order with <link>; a CSS one with @import. Both
+       are load orders and the caller should not have to translate between them —
+       needing to hand-write a stylesheet of @imports mirroring your own <link>
+       tags is what this branch removes. */
+    const fromHtml = /\.x?html?$/i.test(entry)
+    /* Discovery collects stylesheets, so an HTML entry is not in the set — and
+       should not be, since it is not a thing to lint. Read it in for its link
+       order alone. */
+    if (fromHtml && !all.some((f) => f.name === entry)) {
+      try { all.unshift({ name: entry, css: readFileSync(entry, 'utf8') }) }
+      catch { console.log(`  NOT RUN  the cascade checks — cannot read ${entry}`) }
+    }
     let derived = null
-    try { derived = orderFromImports(all, entry) } catch (e) {
+    try { derived = fromHtml ? orderFromHtml(all, entry) : orderFromImports(all, entry) } catch (e) {
       console.log(`  NOT RUN  the cascade checks — ${e.message}`)
     }
 
