@@ -22,7 +22,6 @@
         <a class="nav-link" href="/docs/mcp.html">mcp</a>
         <a class="nav-link" href="/docs/migrating.html">migrating</a>
         <a class="nav-link" href="/play">play</a>
-        <a class="nav-link" href="/demo/">demos</a>
     <label class="theme-toggle">
       <input type="checkbox" hidden onchange="
         document.documentElement.dataset.theme = this.checked ? 'dark' : 'light';
@@ -91,15 +90,15 @@
     </a>
     <a class="doc-card" href="/docs/authoring.html">
       <span class="doc-card-title">Authoring</span>
-      <span class="doc-card-desc">Six rules for writing a component, and the four ways it goes wrong.</span>
+      <span class="doc-card-desc">six rules for writing a component, and the eight ways it goes wrong.</span>
     </a>
     <a class="doc-card" href="/docs/components.html">
       <span class="doc-card-title">Reference components</span>
-      <span class="doc-card-desc">Twenty-three optional components. Copy them or ignore them.</span>
+      <span class="doc-card-desc">32 optional components. Copy them or ignore them.</span>
     </a>
     <a class="doc-card" href="/docs/mcp.html">
       <span class="doc-card-title">MCP server</span>
-      <span class="doc-card-desc">Six tools for agents. No API key, no generate_ui.</span>
+      <span class="doc-card-desc">12 tools for agents. No API key, no generate_ui.</span>
     </a>
     <a class="doc-card" href="/play">
       <span class="doc-card-title">Playground</span>
@@ -110,20 +109,46 @@
   
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Use it</h2>
-    <pre class="code">&lt;link rel="stylesheet" href="https://largen.dev/largen.css"&gt;
+    <pre class="code">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css"&gt;
   
-  # or pinned, immutable:
-  &lt;link rel="stylesheet" href="https://largen.dev/v/0.2.0/largen.css"&gt;
+  # or pinned — a published version is immutable:
+  &lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.3.2/dist/largen.css"&gt;
   
-  # or from npm:
+  # or install it:
   npm install largen</pre>
     <p class="spec-note">For agents: <a href="/llms-compact.txt">/llms-compact.txt</a>
-    carries the whole contract inline, about 2,400 tokens.</p>
+    carries the whole contract inline, about 3,700 tokens.</p>
+  </section>
+  
+  <section class="stack" style="--gap:.75rem">
+    <h2 class="section-title">Evidence, not a showcase</h2>
+    <p class="spec-note">Two pages that run in your browser and report what they find.
+    Neither is a gallery — they exist because the claims below them are the ones no
+    static check can settle.</p>
+    <div class="grid" style="--min-item:16rem;--gap:.75rem">
+    <a class="doc-card" href="/demo/conformance.html">
+      <span class="doc-card-title">Conformance</span>
+      <span class="doc-card-desc">The one mechanism largen has no fallback for: <span class="tok">revert-layer</span> against a guaranteed-invalid slot. eleven checks. Open it in Safari, Firefox and Chrome — nothing static can answer this.</span>
+    </a>
+    <a class="doc-card" href="/demo/tests.html">
+      <span class="doc-card-title">The load-bearing tests</span>
+      <span class="doc-card-desc">UA defaults survive the universal paint rule, tone inherits, slots do not leak to children, and modifiers outrank components.</span>
+    </a>
+    </div>
+  </section>
+  
+  <section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Releases</h2>
+    <p class="spec-note"><strong>0.3.2</strong> — Drive the page theme source instead of overriding one of its outputs. 0.3.1 made a wrong answer more credible; this is the correction. No CSS change: build id <code>b9fc348c</code>, unchanged since 0.3.0.</p>
+    <p class="spec-note">Every entry in the log is checked against the bytes that
+    version actually shipped, so it is a claim with a witness rather than a note
+    written from memory. <a href="https://github.com/vikramrojo/largen/blob/main/RELEASES.md">The
+    full log</a> · <a href="https://www.npmjs.com/package/largen">npm</a></p>
   </section>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.2.0 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.3.2 — a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

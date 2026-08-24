@@ -43,7 +43,6 @@ const NAV = [
   ['/docs/mcp.html', 'mcp'],
   ['/docs/migrating.html', 'migrating'],
   ['/play', 'play'],
-  ['/demo/', 'demos'],
 ]
 
 export function page({ title, description, current, body, version }) {

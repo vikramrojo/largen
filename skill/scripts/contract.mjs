@@ -366,7 +366,14 @@ export async function contract(args = []) {
     if (stale.length) {
       throw new Error(`out of date — run \`largen contract\`:\n${stale.map(([f]) => `    ${f}`).join('\n')}`)
     }
-    console.log('\n  contract: all generated surfaces are current\n')
+
+    /* The hand-written pages are generated too, and were the ones that actually
+       rotted: they are committed and served off disk, so no build step touches
+       them and nothing compared them to their generator. */
+    const { pages } = await import('./pages.mjs')
+    await pages(['--check'])
+
+    console.log('  contract: all generated surfaces are current\n')
     return 0
   }
 

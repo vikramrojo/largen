@@ -19,15 +19,45 @@ import { renderMarkdown } from './markdown.mjs'
 
 const w = (p, s) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, s) }
 
-export async function pages() {
+export async function pages(args = []) {
+  /* --check generates everything and compares, writing nothing.
+     These pages are committed and served straight off disk, so nothing regenerates
+     them at deploy time and nothing noticed when they stopped being true: the site
+     advertised 0.2.0, and a pinned URL for it, for three releases. `largen contract
+     --check` covers the surfaces it generates itself; this makes it cover these. */
+  const check = args.includes('--check')
   const { page, esc } = await import('../../site/mcp/page.mjs')
   const { manifest } = await import('../../genai/validate.js')
   const v = JSON.parse(readFileSync(at('package.json'), 'utf8')).version
-  /* Derived, not spelled. A slot count written as a word goes stale silently. */
+  /* Derived, not spelled. A count written as a word goes stale silently — and
+     every one of these had. The page said six MCP tools when there were twelve,
+     twenty-three components when there were thirty-two, four failure modes when
+     there were eight, and 2,400 tokens for a file that had grown by half. The
+     slot count was the only one derived, and the only one still true. */
   const { registeredSlots } = await import('../../genai/lint.js')
   const SLOTS = registeredSlots(readFileSync(at('src/properties.css'), 'utf8')).length
+  const { TOOL_DEFINITIONS } = await import('../../site/mcp/tools/index.mjs')
+  const TOOLS = TOOL_DEFINITIONS.length
+  const { buildContract } = await import('../../site/mcp/contract.mjs')
+  const CONTRACT = buildContract()
+  const RULES = CONTRACT.rules.length
+  const MODES = CONTRACT.failureModes.length
+  const COMPONENTS = manifest.components.length
+  /* Four characters per token is the usual rough conversion; rounded so the page
+     does not imply a precision it does not have. */
+  const COMPACT_TOKENS = Math.round(readFileSync(at('site/public/llms-compact.txt'), 'utf8').length / 400) * 100
+  const CONFORMANCE = (readFileSync(at('demo/conformance.html'), 'utf8').match(/check\(/g) || []).length
+  const RELEASES = JSON.parse(readFileSync(at('genai/releases.json'), 'utf8')).releases
+  const LATEST = RELEASES[0]
+  const words = (n) => ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven',
+    'eight', 'nine', 'ten', 'eleven', 'twelve'][n] ?? String(n)
+  /* The release log is authored as markdown and read as markdown everywhere else.
+     Escape first, then promote code spans — the other order would let a summary
+     inject markup. */
+  const ticks = (text) => esc(text).replace(/`([^`]+)`/g, '<code>$1</code>')
   const written = []
-  const record = (rel, html) => { w(at(rel), html); written.push(rel) }
+  const produced = new Map()
+  const record = (rel, html) => { produced.set(rel, html); if (!check) w(at(rel), html); written.push(rel) }
 
   const card = (href, title, desc) =>
   `  <a class="doc-card" href="${href}">
@@ -90,24 +120,44 @@ export async function pages() {
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
   ${card('/docs/contract.html', 'The contract', `${SLOTS} slots, the layer rule, the paint rule. What the library guarantees.`)}
   ${card('/docs/axes.html', 'The axes', 'tone, variant, size, state — and why only two of them inherit.')}
-  ${card('/docs/authoring.html', 'Authoring', 'Six rules for writing a component, and the four ways it goes wrong.')}
-  ${card('/docs/components.html', 'Reference components', 'Twenty-three optional components. Copy them or ignore them.')}
-  ${card('/docs/mcp.html', 'MCP server', 'Six tools for agents. No API key, no generate_ui.')}
+  ${card('/docs/authoring.html', 'Authoring', `${words(RULES)} rules for writing a component, and the ${words(MODES)} ways it goes wrong.`)}
+  ${card('/docs/components.html', 'Reference components', `${COMPONENTS} optional components. Copy them or ignore them.`)}
+  ${card('/docs/mcp.html', 'MCP server', `${TOOLS} tools for agents. No API key, no generate_ui.`)}
   ${card('/play', 'Playground', 'Render a spec. Share it in a URL with no server involved.')}
     </div>
   </section>
   
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Use it</h2>
-    <pre class="code">${esc(`<link rel="stylesheet" href="https://largen.dev/largen.css">
+    <pre class="code">${esc(`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css">
   
-  # or pinned, immutable:
-  <link rel="stylesheet" href="https://largen.dev/v/${v}/largen.css">
+  # or pinned — a published version is immutable:
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@${v}/dist/largen.css">
   
-  # or from npm:
+  # or install it:
   npm install largen`)}</pre>
     <p class="spec-note">For agents: <a href="/llms-compact.txt">/llms-compact.txt</a>
-    carries the whole contract inline, about 2,400 tokens.</p>
+    carries the whole contract inline, about ${COMPACT_TOKENS.toLocaleString('en-US')} tokens.</p>
+  </section>
+  
+  <section class="stack" style="--gap:.75rem">
+    <h2 class="section-title">Evidence, not a showcase</h2>
+    <p class="spec-note">Two pages that run in your browser and report what they find.
+    Neither is a gallery — they exist because the claims below them are the ones no
+    static check can settle.</p>
+    <div class="grid" style="--min-item:16rem;--gap:.75rem">
+  ${card('/demo/conformance.html', 'Conformance', `The one mechanism largen has no fallback for: <span class="tok">revert-layer</span> against a guaranteed-invalid slot. ${words(CONFORMANCE)} checks. Open it in Safari, Firefox and Chrome — nothing static can answer this.`)}
+  ${card('/demo/tests.html', 'The load-bearing tests', 'UA defaults survive the universal paint rule, tone inherits, slots do not leak to children, and modifiers outrank components.')}
+    </div>
+  </section>
+  
+  <section class="stack" style="--gap:.5rem">
+    <h2 class="section-title">Releases</h2>
+    <p class="spec-note"><strong>${LATEST.version}</strong> — ${ticks(LATEST.summary)}</p>
+    <p class="spec-note">Every entry in the log is checked against the bytes that
+    version actually shipped, so it is a claim with a witness rather than a note
+    written from memory. <a href="https://github.com/vikramrojo/largen/blob/main/RELEASES.md">The
+    full log</a> · <a href="https://www.npmjs.com/package/largen">npm</a></p>
   </section>`,
   }))
   
@@ -208,8 +258,8 @@ ${names.map(componentBlock).join('\n')}
 
 <section class="stack" style="--gap:.5rem">
   <h2 class="section-title">Using them</h2>
-  <pre class="code">${esc(`<link rel="stylesheet" href="https://largen.dev/largen.css">
-<link rel="stylesheet" href="https://largen.dev/largen.components.css">`)}</pre>
+  <pre class="code">${esc(`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.components.css">`)}</pre>
   <p class="spec-note">Or copy one component's source and skip the file entirely. That is
   the intended path — the set exists to be read and taken from, not depended on.</p>
 </section>`
@@ -227,7 +277,7 @@ ${names.map(componentBlock).join('\n')}
     description: 'Six MCP tools for agents building with largen. Streamable HTTP, no authentication, and deliberately no generate_ui.',
     body: `<div class="stack" style="--gap:.4rem">
     <h1 class="page-title">MCP server</h1>
-    <p class="page-desc">Six tools, over Streamable HTTP, with no authentication.
+    <p class="page-desc">${TOOLS} tools, over Streamable HTTP, with no authentication.
     Everything here is public documentation or a pure function over what you send.</p>
   </div>
   
@@ -316,7 +366,7 @@ ${names.map(componentBlock).join('\n')}
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Without MCP</h2>
     <p class="spec-note">Fetch <a href="/llms-compact.txt">/llms-compact.txt</a>: the
-    whole contract inline, roughly 2,400 tokens, enough to author a correct component
+    whole contract inline, roughly ${COMPACT_TOKENS.toLocaleString('en-US')} tokens, enough to author a correct component
     without another request.</p>
   </section>`,
   }))
@@ -447,6 +497,20 @@ ${names.map(componentBlock).join('\n')}
     description: 'A runbook for moving a site off Tailwind, daisyUI, CVA and a component registry onto largen.',
     body: `<article class="doc">\n${guide}\n</article>`,
   }))
+
+  if (check) {
+    const stale = []
+    for (const [rel, html] of produced) {
+      let current = null
+      try { current = readFileSync(at(rel), 'utf8') } catch { /* absent counts as stale */ }
+      if (current !== html) stale.push(rel)
+    }
+    if (stale.length) {
+      throw new Error(`out of date — run \`largen pages\`:\n${stale.map((f) => `    ${f}`).join('\n')}`)
+    }
+    console.log(`\n  pages: ${produced.size} generated page(s) are current\n`)
+    return 0
+  }
 
   console.log(`\n  largen pages — ${written.length} pages\n`)
   for (const p of written) console.log(`    ${p}`)
