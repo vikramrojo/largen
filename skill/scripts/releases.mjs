@@ -16,10 +16,62 @@
  * it can grep for. That is exactly this list, which is why it is data here rather
  * than sentences in a markdown file.
  */
-import { readFileSync, existsSync, writeFileSync, readdirSync } from 'node:fs'
+import { readFileSync, existsSync, writeFileSync, readdirSync, statSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { at } from './paths.mjs'
 
 const load = () => JSON.parse(readFileSync(at('genai/releases.json'), 'utf8')).releases
+
+/* A fingerprint of the code the package ships.
+ *
+ * The frozen-path check compares dist/ against site/public/v/<version>/, which
+ * catches a stylesheet that changed after its release. It says nothing about the
+ * rest of the package, and the rest of the package is most of it: the linter, the
+ * cascade resolver, the CLI. A release whose CSS is byte-identical and whose
+ * verify command was rewritten passes that check, because the bytes it compares
+ * did not move.
+ *
+ * That happened. 0.3.2 shipped, `largen verify` was then given the cascade checks
+ * — the entire point of the change — and five shipped files changed while the
+ * version stayed 0.3.2 and `releases --check` reported everything in order.
+ * Anyone installing largen@0.3.2 got the old command.
+ *
+ * dist/ is excluded deliberately: the frozen-path check already covers it, and
+ * including it would make this unverifiable from a clean clone, where dist/ does
+ * not exist until something builds it. */
+/* dist/ for the reason above. genai/releases.json because the digest is recorded
+   IN it: hashing a file that is about to contain that hash cannot settle, the same
+   circularity the build id avoids by hashing the bundle before the banner. The log
+   is not unchecked — its own signals are verified against the frozen builds. */
+const SKIP = /^(dist\/|genai\/releases\.json$)/
+
+function shippedFiles() {
+  const { files = [] } = JSON.parse(readFileSync(at('package.json'), 'utf8'))
+  const out = []
+  const walk = (rel) => {
+    /* Per file, not per pattern. Filtering the patterns lets `genai` through and
+       then walks genai/releases.json inside it, so the exclusion never applied and
+       the digest could not settle. */
+    if (SKIP.test(rel)) return
+    const full = at(rel)
+    if (!existsSync(full)) return
+    if (statSync(full).isDirectory()) {
+      for (const entry of readdirSync(full).sort()) walk(`${rel}/${entry}`)
+    } else out.push(rel)
+  }
+  for (const pattern of files) walk(pattern)
+  return out.sort()
+}
+
+/** Stable across machines: sorted paths, each with the hash of its contents. */
+export function packageDigest() {
+  const h = createHash('sha256')
+  for (const rel of shippedFiles()) {
+    h.update(rel)
+    h.update(createHash('sha256').update(readFileSync(at(rel))).digest())
+  }
+  return h.digest('hex')
+}
 
 const bullet = (item) => (typeof item === 'string' ? item : item.change)
 const detail = (item) => (typeof item === 'string' ? null : item)
@@ -119,6 +171,24 @@ export function checkReleases(releases = load()) {
      Only checked when dist/ exists. It is gitignored and built on demand, so a
      fresh clone has none and that is not a failure. */
   const current = JSON.parse(readFileSync(at('package.json'), 'utf8')).version
+
+  /* Did the code change after the version that names it was released? */
+  const entry = releases.find((r) => r.version === current)
+  if (entry?.package) {
+    const actual = packageDigest()
+    if (actual !== entry.package) {
+      findings.push({
+        version: current,
+        severity: 'error',
+        message:
+          `the package's shipped files no longer hash to what ${current} recorded ` +
+          `(${entry.package.slice(0, 12)}… vs ${actual.slice(0, 12)}…). Code that ships ` +
+          'has changed since that version was cut, so publishing now would put different ' +
+          'contents on the registry under a version that is already there. Bump the version.',
+      })
+    }
+  }
+
   const frozenDir = at('site/public/v', current)
   if (existsSync(at('dist')) && existsSync(frozenDir)) {
     for (const f of readdirSync(at('dist')).filter((x) => x.endsWith('.css'))) {

@@ -8,7 +8,7 @@
  * So versioned paths are snapshots, and this refuses to overwrite one. If a
  * version needs different bytes, it needs a different version.
  */
-import { readdirSync, mkdirSync, copyFileSync, existsSync, readFileSync } from 'node:fs'
+import { readdirSync, mkdirSync, copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { at } from './paths.mjs'
 
 export async function release(args = []) {
@@ -17,6 +17,33 @@ export async function release(args = []) {
   const dir = at('site/public/v', pkg.version)
 
   if (!existsSync(at('dist'))) throw new Error('no dist/ — run `largen build` first')
+
+  /* Freezing a version whose generated surfaces are stale freezes the wrong
+     bytes, and SKILL.md and README.md are both shipped, so regenerating them
+     afterwards changes the package under a version that is already frozen. */
+  const { contract } = await import('./contract.mjs')
+  await contract(['--check'])
+
+  /* Record the fingerprint of the code this version ships, LAST — after every
+     generator has run, because several of them write files that ship. Getting
+     this order wrong is not subtle: `largen contract` rewrites SKILL.md, and a
+     digest taken before it is stale the moment it is recorded.
+     
+     This is the check that would have caught 0.3.2, whose stylesheets never moved
+     and whose verify command was rewritten underneath it. */
+  const { packageDigest } = await import('./releases.mjs')
+  const logPath = at('genai/releases.json')
+  const log = JSON.parse(readFileSync(logPath, 'utf8'))
+  const entry = log.releases.find((r) => r.version === pkg.version)
+  if (!entry) {
+    throw new Error(
+      `genai/releases.json has no entry for ${pkg.version}.\n` +
+      '  A published version with nothing written down is the failure the release\n' +
+      '  log exists to prevent. Add the entry, then freeze.')
+  }
+  entry.package = packageDigest()
+  writeFileSync(logPath, JSON.stringify(log, null, 1) + '\n')
+  console.log(`\n  recorded the shipped-code digest for ${pkg.version}: ${entry.package.slice(0, 12)}…`)
 
   if (existsSync(dir) && !force) {
     throw new Error(

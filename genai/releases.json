@@ -2,6 +2,38 @@
  "$comment": "The release log, as data rather than prose, for two reasons. RELEASES.md is generated from it by `largen contract`, so the published log cannot drift from this file. And every entry carries `signals` — strings that must be present in, or absent from, the frozen bytes at site/public/v/<version>/ — so a claim about a release is checked against the artifact that release actually shipped rather than believed. `largen releases --check` runs that. `signals` is also the machine-readable delta list a per-project upgrade check needs: given a project's CSS and the version it vendored, the `present` strings of every later release are exactly what to grep for.",
  "releases": [
   {
+   "version": "0.3.3",
+   "date": "2026-08-24",
+   "summary": "`largen verify` resolves the cascade across your files. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
+   "breaking": [],
+   "added": [
+    "`largen verify` checks whether each slot a component sets is the one that actually wins on an element matching its selector, and whether the cascade layers resolve to the order they are declared in. Both need the order the document loads stylesheets in, so it is derived from an entry file's `@import` graph — inferred when unambiguous, given with `--entry` otherwise, and reported as not run when neither works. Guessing would answer confidently about a cascade you do not have.",
+    "`largen releases --check` fingerprints the code the package ships, so a release whose stylesheets are unchanged and whose tooling was rewritten no longer passes."
+   ],
+   "fixed": [
+    {
+     "change": "A component whose declaration never applies now fails verification.",
+     "why": "Every check read one file. That covers the local mistakes and is blind to the ones that cost the most, which are cross-file: a component sets `--weight: 500` inside `largen.components`, another file's sublayer sorts after it, and the declaration is correct, the file is correct, and the element paints 300. For a person that is a footnote to check in a browser. For an agent looping generate then validate then repair it is the whole thing, because the loop terminates when validate says clean — so a verifier that returns clean on a broken component ends the loop with false confidence."
+    },
+    {
+     "change": "`orderFromImports` lost the `@layer` statement that precedes a file's imports.",
+     "why": "It appended each file after everything it imported, which is right for a file's rules and wrong for the one thing allowed to come before `@import` — the statement that declares layer order. largen's own order resolved wrongly as a result."
+    },
+    "A stylesheet that sets paint slots inside a cascade layer of its own is no longer reported as a component that forgot its layer. It had not forgotten one, and a finding that survives a correct repair is a loop that cannot exit."
+   ],
+   "tooling": [],
+   "signals": {
+    "present": [
+     "--line-height",
+     "--letter-spacing"
+    ],
+    "absent": [
+     "--leading"
+    ]
+   },
+   "package": "749ecec22210d5c519b22b3be0830688040f1272f69eff58ed0ffb5f78aa1f31"
+  },
+  {
    "version": "0.3.2",
    "date": "2026-08-23",
    "summary": "Drive the page theme source instead of overriding one of its outputs. 0.3.1 made a wrong answer more credible; this is the correction. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
@@ -19,8 +51,13 @@
    ],
    "tooling": [],
    "signals": {
-    "present": ["--line-height", "--letter-spacing"],
-    "absent": ["--leading"]
+    "present": [
+     "--line-height",
+     "--letter-spacing"
+    ],
+    "absent": [
+     "--leading"
+    ]
    }
   },
   {
@@ -40,8 +77,13 @@
    ],
    "tooling": [],
    "signals": {
-    "present": ["--line-height", "--letter-spacing"],
-    "absent": ["--leading"]
+    "present": [
+     "--line-height",
+     "--letter-spacing"
+    ],
+    "absent": [
+     "--leading"
+    ]
    }
   },
   {
@@ -81,8 +123,14 @@
     "`largen cascade`, `largen slot` and `largen probe` expose the first three on the command line."
    ],
    "signals": {
-    "present": ["--line-height", "--letter-spacing", "--line-height-base"],
-    "absent": ["--leading"]
+    "present": [
+     "--line-height",
+     "--letter-spacing",
+     "--line-height-base"
+    ],
+    "absent": [
+     "--leading"
+    ]
    }
   },
   {
@@ -99,8 +147,12 @@
     "The MCP server and the generated contract surfaces — `SKILL.md`, `llms.txt`, `llms-compact.txt`."
    ],
    "signals": {
-    "present": ["largen.components"],
-    "absent": ["--line-height"]
+    "present": [
+     "largen.components"
+    ],
+    "absent": [
+     "--line-height"
+    ]
    }
   },
   {
@@ -114,8 +166,15 @@
    "fixed": [],
    "tooling": [],
    "signals": {
-    "present": ["--bg", "--fg", "revert-layer"],
-    "absent": ["--line-height", "--letter-spacing"]
+    "present": [
+     "--bg",
+     "--fg",
+     "revert-layer"
+    ],
+    "absent": [
+     "--line-height",
+     "--letter-spacing"
+    ]
    }
   }
  ]

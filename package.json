@@ -1,6 +1,6 @@
 {
   "name": "largen",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "A property algebra for CSS. Primitives, a handful of layout utilities, and components you write yourself.",
   "author": "Vikram Babu",
   "license": "MIT",

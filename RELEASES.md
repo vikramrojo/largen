@@ -9,6 +9,23 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.3.3 — 2026-08-24
+
+`largen verify` resolves the cascade across your files. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.
+
+### Added
+
+- `largen verify` checks whether each slot a component sets is the one that actually wins on an element matching its selector, and whether the cascade layers resolve to the order they are declared in. Both need the order the document loads stylesheets in, so it is derived from an entry file's `@import` graph — inferred when unambiguous, given with `--entry` otherwise, and reported as not run when neither works. Guessing would answer confidently about a cascade you do not have.
+- `largen releases --check` fingerprints the code the package ships, so a release whose stylesheets are unchanged and whose tooling was rewritten no longer passes.
+
+### Fixed
+
+- A component whose declaration never applies now fails verification.
+  Every check read one file. That covers the local mistakes and is blind to the ones that cost the most, which are cross-file: a component sets `--weight: 500` inside `largen.components`, another file's sublayer sorts after it, and the declaration is correct, the file is correct, and the element paints 300. For a person that is a footnote to check in a browser. For an agent looping generate then validate then repair it is the whole thing, because the loop terminates when validate says clean — so a verifier that returns clean on a broken component ends the loop with false confidence.
+- `orderFromImports` lost the `@layer` statement that precedes a file's imports.
+  It appended each file after everything it imported, which is right for a file's rules and wrong for the one thing allowed to come before `@import` — the statement that declares layer order. largen's own order resolved wrongly as a result.
+- A stylesheet that sets paint slots inside a cascade layer of its own is no longer reported as a component that forgot its layer. It had not forgotten one, and a finding that survives a correct repair is a loop that cannot exit.
+
 ## 0.3.2 — 2026-08-23
 
 Drive the page theme source instead of overriding one of its outputs. 0.3.1 made a wrong answer more credible; this is the correction. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.
