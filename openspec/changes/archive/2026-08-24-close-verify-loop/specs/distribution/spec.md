@@ -1,3 +1,8 @@
+## RENAMED Requirements
+
+- FROM: `### Requirement: Verification is known to be partial`
+- TO: `### Requirement: Verification resolves the cascade, and says what it did not check`
+
 ## MODIFIED Requirements
 
 ### Requirement: Optional tooling
@@ -30,6 +35,10 @@ could report success on a component that never applied.
 - **AND** SHALL identify which cascade step decided it, because a component that
   is correct in a file that is correct does not look like a layer problem
 
+#### Scenario: Static checks pass
+- **WHEN** `largen verify` reports success
+- **THEN** it SHALL also direct the reader to render the demo pages in a browser
+
 #### Scenario: Verification reports success
 - **WHEN** `largen verify` reports success
 - **THEN** it SHALL state what was checked and what was not
@@ -43,6 +52,8 @@ could report success on a component that never applied.
   correct
 - **AND** a finding SHALL be clearable by the repair it describes, since a finding
   that survives a correct repair is a loop that cannot exit
+
+## ADDED Requirements
 
 ### Requirement: Verification does not guess at load order
 Which declaration wins depends on the order the document loads its stylesheets in.
