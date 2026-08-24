@@ -1,0 +1,12 @@
+@layer largen.components {
+  .hero { --bg: var(--tone-soft); --fg: var(--tone-ink); --pad: 4rem 2rem; --gap: 1rem }
+  .hero-title { --font-size: calc(2.5rem * var(--scale)); --weight: var(--weight-bold) }
+  .cta { --bg: var(--tone); --fg: var(--tone-contrast); --pad: .7em 1.4em; --radius: var(--radius-md) }
+  .card { --bg: var(--surface); --border-color: var(--line); --border-width: var(--hairline);
+          --border-style: solid; --radius: var(--radius-md); --pad: 1.25rem }
+  .tier { --bg: var(--surface); --border-color: var(--line); --border-width: var(--hairline);
+          --border-style: solid; --radius: var(--radius-md); --pad: 1.25rem }
+  .tier-featured { --bg: var(--tone-soft); --fg: var(--tone-ink); --border-color: var(--tone) }
+  .quote { --fg: var(--ink-muted); --font-size: calc(1.2rem * var(--scale)); --pad: 2rem }
+  .site-footer { --bg: var(--surface); --fg: var(--ink-muted); --pad: 2rem }
+}

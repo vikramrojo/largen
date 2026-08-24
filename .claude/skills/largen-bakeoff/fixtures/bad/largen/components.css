@@ -1,0 +1,7 @@
+.hero { background: #eef4ff; color: #123; padding: 4rem 2rem }
+.hero-title { font-size: 2.5rem; font-weight: 700 }
+.cta { background: #1c6fd6; color: #fff; padding: .7em 1.4em; border-radius: 8px }
+.card, .tier { background: #f4f5f7; border: 1px solid #dfe2e7; border-radius: 8px; padding: 1.25rem }
+.tier-featured { background: #eef4ff; border-color: #1c6fd6 }
+.quote { color: #5c636e; font-size: 1.2rem; padding: 2rem }
+.site-footer { background: #f4f5f7; color: #5c636e; padding: 2rem }

@@ -1,0 +1,7 @@
+{
+  "$comment": "The neutral instrument. Identical for both arms, which is only possible because the brief mandates ids rather than classes — how each substrate styles #hero is its own business, but both must have one. Properties chosen because every substrate has to produce them somehow: they are what a browser resolves, not what anyone authored.",
+  "selectors": ["#hero", "#hero-title", "#cta", "#feature-card", "#price-highlight", "#price-plain", "#quote", "#footer"],
+  "properties": ["color", "background-color", "border-color", "padding", "font-size", "font-weight", "border-radius"],
+  "themes": ["light", "dark"],
+  "viewport": { "width": 1280, "height": 900 }
+}
