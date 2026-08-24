@@ -9,6 +9,23 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.4.0 — 2026-08-24
+
+A spacing scale, and a contract that teaches composition. First CSS change since 0.3.0 — build id `b9fc348c` becomes `5445bbba`, so vendored copies change.
+
+### Added
+
+- `--space-1` … `--space-24`, nine steps on a 0.25rem base, for the rhythm between things. largen shipped tokens for colour, radius, type, weight and elevation and none for space, so every gap and page padding was invented per project.
+- A composition section in the contract, carried in full by `llms-compact.txt` and `SKILL.md` and served by `get_contract({section: 'composition'})`: the spacing scale and which unit belongs where, elevation via `--shadow` and `--lift-1`/`--lift-2`, what a slot cannot express, and contrast on toned surfaces.
+- A `pad-in-rem` warning from `largen verify`. Padding in `em` follows the size axis — `0.5em 1em` is 7px 14px at `sm` and 10px 20px at `xl`. The same padding taken from the spacing scale is 8px 16px at every size: the type grows, the box does not, and nothing looks wrong.
+- Two failure modes, taking the taxonomy from eight to ten: a gradient set through `--bg` paints nothing at all, and padding in rem stops responding to `data-size`.
+
+### Fixed
+
+- The contract had a `How it fails` and no `How it looks good`.
+  A bake-off ran one brief through one model on largen and on Tailwind. The largen page passed every check and came out plain — sections butted together, no elevation, a price suffix unreadable on a toned tier. `--lift-1` and `--lift-2` appear nowhere in the compact contract and none of the thirty-two reference components use `--shadow`, so elevation existed and could not be found by reading. Adding composition guidance to the prompt and changing nothing else produced rhythm, elevation, a working gradient and readable toned text.
+- The `llms-compact.txt` budget moves from 16kb to 24kb. The check and its warning stay; only the number moves. Composition guidance is about 4kb and there were 463 bytes of headroom, so the old budget could not carry the material that measurably improved the output.
+
 ## 0.3.5 — 2026-08-24
 
 `largen verify --entry` accepts an HTML file. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.

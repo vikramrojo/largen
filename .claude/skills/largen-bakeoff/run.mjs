@@ -184,7 +184,16 @@ function authored(dir) {
     const text = readFileSync(join(dir, f), 'utf8')
     bytes += Buffer.byteLength(text)
     /* Comments stripped first so a hex in prose is not counted as a decision. */
-    const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '')
+    /* Numeric character references are not colours. `&#9680;` and `&#169;` match
+       a naive hex pattern, and an arm that uses an emoji or a copyright sign then
+       scores as though it hardcoded four colours. Run 2 did exactly that: four
+       "literals" against a stylesheet `largen verify` had just passed clean. Strip
+       entities before counting. */
+    const code = text
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/&#[0-9]+;/g, '')
+      .replace(/&#x[0-9a-f]+;/gi, '')
     literals += (code.match(/#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(/gi) ?? []).length
   }
   return { files, bytes, colourLiterals: literals }

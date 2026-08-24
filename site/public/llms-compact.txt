@@ -1,4 +1,4 @@
-# largen 0.3.5 — the complete authoring contract
+# largen 0.4.0 — the complete authoring contract
 
 A property algebra for CSS. Plain CSS — no build step, no preprocessor, no plugin.
 
@@ -215,6 +215,14 @@ that is not wrapped — a bare `*` is already specificity-free.
 Symptom and fix. For why, fetch `get_contract` with section "failureModes", or
 read https://largen.dev/docs/authoring.html
 
+SYMPTOM A gradient set through `--bg` produces no background at all.
+FIX Keep the slot and write the gradient beside it: `--bg: var(--tone);
+background-image: linear-gradient(…)`.
+
+SYMPTOM Type resizes with `data-size` and the padding around it does not.
+FIX Use `em` for a component's own padding. Keep `--space-*` for the rhythm
+between things.
+
 SYMPTOM `data-variant` has no effect, but `data-tone` and `data-size` still
 work.
 FIX Wrap the component rule in `@layer largen.components { … }`.
@@ -254,6 +262,69 @@ equivalent.
 
 SYMPTOM A component looks right in one theme and wrong in the other.
 FIX Route the colour through a token or a `--tone*` derivation.
+
+## Composing a page
+
+SPACE IS A SCALE, AND THE UNIT CARRIES MEANING
+
+Use `--space-1` … `--space-24` for the rhythm BETWEEN things: section gaps, page
+padding, the distance from a heading to what it introduces. They are rem,
+because a gap between two sections should not grow when a component inside one
+carries `data-size="lg"`.
+
+Use `em` for a component's OWN padding. `--scale` inherits and a component
+multiplies its `--font-size` by it, so `em` padding follows: `0.5em 1em` is 7px
+14px at `sm` and 10px 20px at `xl`. The same padding as `var(--space-2)
+var(--space-4)` is 8px 16px at every size — the type grows, the box does not,
+and nothing looks wrong. `largen verify` reports it.
+
+Sections need space between them, not only inside them. Padding a hero does
+nothing for the gap after it: `<body class="stack" style="--gap:
+var(--space-24)">`. A page whose sections butt together reads as unfinished
+however good each section is.
+
+ELEVATION EXISTS
+
+`--shadow` is a slot and two tokens already fill it: `--lift-1` (`0 1px 2px
+var(--shade)`) for resting surfaces, `--lift-2` (`0 8px 28px
+var(--shade-strong)`) for the one thing you want picked out.
+
+Restraint is the whole of it. If everything is raised, nothing is. A recommended
+pricing tier earns `--lift-2`; the tiers either side earn `--lift-1` or nothing.
+
+WHAT A SLOT CANNOT EXPRESS
+
+Fourteen slots do not cover everything, and the ones they miss fail silently
+rather than loudly. A gradient is the common one: `--bg` drives
+`background-color`, so `--bg: linear-gradient(…)` paints nothing.
+
+Write the slot, then the plain property:
+
+    .hero {
+      --bg: var(--tone);
+      background-image: linear-gradient(160deg, transparent, var(--shade-strong));
+    }
+
+The slot keeps the element inside the algebra — tone, variant and theme still
+reach it — and the plain declaration adds what has no slot. Note the gradient
+stop is a token: a literal there is still a literal, and `verify` will say so.
+
+TEXT ON A TONED SURFACE TAKES ITS COLOUR FROM THE TONE
+
+A muted grey that reads well on `--canvas` can be almost invisible on
+`--tone-soft`, and it lands on exactly the element you most want read — a price
+suffix, a caption, a label. On a toned surface use `--fg: var(--tone-ink)` or
+`var(--tone-contrast)`. Keep `--ink-muted` for the untoned page.
+
+LOUD IS RELATIVE
+
+If the hero is to be the loudest thing, the rest of the page has to be quiet:
+one accent used sparingly, one step between resting and raised, one type scale,
+generous and CONSISTENT space.
+
+Detail earns its place. A nav, an eyebrow above the headline, an icon tile, a
+ribbon on the recommended tier — each is fine and all of them together is noise.
+Choose two or three.
 
 ## Generative UI
 

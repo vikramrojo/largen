@@ -221,7 +221,107 @@ export const RULES = [
 
 /* --- How it fails --------------------------------------------------------- */
 
+/* Composition — the half the contract did not have.
+ *
+ * Everything else here is mechanism or prohibition: what the paint rule does,
+ * which layer to author in, what not to hardcode. There was a "how it fails" and
+ * no "how it looks good", and a page built to the rules alone comes out correct
+ * and plain — measured, not supposed: the same brief through the same model
+ * produced a page that passed every check and had no rhythm, no elevation and
+ * unreadable text on a toned surface. Adding this material and changing nothing
+ * else fixed all three.
+ *
+ * None of it changes a rule. Every line is expressible in the algebra already. */
+export const COMPOSITION = {
+  space: {
+    title: 'Space is a scale, and the unit carries meaning',
+    body:
+      'Use `--space-1` … `--space-24` for the rhythm BETWEEN things: section gaps, ' +
+      'page padding, the distance from a heading to what it introduces. They are ' +
+      'rem, because a gap between two sections should not grow when a component ' +
+      'inside one carries `data-size="lg"`.\n\n' +
+      "Use `em` for a component's OWN padding. `--scale` inherits and a component " +
+      'multiplies its `--font-size` by it, so `em` padding follows: `0.5em 1em` is ' +
+      '7px 14px at `sm` and 10px 20px at `xl`. The same padding as `var(--space-2) ' +
+      'var(--space-4)` is 8px 16px at every size — the type grows, the box does ' +
+      'not, and nothing looks wrong. `largen verify` reports it.\n\n' +
+      'Sections need space between them, not only inside them. Padding a hero does ' +
+      'nothing for the gap after it: `<body class="stack" style="--gap: ' +
+      'var(--space-24)">`. A page whose sections butt together reads as unfinished ' +
+      'however good each section is.',
+  },
+  elevation: {
+    title: 'Elevation exists',
+    body:
+      '`--shadow` is a slot and two tokens already fill it: `--lift-1` ' +
+      '(`0 1px 2px var(--shade)`) for resting surfaces, `--lift-2` ' +
+      '(`0 8px 28px var(--shade-strong)`) for the one thing you want picked out.\n\n' +
+      'Restraint is the whole of it. If everything is raised, nothing is. A ' +
+      'recommended pricing tier earns `--lift-2`; the tiers either side earn ' +
+      '`--lift-1` or nothing.',
+  },
+  beyond: {
+    title: 'What a slot cannot express',
+    body:
+      'Fourteen slots do not cover everything, and the ones they miss fail ' +
+      'silently rather than loudly. A gradient is the common one: `--bg` drives ' +
+      '`background-color`, so `--bg: linear-gradient(…)` paints nothing.\n\n' +
+      'Write the slot, then the plain property:\n\n' +
+      '    .hero {\n' +
+      '      --bg: var(--tone);\n' +
+      '      background-image: linear-gradient(160deg, transparent, var(--shade-strong));\n' +
+      '    }\n\n' +
+      'The slot keeps the element inside the algebra — tone, variant and theme ' +
+      'still reach it — and the plain declaration adds what has no slot. Note the ' +
+      'gradient stop is a token: a literal there is still a literal, and `verify` ' +
+      'will say so.',
+  },
+  contrast: {
+    title: 'Text on a toned surface takes its colour from the tone',
+    body:
+      'A muted grey that reads well on `--canvas` can be almost invisible on ' +
+      '`--tone-soft`, and it lands on exactly the element you most want read — a ' +
+      'price suffix, a caption, a label. On a toned surface use ' +
+      '`--fg: var(--tone-ink)` or `var(--tone-contrast)`. Keep `--ink-muted` for ' +
+      'the untoned page.',
+  },
+  restraint: {
+    title: 'Loud is relative',
+    body:
+      'If the hero is to be the loudest thing, the rest of the page has to be ' +
+      'quiet: one accent used sparingly, one step between resting and raised, one ' +
+      'type scale, generous and CONSISTENT space.\n\n' +
+      'Detail earns its place. A nav, an eyebrow above the headline, an icon tile, ' +
+      'a ribbon on the recommended tier — each is fine and all of them together is ' +
+      'noise. Choose two or three.',
+  },
+}
+
 export const FAILURE_MODES = [
+  {
+    symptom: 'A gradient set through `--bg` produces no background at all.',
+    cause: '`--bg` drives `background-color`, which cannot take a gradient.',
+    fix: 'Keep the slot and write the gradient beside it: `--bg: var(--tone); background-image: linear-gradient(…)`.',
+    why:
+      'The declaration is dropped and the element paints transparent, with no ' +
+      'warning anywhere. Nothing about `--bg` says "colour only" — it is named for ' +
+      'background, and every other slot takes whatever its property takes. This is ' +
+      'the general shape for anything the algebra does not model: write the slot, ' +
+      'then the plain property. The slot keeps the element inside the algebra; the ' +
+      'plain declaration adds what has no slot.',
+  },
+  {
+    symptom: 'Type resizes with `data-size` and the padding around it does not.',
+    cause: 'The component\'s `--pad` is written in `rem` — often `var(--space-*)` — instead of `em`.',
+    fix: 'Use `em` for a component\'s own padding. Keep `--space-*` for the rhythm between things.',
+    why:
+      '`--scale` inherits and a component multiplies its `--font-size` by it. ' +
+      'Padding in `em` is relative to that font-size and follows it: `0.5em 1em` ' +
+      'goes from 7px 14px at `sm` to 10px 20px at `xl`. In rem it is 8px 16px at ' +
+      'every size. The page looks deliberate and has lost an axis. Reaching for the ' +
+      'spacing scale is the obvious move, which is why `largen verify` reports this ' +
+      'rather than leaving it to the eye.',
+  },
   {
     symptom: '`data-variant` has no effect, but `data-tone` and `data-size` still work.',
     cause: 'The component is declared outside `@layer largen.components`.',
@@ -518,6 +618,7 @@ export function buildContract() {
     },
     rules: RULES,
     failureModes: FAILURE_MODES,
+    composition: COMPOSITION,
     commands: { list: COMMANDS, caveat: COMMANDS_CAVEAT },
     generativeUI: GENERATIVE_UI,
     notes: manifest.notes,
@@ -547,7 +648,7 @@ export function assertAxesAgree() {
 }
 
 export const SECTIONS = ['overview', 'slots', 'paint', 'axes', 'layers', 'rules', 'failureModes',
-  'commands', 'generativeUI', 'notes']
+  'composition', 'commands', 'generativeUI', 'notes']
 
 /** One section of the contract, for `get_contract`'s `section` argument. */
 export function getSection(name) {

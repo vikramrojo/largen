@@ -223,6 +223,33 @@ class, because the browser already knows the answer.
 
 ## When it goes wrong
 
+**A gradient set through `--bg` produces no background at all.**
+
+Cause: `--bg` drives `background-color`, which cannot take a gradient.  
+Fix: Keep the slot and write the gradient beside it: `--bg: var(--tone);
+background-image: linear-gradient(…)`.
+
+The declaration is dropped and the element paints transparent, with no warning
+anywhere. Nothing about `--bg` says "colour only" — it is named for background,
+and every other slot takes whatever its property takes. This is the general
+shape for anything the algebra does not model: write the slot, then the plain
+property. The slot keeps the element inside the algebra; the plain declaration
+adds what has no slot.
+
+**Type resizes with `data-size` and the padding around it does not.**
+
+Cause: The component's `--pad` is written in `rem` — often `var(--space-*)` —
+instead of `em`.  
+Fix: Use `em` for a component's own padding. Keep `--space-*` for the rhythm
+between things.
+
+`--scale` inherits and a component multiplies its `--font-size` by it. Padding
+in `em` is relative to that font-size and follows it: `0.5em 1em` goes from 7px
+14px at `sm` to 10px 20px at `xl`. In rem it is 8px 16px at every size. The page
+looks deliberate and has lost an axis. Reaching for the spacing scale is the
+obvious move, which is why `largen verify` reports this rather than leaving it
+to the eye.
+
 **`data-variant` has no effect, but `data-tone` and `data-size` still work.**
 
 Cause: The component is declared outside `@layer largen.components`.  
@@ -352,6 +379,72 @@ Fix: Route the colour through a token or a `--tone*` derivation.
 
 Theme swapping works by changing what the tokens resolve to. Anything that
 bypasses the tokens is simply not part of that mechanism.
+
+## Composing a page
+
+The rules above say what largen guarantees and how it fails. This is the other
+half — a page built to the rules alone comes out correct and plain.
+
+**Space is a scale, and the unit carries meaning**
+
+Use `--space-1` … `--space-24` for the rhythm BETWEEN things: section gaps, page
+padding, the distance from a heading to what it introduces. They are rem,
+because a gap between two sections should not grow when a component inside one
+carries `data-size="lg"`.
+
+Use `em` for a component's OWN padding. `--scale` inherits and a component
+multiplies its `--font-size` by it, so `em` padding follows: `0.5em 1em` is 7px
+14px at `sm` and 10px 20px at `xl`. The same padding as `var(--space-2)
+var(--space-4)` is 8px 16px at every size — the type grows, the box does not,
+and nothing looks wrong. `largen verify` reports it.
+
+Sections need space between them, not only inside them. Padding a hero does
+nothing for the gap after it: `<body class="stack" style="--gap:
+var(--space-24)">`. A page whose sections butt together reads as unfinished
+however good each section is.
+
+**Elevation exists**
+
+`--shadow` is a slot and two tokens already fill it: `--lift-1` (`0 1px 2px
+var(--shade)`) for resting surfaces, `--lift-2` (`0 8px 28px
+var(--shade-strong)`) for the one thing you want picked out.
+
+Restraint is the whole of it. If everything is raised, nothing is. A recommended
+pricing tier earns `--lift-2`; the tiers either side earn `--lift-1` or nothing.
+
+**What a slot cannot express**
+
+Fourteen slots do not cover everything, and the ones they miss fail silently
+rather than loudly. A gradient is the common one: `--bg` drives
+`background-color`, so `--bg: linear-gradient(…)` paints nothing.
+
+Write the slot, then the plain property:
+
+    .hero {
+      --bg: var(--tone);
+      background-image: linear-gradient(160deg, transparent, var(--shade-strong));
+    }
+
+The slot keeps the element inside the algebra — tone, variant and theme still
+reach it — and the plain declaration adds what has no slot. Note the gradient
+stop is a token: a literal there is still a literal, and `verify` will say so.
+
+**Text on a toned surface takes its colour from the tone**
+
+A muted grey that reads well on `--canvas` can be almost invisible on
+`--tone-soft`, and it lands on exactly the element you most want read — a price
+suffix, a caption, a label. On a toned surface use `--fg: var(--tone-ink)` or
+`var(--tone-contrast)`. Keep `--ink-muted` for the untoned page.
+
+**Loud is relative**
+
+If the hero is to be the loudest thing, the rest of the page has to be quiet:
+one accent used sparingly, one step between resting and raised, one type scale,
+generous and CONSISTENT space.
+
+Detail earns its place. A nav, an eyebrow above the headline, an icon tile, a
+ribbon on the recommended tier — each is fine and all of them together is noise.
+Choose two or three.
 
 ## Commands
 

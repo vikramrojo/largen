@@ -97,6 +97,18 @@ One registered property does carry an initial value, deliberately: <span class="
   <p class="spec-note">The first one is the one to memorise. It is the only failure
   in largen that looks like success.</p>
   <div class="failure" data-tone="danger">
+    <span class="failure-symptom">A gradient set through <span class="tok">--bg</span> produces no background at all.</span>
+    <span class="failure-line"><strong>Cause</strong> — <span class="tok">--bg</span> drives <span class="tok">background-color</span>, which cannot take a gradient.</span>
+    <span class="failure-line"><strong>Fix</strong> — Keep the slot and write the gradient beside it: <span class="tok">--bg: var(--tone); background-image: linear-gradient(…)</span>.</span>
+    <p class="failure-line">The declaration is dropped and the element paints transparent, with no warning anywhere. Nothing about <span class="tok">--bg</span> says "colour only" — it is named for background, and every other slot takes whatever its property takes. This is the general shape for anything the algebra does not model: write the slot, then the plain property. The slot keeps the element inside the algebra; the plain declaration adds what has no slot.</p>
+  </div>
+  <div class="failure" data-tone="warning">
+    <span class="failure-symptom">Type resizes with <span class="tok">data-size</span> and the padding around it does not.</span>
+    <span class="failure-line"><strong>Cause</strong> — The component's <span class="tok">--pad</span> is written in <span class="tok">rem</span> — often <span class="tok">var(--space-*)</span> — instead of <span class="tok">em</span>.</span>
+    <span class="failure-line"><strong>Fix</strong> — Use <span class="tok">em</span> for a component's own padding. Keep <span class="tok">--space-*</span> for the rhythm between things.</span>
+    <p class="failure-line"><span class="tok">--scale</span> inherits and a component multiplies its <span class="tok">--font-size</span> by it. Padding in <span class="tok">em</span> is relative to that font-size and follows it: <span class="tok">0.5em 1em</span> goes from 7px 14px at <span class="tok">sm</span> to 10px 20px at <span class="tok">xl</span>. In rem it is 8px 16px at every size. The page looks deliberate and has lost an axis. Reaching for the spacing scale is the obvious move, which is why <span class="tok">largen verify</span> reports this rather than leaving it to the eye.</p>
+  </div>
+  <div class="failure" data-tone="warning">
     <span class="failure-symptom"><span class="tok">data-variant</span> has no effect, but <span class="tok">data-tone</span> and <span class="tok">data-size</span> still work.</span>
     <span class="failure-line"><strong>Cause</strong> — The component is declared outside <span class="tok">@layer largen.components</span>.</span>
     <span class="failure-line"><strong>Fix</strong> — Wrap the component rule in <span class="tok">@layer largen.components { … }</span>.</span>
@@ -170,7 +182,7 @@ The general lesson is worth more than the recipe: returning a slot to guaranteed
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.3.5 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.4.0 — a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

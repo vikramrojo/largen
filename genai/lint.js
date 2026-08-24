@@ -229,6 +229,42 @@ export function lintComponentCss(css, { slots = [] } = {}) {
     }
   })
 
+  /* --- 4b. --pad written in rem loses the size axis ------------------------
+   *
+   * `--scale` inherits and components multiply their `--font-size` by it. Padding
+   * in `em` is relative to that font-size, so it scales too, for free. Padding in
+   * `rem` is absolute and simply does not:
+   *
+   *     --pad: 0.5em 1em          data-size sm -> xl:  7px 14px -> 10px 20px
+   *     --pad: var(--space-2) …                        8px 16px ->  8px 16px
+   *
+   * Measured, not assumed. The failure is invisible — the type grows, the box
+   * does not, and the page looks deliberate — and it is the mistake a spacing
+   * scale invites, because reaching for the scale you were just handed is the
+   * obvious move. An agent given the scale and told the rule in prose did this in
+   * eight places on its first attempt, which is why this is a check and not a
+   * paragraph.
+   *
+   * A WARNING rather than an error. Fixed padding is sometimes exactly right, and
+   * a finding that a correct choice cannot clear is a loop that cannot exit. Only
+   * `--pad` is reported: `--gap` is legitimately absolute at the pattern level,
+   * which is what the scale is for. */
+  lines.forEach((line, i) => {
+    const m = line.match(/(?:^|[;{\s])--pad\s*:\s*([^;}]+)/)
+    if (!m) return
+    const value = m[1]
+    const rem = /\b[\d.]+rem\b/.test(value) || /var\(\s*--space-/.test(value)
+    if (!rem) return
+    add('pad-in-rem', 'warning', at(i),
+      '`--pad` is set in rem, so it will not respond to `data-size`',
+      'A component multiplies its `--font-size` by `--scale`, and padding in `em` ' +
+      'follows that font-size — sm to xl takes `0.5em 1em` from 7px 14px to ' +
+      '10px 20px. In rem it stays 8px 16px at every size: the type grows and the ' +
+      'box does not. Use `em` for a component\'s own padding and keep `--space-*` ' +
+      'for the rhythm between things, which should not resize. If the fixed ' +
+      'padding is deliberate, this is a note rather than a fault.')
+  })
+
   /* --- 5. --tone-contrast does not follow --tone ---------------------------
    *
    * The soft/ink/line derivations recompute on every element, so setting --tone

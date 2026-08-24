@@ -16,6 +16,7 @@ authors its own components on top of them. There is no build step.
 - [The contract](https://largen.dev/docs/contract.html): slots, layers, and the rules for authoring a component.
 - [The axes](https://largen.dev/docs/axes.html): tone, variant, size and state.
 - [Authoring](https://largen.dev/docs/authoring.html): writing a component, and how it fails.
+- [Composing](https://largen.dev/llms-compact.txt): space, elevation, and what a slot cannot express — `get_contract` section "composition".
 - [Components](https://largen.dev/docs/components.html): the optional reference set, to copy or ignore.
 
 ## The one rule to know
@@ -29,4 +30,4 @@ anything else.
 ## Stylesheet
 
 - Current: https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css
-- Pinned:  https://cdn.jsdelivr.net/npm/largen@0.3.5/dist/largen.css (immutable)
+- Pinned:  https://cdn.jsdelivr.net/npm/largen@0.4.0/dist/largen.css (immutable)

@@ -81,12 +81,27 @@ function skillMarkdown(c) {
       wrap(f.why), '')
   }
 
+  L.push('## Composing a page', '')
+  L.push(wrap('The rules above say what largen guarantees and how it fails. This is ' +
+    'the other half — a page built to the rules alone comes out correct and plain.'), '')
+  for (const part of Object.values(c.composition)) {
+    L.push(wrap(`**${part.title}**`), '')
+    for (const para of part.body.split('\n\n')) {
+      L.push(para.startsWith('    ') ? para : wrap(para), '')
+    }
+  }
+
   L.push('## Commands', '', '```')
   const w = Math.max(...c.commands.list.map((x) => x.command.length))
   for (const x of c.commands.list) L.push(`${x.command.padEnd(w)}   # ${x.does}`)
   L.push('```', '', wrap(c.commands.caveat), '')
 
   L.push('## Layer order', '', '```', c.layers.order.join(' < '), '```', '', wrap(c.layers.why), '')
+  /* Carried in full rather than pointed at. The measurement that justified the
+     budget increase was of THIS material being present in the prompt: the same
+     brief and model produced a page with rhythm, elevation and readable toned
+     text when it was there, and none of those when it was not. A pointer would
+     have reproduced the original result. */
   L.push('## Generative UI', '', wrap(c.generativeUI), '')
   for (const n of c.notes) L.push(wrap(`- ${n}`, 80, '') , '')
   return L.join('\n').replace(/\n{3,}/g, '\n\n') + '\n'
@@ -107,6 +122,8 @@ function llmsTxt(c) {
   L.push('- [The contract](https://largen.dev/docs/contract.html): slots, layers, and the rules for authoring a component.')
   L.push('- [The axes](https://largen.dev/docs/axes.html): tone, variant, size and state.')
   L.push('- [Authoring](https://largen.dev/docs/authoring.html): writing a component, and how it fails.')
+  L.push('- [Composing](https://largen.dev/llms-compact.txt): space, elevation, and what a slot cannot ' +
+    'express — `get_contract` section "composition".')
   L.push('- [Components](https://largen.dev/docs/components.html): the optional reference set, to copy or ignore.')
   L.push('')
   L.push('## The one rule to know', '')
@@ -170,6 +187,19 @@ function llmsCompact(c) {
     '"failureModes", or read https://largen.dev/docs/authoring.html'), '')
   for (const f of c.failureModes) {
     L.push(wrap(`SYMPTOM  ${f.symptom}`), wrap(`FIX      ${f.fix}`), '')
+  }
+
+  /* Carried in full rather than pointed at. The measurement that justified the
+     budget increase was of THIS material being in the prompt: the same brief and
+     the same model produced rhythm, elevation and readable toned text when it was
+     present, and none of them when it was not. A pointer would have reproduced
+     the original result. */
+  L.push('## Composing a page', '')
+  for (const part of Object.values(c.composition)) {
+    L.push(wrap(part.title.toUpperCase()), '')
+    for (const para of part.body.split('\n\n')) {
+      L.push(para.startsWith('    ') ? para : wrap(para), '')
+    }
   }
 
   L.push('## Generative UI', '', wrap(c.generativeUI), '')
@@ -410,7 +440,21 @@ export async function contract(args = []) {
   /* The compact file is meant to fit comfortably in a prompt. If it stops
      fitting, that is evidence the contract has outgrown what the design claims,
      and the spec says to report it rather than quietly accept it. */
-  const LIMIT = 16 * 1024
+  /* Raised from 16kb, deliberately and with evidence rather than because it was
+     in the way.
+   *
+     A bake-off ran one brief through one model on largen and on Tailwind. The
+     largen page passed every check and looked plain. Adding composition guidance
+     to the prompt — and changing nothing else — produced rhythm, elevation, a
+     working gradient and readable text on toned surfaces. That material is ~4kb
+     and there were 463 bytes of headroom, so the old budget could not carry the
+     thing that demonstrably improved the output.
+   *
+     The check and this warning stay. The number moved; the discipline did not.
+     24kb is roughly 6,000 tokens, about 3% of a 200k context window — still small
+     enough that inlining it costs a caller little, which is the property the
+     budget exists to protect. */
+  const LIMIT = 24 * 1024
   if (d > LIMIT) {
     console.log(`\n  WARNING: llms-compact.txt is ${kb(d)}, over the ${kb(LIMIT)} budget.`)
     console.log('  The contract has grown beyond "small enough to inline". Trim it or')

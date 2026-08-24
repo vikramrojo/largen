@@ -2,6 +2,37 @@
  "$comment": "The release log, as data rather than prose, for two reasons. RELEASES.md is generated from it by `largen contract`, so the published log cannot drift from this file. And every entry carries `signals` — strings that must be present in, or absent from, the frozen bytes at site/public/v/<version>/ — so a claim about a release is checked against the artifact that release actually shipped rather than believed. `largen releases --check` runs that. `signals` is also the machine-readable delta list a per-project upgrade check needs: given a project's CSS and the version it vendored, the `present` strings of every later release are exactly what to grep for.",
  "releases": [
   {
+   "version": "0.4.0",
+   "date": "2026-08-24",
+   "summary": "A spacing scale, and a contract that teaches composition. First CSS change since 0.3.0 — build id `b9fc348c` becomes `5445bbba`, so vendored copies change.",
+   "breaking": [],
+   "added": [
+    "`--space-1` … `--space-24`, nine steps on a 0.25rem base, for the rhythm between things. largen shipped tokens for colour, radius, type, weight and elevation and none for space, so every gap and page padding was invented per project.",
+    "A composition section in the contract, carried in full by `llms-compact.txt` and `SKILL.md` and served by `get_contract({section: 'composition'})`: the spacing scale and which unit belongs where, elevation via `--shadow` and `--lift-1`/`--lift-2`, what a slot cannot express, and contrast on toned surfaces.",
+    "A `pad-in-rem` warning from `largen verify`. Padding in `em` follows the size axis — `0.5em 1em` is 7px 14px at `sm` and 10px 20px at `xl`. The same padding taken from the spacing scale is 8px 16px at every size: the type grows, the box does not, and nothing looks wrong.",
+    "Two failure modes, taking the taxonomy from eight to ten: a gradient set through `--bg` paints nothing at all, and padding in rem stops responding to `data-size`."
+   ],
+   "fixed": [
+    {
+     "change": "The contract had a `How it fails` and no `How it looks good`.",
+     "why": "A bake-off ran one brief through one model on largen and on Tailwind. The largen page passed every check and came out plain — sections butted together, no elevation, a price suffix unreadable on a toned tier. `--lift-1` and `--lift-2` appear nowhere in the compact contract and none of the thirty-two reference components use `--shadow`, so elevation existed and could not be found by reading. Adding composition guidance to the prompt and changing nothing else produced rhythm, elevation, a working gradient and readable toned text."
+    },
+    "The `llms-compact.txt` budget moves from 16kb to 24kb. The check and its warning stay; only the number moves. Composition guidance is about 4kb and there were 463 bytes of headroom, so the old budget could not carry the material that measurably improved the output."
+   ],
+   "tooling": [],
+   "signals": {
+    "present": [
+     "--space-4",
+     "--line-height",
+     "--letter-spacing"
+    ],
+    "absent": [
+     "--leading"
+    ]
+   },
+   "package": "4f239e73150a8e153a5e3240972229efb81d7a435547810d1066c48bf1093db3"
+  },
+  {
    "version": "0.3.5",
    "date": "2026-08-24",
    "summary": "`largen verify --entry` accepts an HTML file. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
