@@ -112,8 +112,12 @@ function llmsTxt(c) {
   L.push('## The one rule to know', '')
   L.push(wrap(c.rules[0].why), '')
   L.push('## Stylesheet', '')
-  L.push(`- Current: https://largen.dev/largen.css`)
-  L.push(`- Pinned:  https://largen.dev/v/${c.version}/largen.css (immutable)`)
+  /* The CDN, not largen.dev. The stylesheets are distributed as an npm package
+     and re-served by jsDelivr and unpkg, which makes a pinned version immutable
+     because the registry refuses a second publish of one — a stronger guarantee
+     than a path convention the site promises to honour. */
+  L.push(`- Current: https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css`)
+  L.push(`- Pinned:  https://cdn.jsdelivr.net/npm/largen@${c.version}/dist/largen.css (immutable)`)
   return L.join('\n') + '\n'
 }
 

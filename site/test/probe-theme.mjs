@@ -35,6 +35,21 @@ const BY_ATTRIBUTE = `<!doctype html><html lang="en"><head><meta charset="utf-8"
 <script type="module">requestAnimationFrame(() => { document.documentElement.dataset.theme = 'dark' })</script>
 </body></html>`
 
+/* Themes from localStorage and writes the palette INLINE on <html> so nothing
+   repaints -- the standard way to avoid a flash of the wrong theme. data-theme is
+   only one of its outputs, and not the one that decides the colours. */
+const BY_SOURCE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<script>
+  var t = localStorage.getItem('theme') || 'dark';
+  document.documentElement.dataset.theme = t;
+  document.documentElement.style.setProperty('--ink', t === 'dark' ? 'rgb(242, 244, 246)' : 'rgb(22, 24, 28)');
+</script>
+<style>
+  :root, [data-theme="light"] { --ink: rgb(22,24,28); color-scheme: light }
+  [data-theme="dark"]         { --ink: rgb(242,244,246); color-scheme: dark }
+  .themed { color: var(--ink) }
+</style></head><body><span class="themed">a</span></body></html>`
+
 /* Themes by CLASS, as Tailwind does. Setting data-theme here changes nothing. */
 const BY_CLASS = `<!doctype html><html lang="en" class="dark"><head><meta charset="utf-8">
 <style>
@@ -52,6 +67,7 @@ const server = createServer((req, res) => {
   const url = req.url.split('?')[0]
   const body = probes.has(url) ? probes.get(url)
     : url.startsWith('/by-class') ? BY_CLASS
+    : url.startsWith('/by-source') ? BY_SOURCE
     : BY_ATTRIBUTE
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
   res.end(body)
@@ -114,9 +130,13 @@ await check('every row records the theme in effect when it was read', async () =
   const r = await runProbe('attr3', {
     kind: 'computed', pages: [page], selectors: ['.themed'], properties: ['color'], themes: ['light'],
   })
-  assert(r.rows[0].theme, 'no theme state recorded')
-  assert(r.rows[0].theme['data-theme'] === 'light', `recorded ${r.rows[0].theme['data-theme']}`)
-  return 'a reading describes its own conditions'
+  const t = r.rows[0].theme
+  assert(t, 'no theme state recorded')
+  assert(t.requested === 'light', `requested recorded as ${t.requested}`)
+  assert(t.attribute === 'light', `attribute recorded as ${t.attribute}`)
+  assert(t.drivenVia, 'did not record how the theme was driven')
+  assert(Array.isArray(t.pinnedInline), 'did not report inline-pinned properties')
+  return 'requested, observed, and how it was driven'
 })
 
 await check('driving the wrong lever fails instead of returning the wrong theme', async () => {
@@ -141,6 +161,61 @@ await check('themeClass drives a class-themed page correctly', async () => {
   const light = r.rows.find((x) => x.label.includes('light'))
   assert(light.values.color === 'rgb(22, 24, 28)', `light read ${light.values.color}`)
   return 'light and dark both correct'
+})
+
+/* --- driving the source rather than overriding its output ----------------- */
+
+await check('a palette pinned inline is refused, not reported as the theme asked for', async () => {
+  /* The failure that made 0.3.1 worse than useless: the attribute override held,
+     every check passed, the row attested data-theme=light, and the colours were
+     the dark palette. It has to fail. */
+  const r = await runProbe('src-attr', {
+    kind: 'computed', pages: [`${page}by-source`], selectors: ['.themed'], properties: ['color'],
+    themes: ['light'],
+  })
+  assert(r.failures === 1, 'a half-applied theme was reported as if it were the theme requested')
+  const row = r.rows[0]
+  assert(row.themeUnstable, 'not flagged')
+  assert(/--ink/.test(row.why), `the message does not name the pinned property: ${row.why}`)
+  assert(/themeStorage/.test(row.why), 'the message does not name the fix')
+  assert(!Object.keys(row.values).length, 'it reported values it could not vouch for')
+  return 'refused, with the competing channel named'
+})
+
+await check('driving the theme source gives the palette the page would really show', async () => {
+  const r = await runProbe('src-storage', {
+    kind: 'computed', pages: [`${page}by-source`], selectors: ['.themed'], properties: ['color'],
+    themes: ['light', 'dark'], themeStorage: 'theme',
+  })
+  assert(r.failures === 0, JSON.stringify(r.rows.map((x) => x.why).filter(Boolean)))
+  const light = r.rows.find((x) => x.label.includes('light'))
+  const dark = r.rows.find((x) => x.label.includes('dark'))
+  assert(light.values.color === 'rgb(22, 24, 28)', `light read ${light.values.color}`)
+  assert(dark.values.color === 'rgb(242, 244, 246)', `dark read ${dark.values.color}`)
+  assert(light.theme.drivenVia === 'storage', 'did not record how the theme was driven')
+  return 'the page applied both themes itself'
+})
+
+await check('a storage key the page does not read is caught', async () => {
+  const r = await runProbe('src-badkey', {
+    kind: 'computed', pages: [`${page}by-source`], selectors: ['.themed'], properties: ['color'],
+    themes: ['light'], themeStorage: 'colour-mode',
+  })
+  assert(r.failures === 1, 'silently returned the page default under the requested label')
+  assert(/does not read that key/.test(r.rows[0].why), r.rows[0].why)
+  return 'reported rather than defaulted'
+})
+
+await check('the row reports the competing channel, not just the lever that was pulled', async () => {
+  const r = await runProbe('src-state', {
+    kind: 'computed', pages: [`${page}by-source`], selectors: ['.themed'], properties: ['color'],
+    themes: ['light'], themeStorage: 'theme',
+  })
+  const t = r.rows[0].theme
+  assert(Array.isArray(t.pinnedInline), 'pinnedInline not reported')
+  assert(t.pinnedInline.includes('--ink'), `expected --ink among ${JSON.stringify(t.pinnedInline)}`)
+  assert(t.requested === 'light' && t.attribute === 'light', 'requested/observed not both reported')
+  return `pinnedInline: ${t.pinnedInline.join(', ')} — disclosed even when the run succeeds`
 })
 
 server.close()

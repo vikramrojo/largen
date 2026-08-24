@@ -28,5 +28,5 @@ anything else.
 
 ## Stylesheet
 
-- Current: https://largen.dev/largen.css
-- Pinned:  https://largen.dev/v/0.3.1/largen.css (immutable)
+- Current: https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css
+- Pinned:  https://cdn.jsdelivr.net/npm/largen@0.3.2/dist/largen.css (immutable)

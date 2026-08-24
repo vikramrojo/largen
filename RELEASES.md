@@ -9,6 +9,21 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.3.2 — 2026-08-23
+
+Drive the page theme source instead of overriding one of its outputs. 0.3.1 made a wrong answer more credible; this is the correction. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.
+
+### Added
+
+- `emit_probe` takes `themeStorage` — the localStorage key the page reads its theme from (`largen probe --theme-storage`). The probe writes it before load and the page applies the theme itself, completely, the way it does for a user. This is now the recommended way to run themed probes.
+- Each row reports what was observed rather than what was set: the requested theme, the attribute, the class, the resolved `color-scheme`, any custom properties pinned inline on `<html>`, and how the theme was driven.
+- The package ships `dist/build.json`, so byte lengths, sha256 and integrity strings are reachable from a CDN now that the stylesheets are distributed through npm.
+
+### Fixed
+
+- The probe no longer reports values for a theme it only half applied.
+  0.3.1 held the attribute override and verified it, and that verification was necessary but not sufficient: it proved the lever was in the position it was set to, and the output presented that as the theme being in effect. A page that writes its palette inline on the root element to avoid a flash of the wrong theme has an output that beats every author rule, so the attribute moved and the colours did not. What came back was a mix of two themes, in a state no user can be in — with a row attesting to the half that had been set. One report reached a real-looking light-mode bug this way and spent a session on it. The probe now detects a palette pinned inline, and a storage key the page does not read, and refuses to report values in either case.
+
 ## 0.3.1 — 2026-08-23
 
 A probe that could report the wrong theme's numbers under the right theme's label. No CSS change: the stylesheets carry build id `b9fc348c`, the same as 0.3.0, so the only difference in the served bytes is the version in the banner. Nothing needs re-pinning for this — upgrade for the tooling.

@@ -116,86 +116,84 @@ and size keep going. If a variant isn't applying, check this first.
 No install needed — it is a stylesheet:
 
 ```html
-<link rel="stylesheet" href="https://largen.dev/largen.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css">
 ```
 
-It is also on npm, which gives you the same bytes from a registry CDN with no
-dependency on largen.dev staying up:
+unpkg serves the same package at `https://unpkg.com/largen@latest/dist/largen.css`, and
+`largen.components.css` and `theme-dark.css` sit beside it. Or install it:
+
+```
+npm install largen        # the CSS, the linter, and the importable modules
+```
+
+Nothing here is a dependency in the build sense. Installing gets you a stylesheet and
+some optional dev-time commands, not a step between your source and your page.
+
+### Pinning
+
+`@latest` follows the newest release, so the bytes change when largen does. That is right
+for a demo and wrong for production — and CDNs cache it for hours, so it is not prompt
+either.
+
+A version is immutable in a way a URL convention cannot be: npm will not accept a second
+publish of a version that already exists, so `largen@0.3.2/dist/largen.css` is the same
+file forever.
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.3.1/dist/largen.css">
-<link rel="stylesheet" href="https://unpkg.com/largen@0.3.1/dist/largen.css">
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/largen@0.3.2/dist/largen.css"
+      integrity="sha384-0/4brOFqg8GWPeeobArfCaiIVHs/FBR0ICGOvRDBwZFlBnCtib6We/QFOXkvguv/"
+      crossorigin="anonymous">
 ```
 
+**`integrity` and `@latest` do not go together.** The hash is of one specific build, so it
+would fail the moment a release lands — loudly, which is the point of SRI, but not what
+you wanted. Pin the version if you want the check.
+
+To get the hash for any version, from the bytes you will actually be served:
+
 ```
-npm install largen        # for the CSS, the linter and the importable modules
-```
-
-`largen.dev/v/0.3.1/largen.css`, `largen@0.3.1/dist/largen.css` on either CDN, and
-`node_modules/largen/dist/largen.css` are byte-identical, so **one `integrity`
-string validates all of them** — the release check enforces that rather than
-assuming it. Nothing here is a dependency in the build sense: installing gets you a
-stylesheet and some optional dev-time commands, not a step between your source and
-your page.
-
-**That path is not versioned, and the version in its banner does not identify it.**
-`/largen.css` is a live read of the current build; it changes whenever the library does,
-while still printing whatever `version` says. Two builds can call themselves the same
-version and have different bytes — they currently do.
-
-To pin, use one of the three things that actually identify bytes:
-
-```html
-<!-- a frozen path: these bytes, forever -->
-<link rel="stylesheet" href="https://largen.dev/v/0.3.1/largen.css">
-
-<!-- or the live path with an integrity check, which fails loudly if it moves -->
-<link rel="stylesheet" href="https://largen.dev/largen.css"
-      integrity="sha384-AwFgalGCwsGMVWxOC83gxil5ucVnwYMQJgmuNFDYRqQDYzOoNyMrSOPkjr2aWsus" crossorigin="anonymous">
+curl -s https://cdn.jsdelivr.net/npm/largen@0.3.2/dist/largen.css |
+  openssl dgst -sha384 -binary | openssl base64 -A
 ```
 
-`https://largen.dev/build.json` publishes, for every stylesheet: byte length, `sha256` of
-the served bytes, and an `integrity` string to paste above. That is what to record when
-vendoring — `curl -s https://largen.dev/largen.css | shasum -a 256` reproduces the
-`sha256` exactly. The `+abcd1234` suffix in the banner is the *build id*, a hash of the
-bundle before the banner was added; it names the build but is not the file's digest.
+`npm install` and both CDNs resolve to the same tarball, so a pinned version is
+byte-identical wherever you take it from and one `integrity` string validates all three.
+The release check enforces that rather than assuming it.
 
-`ETag` is served on the unversioned paths, so `curl -I` answers "has it moved?" without
-downloading.
+The `+abcd1234` suffix in the banner is the *build id*: a hash of the bundle before the
+banner was added. It names the build but is not the file's digest, and two versions
+sharing one build id have identical CSS differing only in the version string — 0.3.2, 0.3.1 and
+0.3.0 are exactly that. [RELEASES.md](RELEASES.md) says when that happened, and every
+entry there is checked against the bytes that version shipped.
 
-[RELEASES.md](RELEASES.md) records what changed in each version. Every entry there is
-checked against the bytes that version actually froze, so it is a claim with a witness
-rather than a note written from memory.
+### Measuring a themed page
 
-Or through a bundler:
+`largen probe` reads computed styles in a real browser. If the page manages its own
+theme, tell the probe where that theme comes from rather than letting it override the
+page afterwards:
 
-```sh
-npm install largen
+```
+largen probe --page ./index.html --select .brand --prop color \
+             --theme light --theme dark --theme-storage theme
 ```
 
-```css
-@import "largen";                      /* the algebra + layout utilities */
-@import "largen/components";           /* optional reference components */
-@import "largen/themes/dark.css";
-```
+`--theme-storage` names the `localStorage` key the page reads. The probe writes it
+before the page loads, so the page applies the theme itself — completely, the way it
+does for a visitor. It is restored afterwards.
 
-The package exists mainly for two JavaScript modules, which are the only part of
-largen there is a real reason to depend on:
+The alternative is to set `data-theme` on the page after it has loaded, and that is
+worth understanding before relying on it. A theme is usually applied through more than
+one output: an attribute, sometimes a class, and often the palette written straight onto
+`<html>` so nothing repaints. Overriding the attribute moves the attribute. An inline
+style beats every author rule, so a pinned palette stays where it was, and what you read
+is a mix of two themes in a state no visitor can be in — while the attribute you set
+sits there looking correct.
 
-```js
-import { safeValidateNode } from 'largen/validate'  // reject malformed model output
-import { lintComponentCss } from 'largen/lint'      // the authoring contract, in CI
-```
-
-Both are zero-dependency ESM, and both are the same modules the hosted MCP server
-runs — so a spec that validates locally validates hosted, by construction rather
-than by coincidence.
-
-Components are addressable as a class or a custom element — `.alert` and
-`<l-alert>` both work, with nothing to register. Use custom elements for
-containers that would otherwise be `<div>`; keep real elements where semantics
-matter, since `<a>`, `<nav>`, `<details>` and `<ol>` carry meaning a custom
-element discards.
+The probe detects that and refuses to report values rather than returning the mixture,
+and every row discloses what it actually observed, including any properties pinned
+inline. But the check can only catch the cases it can see. Driving the source has no
+such limit, so prefer it.
 
 ## What largen does not do
 

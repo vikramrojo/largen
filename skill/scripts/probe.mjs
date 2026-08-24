@@ -24,6 +24,10 @@ const USAGE = `
     --select SELECTOR             repeatable
     --prop PROPERTY               repeatable
     --theme NAME                  repeatable; sets data-theme
+    --theme-storage KEY           the localStorage key the page reads its theme
+                                  from. PREFER THIS: the page then applies the
+                                  theme itself, completely, rather than having
+                                  one of its outputs overridden
     --theme-class                 the page themes by a class on <html>, not an
                                   attribute (Tailwind does this)
     --theme-attribute NAME        the attribute the page themes by
@@ -31,9 +35,12 @@ const USAGE = `
                                   interaction steps and assertions
     --out FILE                    default: largen-probe.html
 
-  A page that manages its own theme will re-apply it after load. The probe pins
-  its override against that, and fails rather than reporting numbers if some other
-  theme signal on <html> contradicts the one you asked for.
+  A page that manages its own theme applies it through more than one output --
+  an attribute, a class, and often the palette written straight onto <html> so
+  nothing repaints. Overriding one of those moves one of them. Where the probe can
+  tell that the rest did not follow, it refuses to report values rather than
+  returning a mix of two themes. Give it --theme-storage and the page does the
+  work itself.
 
   For "which rule set this property, and why", you do not need this. That is
   cascade arithmetic and \`largen cascade\` answers it without a browser.
@@ -56,6 +63,7 @@ export async function probe(argv = []) {
     else if (a === '--themes') opts.themes.push(...list(next()))
     else if (a === '--theme-class') opts.themeClass = true
     else if (a === '--theme-attribute') opts.themeAttribute = next()
+    else if (a === '--theme-storage') opts.themeStorage = next()
     else if (a === '--html') opts.html = (await import('node:fs')).readFileSync(next(), 'utf8')
     else if (a === '--config') config = next()
     else if (a === '--out' || a === '-o') out = next()

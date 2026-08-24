@@ -171,6 +171,28 @@ function applyTheme(doc, theme) {
   return observer
 }
 
+/* Custom properties the page has written directly onto <html>.
+ *
+ * This is the channel that defeats an attribute override, and it defeats it by
+ * the plainest rule in CSS: an inline style beats any author rule, so a palette
+ * pinned here cannot be moved by setting [data-theme]. The pattern is common
+ * because it is the standard way to avoid a flash of the wrong theme -- read the
+ * stored preference, write the palette, never repaint.
+ *
+ * The result is a page in a state no user can ever be in: the attribute says one
+ * theme, some properties follow it, and the pinned ones do not. A reporter saw
+ * body background resolve light while every text colour resolved dark, which is
+ * impossible in one settled recalculation, and that impossibility was the only
+ * clue -- the probe itself was reporting success. */
+function pinnedInline(root) {
+  const out = []
+  for (let i = 0; i < root.style.length; i++) {
+    const name = root.style[i]
+    if (name.slice(0, 2) === '--') out.push(name)
+  }
+  return out
+}
+
 /* Is some OTHER theme signal on the root element contradicting what we set?
  *
  * The read-back guard below verifies that our own override stuck, which it always
@@ -207,12 +229,19 @@ function conflictingSignal(root, theme) {
 
 /* What the document actually had in effect when it was read. Recorded per row so
    a reading describes its own conditions instead of relying on the label. */
-function themeState(doc) {
+function themeState(doc, requested, drivenVia) {
   const root = doc.documentElement
   return {
-    [CFG.themeAttribute]: root.getAttribute(CFG.themeAttribute),
+    requested: requested || null,
+    drivenVia: drivenVia || null,
+    attribute: root.getAttribute(CFG.themeAttribute),
     class: root.className || null,
     colorScheme: getComputedStyle(root).colorScheme || null,
+    /* Named separately because the first four can all agree with what was asked
+       for while this one quietly overrules them. Reporting the attribute alone
+       attested to the half of the theme that had been set and said nothing about
+       the half that decides the colours. */
+    pinnedInline: pinnedInline(root),
   }
 }
 
@@ -240,19 +269,19 @@ async function step(doc, s) {
   await settle()
 }
 
-function measure(doc, sel, props, label) {
+function measure(doc, sel, props, label, requested, drivenVia) {
   const nodes = doc.querySelectorAll(sel)
   if (!nodes.length) {
     /* Absent is a result, not a gap. The reporter's worst case was a harness
        that passed because the elements it asserted on had never rendered. */
-    out.rows.push({ label, selector: sel, found: 0, missing: true, values: {}, theme: themeState(doc) })
+    out.rows.push({ label, selector: sel, found: 0, missing: true, values: {}, theme: themeState(doc, requested, drivenVia) })
     out.failures++
     return
   }
   const cs = getComputedStyle(nodes[0])
   const values = {}
   for (const p of props) values[p] = cs.getPropertyValue(p).trim()
-  out.rows.push({ label, selector: sel, found: nodes.length, missing: false, values, theme: themeState(doc) })
+  out.rows.push({ label, selector: sel, found: nodes.length, missing: false, values, theme: themeState(doc, requested, drivenVia) })
 }
 
 function assertOne(doc, a, label) {
@@ -282,12 +311,35 @@ const describe = (a) => {
 }
 
 async function run() {
+  /* Driving the source means writing the caller's real localStorage, on their own
+     origin. Left behind, that silently changes the theme of the site they were
+     measuring the next time they open it -- a probe should not redecorate the
+     thing it came to look at. Captured here, restored in the finally below. */
+  const storageKey = CFG.themeStorage
+  const hadStorage = storageKey ? localStorage.getItem(storageKey) : null
+
   try {
     for (const page of CFG.pages) {
       for (const theme of CFG.themes) {
+        /* Drive the page's own source of truth where one is named, and let the
+           page apply the theme itself, completely, the way it does for a user.
+           Overriding its output can only ever move the outputs we know about.
+
+           The probe and the page are same-origin -- required anyway for
+           contentDocument -- so this localStorage IS the page's localStorage. */
+        let drivenVia = 'attribute'
+        if (theme && CFG.themeStorage) {
+          try {
+            localStorage.setItem(CFG.themeStorage, theme)
+            drivenVia = 'storage'
+          } catch (e) {
+            throw new Error('could not write localStorage[' + CFG.themeStorage + ']: ' + e.message)
+          }
+        }
+
         const frame = await load(page)
         const doc = frame.contentDocument
-        const pin = applyTheme(doc, theme)
+        const pin = drivenVia === 'storage' ? null : applyTheme(doc, theme)
         await settle()
         const label = (CFG.html ? '(inline)' : page) + (theme ? ' · ' + theme : '')
 
@@ -300,7 +352,46 @@ async function run() {
         const root = doc.documentElement
         const held = theme ? root.getAttribute(CFG.themeAttribute) : null
         const classHeld = !theme || !CFG.themeClass || root.classList.contains(theme)
-        const conflict = theme ? conflictingSignal(root, theme) : null
+        const conflict = theme && drivenVia === 'attribute' ? conflictingSignal(root, theme) : null
+        const pinned = theme ? pinnedInline(root) : []
+
+        /* Driving the source: the page applies the theme, so the check is whether
+           it adopted the value -- not whether our override stuck, since there is
+           no override. A key it does not read leaves it on its own default. */
+        if (theme && drivenVia === 'storage' && held !== theme) {
+          out.rows.push({
+            label, selector: '(theme)', themeUnstable: true, missing: true, values: {},
+            theme: themeState(doc, theme, drivenVia),
+            why: 'set localStorage[' + CFG.themeStorage + '] = "' + theme + '" before load, but ' +
+              'the page settled on ' + CFG.themeAttribute + '="' + held + '". It does not read ' +
+              'that key, or reads it under another name. Check the key the page actually uses.',
+          })
+          out.failures++
+          frame.remove()
+          continue
+        }
+
+        /* An attribute override cannot move a palette the page has written inline
+           on the root element, because an inline style beats every author rule.
+           What comes back is the attribute that was asked for and the colours that
+           were not -- and every check above this one passes, which is worse than
+           failing. Refuse rather than report. */
+        if (theme && drivenVia === 'attribute' && pinned.length) {
+          out.rows.push({
+            label, selector: '(theme)', themeUnstable: true, missing: true, values: {},
+            theme: themeState(doc, theme, drivenVia),
+            why: 'asked for ' + theme + ' by setting ' + CFG.themeAttribute + ', but the page has ' +
+              'written ' + pinned.length + ' custom propert' + (pinned.length === 1 ? 'y' : 'ies') +
+              ' inline on the root element (' + pinned.join(', ') + '). An inline style beats every ' +
+              'author rule, so the attribute changed and the palette did not: these values would be ' +
+              'a mix of both themes, which is a state no user can be in. Drive the page theme source ' +
+              'instead -- pass themeStorage with the key the page reads (largen probe --theme-storage).',
+          })
+          out.failures++
+          if (pin) pin.disconnect()
+          frame.remove()
+          continue
+        }
 
         if (theme && conflict) {
           out.rows.push({
@@ -320,7 +411,7 @@ async function run() {
           continue
         }
 
-        if (theme && (held !== theme || !classHeld)) {
+        if (theme && drivenVia === 'attribute' && (held !== theme || !classHeld)) {
           out.rows.push({
             label, selector: '(theme)', themeUnstable: true, missing: true, values: {},
             theme: themeState(doc),
@@ -338,7 +429,7 @@ async function run() {
         }
 
         for (const s of CFG.steps) await step(doc, s)
-        for (const sel of CFG.selectors) measure(doc, sel, CFG.properties, label)
+        for (const sel of CFG.selectors) measure(doc, sel, CFG.properties, label, theme, drivenVia)
         for (const a of CFG.assertions) assertOne(doc, a, label)
         if (pin) pin.disconnect()
         frame.remove()
@@ -352,6 +443,11 @@ async function run() {
     out.ran = true
     out.error = e.message
     status('probe failed: ' + e.message, 'bad')
+  } finally {
+    if (storageKey) {
+      if (hadStorage === null) localStorage.removeItem(storageKey)
+      else localStorage.setItem(storageKey, hadStorage)
+    }
   }
 }
 
@@ -407,7 +503,8 @@ export function buildProbe(options = {}) {
   const {
     kind = 'computed', pages = [], html = null, selectors = [], properties = [],
     steps = [], assertions = [], themes = [null], themeAttribute = 'data-theme',
-    themeClass = false, viewport = { width: 1280, height: 900 }, timeout = 10000,
+    themeClass = false, themeStorage = null,
+    viewport = { width: 1280, height: 900 }, timeout = 10000,
   } = options
 
   if (!KINDS.has(kind)) throw new Error(`kind must be one of ${[...KINDS].join(', ')}`)
@@ -429,6 +526,7 @@ export function buildProbe(options = {}) {
     themes: themes.length ? themes : [null],
     themeAttribute,
     themeClass,
+    themeStorage,
     viewport,
     timeout,
   }
