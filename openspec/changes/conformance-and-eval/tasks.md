@@ -125,4 +125,4 @@
       changes, and `contract --check` is what notices if they are not.
 - [x] 5.4 Bump the version. Shipped files change, so `largen release` records a new
       digest and refuses to freeze while any generated surface is stale.
-- [ ] 5.5 Deploy, then re-run the suites against the deployed origin.
+- [x] 5.5 Deploy, then re-run the suites against the deployed origin.
