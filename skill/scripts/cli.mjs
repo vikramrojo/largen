@@ -21,6 +21,7 @@
  */
 const COMMANDS = {
   verify: { load: () => import('./verify.mjs'), blurb: 'check components against the authoring contract' },
+  eval: { load: () => import('./eval.mjs'), blurb: 'score authored components against the contract — offline, deterministic' },
   build: { load: () => import('./build.mjs'), blurb: 'bundle + minify to dist/ — optional, for CDN' },
   gen: { load: () => import('./gen.mjs'), blurb: 'regenerate genai artifacts from genai/manifest.json' },
   manifest: { load: () => import('./manifest.mjs'), blurb: "derive a manifest from a project's CSS" },

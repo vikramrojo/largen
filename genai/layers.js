@@ -288,3 +288,43 @@ export function orderFromImports(files, entry) {
   const unreached = files.map((f) => f.name).filter((n) => !seen.has(n))
   return { order, unresolved, layered, unreached }
 }
+
+/**
+ * Which of these stylesheets does the document load first?
+ *
+ * Deriving the cascade needs the load order, and a directory walk is not it. An
+ * entry point is the file nothing else imports that imports something — exactly
+ * one such file means the graph is unambiguous. More than one, or none, and the
+ * honest answer is that we do not know, which callers report rather than guess.
+ *
+ * Lives here rather than in a CLI script because it is the input `orderFromImports`
+ * needs and because two commands want it. It was written twice — once in
+ * `verify`, once in `eval` — and the two copies had already drifted apart by the
+ * time anyone looked. That is the failure this module's neighbours exist to avoid:
+ * `genai/lint.js` says it in its own header, that a rule written twice guarantees
+ * the two answers eventually differ.
+ *
+ * @param {Array<{name: string, css: string}>} files
+ * @returns {string|null} the entry's name, or null when it cannot be determined
+ */
+export function inferEntry(files) {
+  const imported = new Set()
+  const importers = []
+
+  for (const file of files) {
+    const clean = String(file.css).replace(/\/\*[\s\S]*?\*\//g, '')
+    let any = false
+    for (const m of clean.matchAll(IMPORT_ANY)) {
+      const spec = m[1] ?? m[2] ?? m[3] ?? m[4] ?? m[5]
+      const target = resolveSpec(file.name, spec)
+      /* Remote imports resolve to null and are not candidates for an entry. */
+      if (target === null) continue
+      any = true
+      imported.add(target)
+    }
+    if (any) importers.push(file.name)
+  }
+
+  const roots = importers.filter((name) => !imported.has(name))
+  return roots.length === 1 ? roots[0] : null
+}

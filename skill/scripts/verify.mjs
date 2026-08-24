@@ -44,9 +44,9 @@
  */
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
-import { at, root } from './paths.mjs'
+import { at, root, discover } from './paths.mjs'
 import { lintComponentCss, registeredSlots, classifySheet } from '../../genai/lint.js'
-import { checkLayerOrder, orderFromImports } from '../../genai/layers.js'
+import { checkLayerOrder, orderFromImports, inferEntry } from '../../genai/layers.js'
 import { checkComponentsApply } from '../../genai/cascade.js'
 
 const read = (p) => readFileSync(at(p), 'utf8')
@@ -66,22 +66,6 @@ const assert = (c, m) => { if (!c) throw new Error(m) }
 
 /** Developing largen itself, rather than consuming it. */
 const inLibraryRepo = () => resolve(process.cwd()) === resolve(root) && existsSync(at('src/properties.css'))
-
-const SKIP = new Set(['node_modules', '.git', 'dist', '.previews'])
-
-/** CSS under a directory, for when no paths were given. Bounded depth, because
- *  scanning a whole project tree to lint four files is a poor trade. */
-function discover(dir, depth = 0) {
-  if (depth > 4) return []
-  const out = []
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (SKIP.has(entry.name) || entry.name.startsWith('.')) continue
-    const full = join(dir, entry.name)
-    if (entry.isDirectory()) out.push(...discover(full, depth + 1))
-    else if (entry.name.endsWith('.css')) out.push(full)
-  }
-  return out
-}
 
 /* --- The library's own invariants ---------------------------------------- */
 
@@ -190,39 +174,6 @@ function libraryInvariants() {
 }
 
 /* --- The contract, against whatever the caller pointed at ---------------- */
-
-/* Which file does the document load first?
- *
- * Deriving the cascade needs the load order, and a directory walk is not it.
- * An entry point is the file nothing else imports that imports something —
- * exactly one such file means the graph is unambiguous and can be trusted. More
- * than one, or none, and the honest answer is that we do not know. */
-function inferEntry(files) {
-  const IMPORT = /@import\s+(?:url\(\s*(?:"([^"]*)"|'([^']*)'|([^)"'\s]*))\s*\)|"([^"]*)"|'([^']*)')/g
-  const imported = new Set()
-  const importers = []
-  for (const f of files) {
-    const clean = String(f.css).replace(/\/\*[\s\S]*?\*\//g, '')
-    let any = false
-    for (const m of clean.matchAll(IMPORT)) {
-      const spec = m[1] ?? m[2] ?? m[3] ?? m[4] ?? m[5]
-      if (/^(https?:)?\/\//.test(spec)) continue
-      any = true
-      const base = f.name.includes('/') ? f.name.slice(0, f.name.lastIndexOf('/')) : ''
-      const joined = spec.startsWith('/') ? spec : (base ? `${base}/${spec}` : spec)
-      const out = []
-      for (const part of joined.split('/')) {
-        if (!part || part === '.') continue
-        if (part === '..') out.pop()
-        else out.push(part)
-      }
-      imported.add((joined.startsWith('/') ? '/' : '') + out.join('/'))
-    }
-    if (any) importers.push(f.name)
-  }
-  const roots = importers.filter((n) => !imported.has(n))
-  return roots.length === 1 ? roots[0] : null
-}
 
 export async function verify(args = []) {
   /* `--entry main.css` takes a value, so a naive "not a flag" filter collects that

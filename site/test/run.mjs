@@ -560,7 +560,16 @@ check('the release check fails on a claim that was never true', () => {
   published.signals.absent.push('revert-layer')
   const r = checkReleases(lying)
   assert(!r.ok, 'the check passed on two false claims')
-  eq(r.findings.filter((f) => f.severity === 'error').length, 2, 'wrong number of errors')
+  /* Assert the two lies were caught, not that the total error count is two.
+     Counting everything makes this fail whenever any OTHER check starts
+     reporting — it did, the moment the shipped-code digest was added — and the
+     failure says "wrong number of errors" about an assertion that has nothing to
+     do with the new one. Same shape as the hardcoded "twelve slots" and "six
+     tools" this repo has already been bitten by. */
+  const mine = r.findings.filter((f) => f.severity === 'error' && f.version === '0.1.0')
+  eq(mine.length, 2, 'the two false claims about 0.1.0 were not both caught')
+  assert(mine.some((f) => /--container-queries/.test(f.message)), 'the present-but-absent lie was missed')
+  assert(mine.some((f) => /revert-layer/.test(f.message)), 'the absent-but-present lie was missed')
   return 'both directions caught'
 })
 

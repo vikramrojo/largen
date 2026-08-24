@@ -9,6 +9,22 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.3.4 — 2026-08-24
+
+The conformance assertions now run, the four-axes claim is checked, and `largen eval` scores authored components offline. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.
+
+### Added
+
+- `largen eval <dir> [dir2]` scores authored components against the authoring contract — colour-literal and raw-token escapes, layer placement, whether declarations actually apply, axis coverage, tokens per component. Offline and deterministic: no model, no key, no network. Two-directory mode reports both and declares no winner.
+- `genai/matrix.js` — the axis matrix. For every reference component it resolves whether tone, variant, size and theme reach its slots, and a rendered sample confirms `color-mix()` and `calc()` genuinely compute different values, which static resolution cannot show.
+- `inferEntry` moved into `genai/layers.js` beside `orderFromImports`, and `discover` into `skill/scripts/paths.mjs`. Both had been written twice, once in `verify` and once in `eval`, and the copies had already drifted.
+
+### Fixed
+
+- The eleven conformance assertions are executed rather than published.
+  `demo/conformance.html` has run eleven checks about the one mechanism largen has no fallback for since before 0.3.0, computing pass or fail into a banner, and nothing ran it. `verify` asserted the file existed; the screenshot suite photographed it. Its checks executed only when a person opened the page, which is a footnote for a reader and a false stop condition for an agent looping generate, validate, repair. The runner also fails when the page reports fewer checks than its source defines, because a page reporting zero of zero passed is otherwise green.
+- `site/test/shots.mjs` screenshotted `/demo/`, removed three releases earlier and returning 404 since. It writes images and asserted nothing, so the dead path produced a picture of an error page and no complaint. It now checks every path resolves before shooting.
+
 ## 0.3.3 — 2026-08-24
 
 `largen verify` resolves the cascade across your files. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.

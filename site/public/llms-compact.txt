@@ -1,4 +1,4 @@
-# largen 0.3.3 — the complete authoring contract
+# largen 0.3.4 — the complete authoring contract
 
 A property algebra for CSS. Plain CSS — no build step, no preprocessor, no plugin.
 
@@ -275,6 +275,7 @@ wrong approved component.
 ## Commands
 
 npx largen verify [css...] [--entry main.css] — check your components against the contract, and resolve the cascade across your files
+npx largen eval <dir> [dir2] [--entry main.css] [--json] — score a directory of authored components against the contract — offline, deterministic, no model
 npx largen build — bundle + minify to dist/ — optional, for CDN, no dependencies
 npx largen gen — regenerate genai artifacts from genai/manifest.json
 npx largen manifest <css...> — derive a component manifest from a project's CSS

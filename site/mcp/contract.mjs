@@ -402,6 +402,7 @@ export const OVERVIEW = {
 
 export const COMMANDS = [
   { command: 'npx largen verify [css...] [--entry main.css]', does: "check your components against the contract, and resolve the cascade across your files" },
+  { command: 'npx largen eval <dir> [dir2] [--entry main.css] [--json]', does: 'score a directory of authored components against the contract — offline, deterministic, no model' },
   { command: 'npx largen build', does: 'bundle + minify to dist/ — optional, for CDN, no dependencies' },
   { command: 'npx largen gen', does: 'regenerate genai artifacts from genai/manifest.json' },
   { command: 'npx largen manifest <css...>', does: "derive a component manifest from a project's CSS" },

@@ -74,6 +74,10 @@
   <div id="ua"></div>
   <table id="out"></table>
 </div>
+<!-- Machine-readable results, written once the run finishes. Same shape as
+     genai/probe.js's #json: a driver that can --dump-dom does not need to
+     evaluate script, which is a lighter dependency than one that does. -->
+<pre id="json" hidden></pre>
 
 <script>
 /* A conformance check for the one mechanism largen has no fallback for.
@@ -226,5 +230,6 @@ document.getElementById('out').innerHTML = results.map(r => `
   </tr>`).join('')
 
 window.__largen = { passed, total: results.length, results, ua: navigator.userAgent }
+document.getElementById('json').textContent = JSON.stringify(window.__largen)
 </script>
 </body></html>

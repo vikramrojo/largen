@@ -7,7 +7,7 @@
       "type": "skill",
       "description": "Author, review, or debug CSS components with largen — a property algebra where components are custom-property bundles rather than modifier classes. Covers the 14 slots, the four axes, the layer rule, and the eight ways a component silently fails.",
       "url": "https://largen.exe.xyz/skill/SKILL.md",
-      "sha256": "b32253177d3f2344f82a746139c6e40585da813aa6f88c3770a3c9c45c297cbc"
+      "sha256": "6476ed2841366b9c1817a7d47f236fa38033a508322680e1a557cf169695fc3c"
     }
   ]
 }

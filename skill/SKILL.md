@@ -356,13 +356,14 @@ bypasses the tokens is simply not part of that mechanism.
 ## Commands
 
 ```
-npx largen verify [css...] [--entry main.css]         # check your components against the contract, and resolve the cascade across your files
-npx largen build                                      # bundle + minify to dist/ — optional, for CDN, no dependencies
-npx largen gen                                        # regenerate genai artifacts from genai/manifest.json
-npx largen manifest <css...>                          # derive a component manifest from a project's CSS
-npx largen cascade --property P --at CHAIN <css...>   # which declaration wins for a property on an element, and why — no browser
-npx largen slot --slot S --at CHAIN <css...>          # whether the paint rule applies a slot, or it reverts, and to what
-npx largen probe --page URL --select SEL --prop P     # emit a browser harness for what static checks cannot see
+npx largen verify [css...] [--entry main.css]              # check your components against the contract, and resolve the cascade across your files
+npx largen eval <dir> [dir2] [--entry main.css] [--json]   # score a directory of authored components against the contract — offline, deterministic, no model
+npx largen build                                           # bundle + minify to dist/ — optional, for CDN, no dependencies
+npx largen gen                                             # regenerate genai artifacts from genai/manifest.json
+npx largen manifest <css...>                               # derive a component manifest from a project's CSS
+npx largen cascade --property P --at CHAIN <css...>        # which declaration wins for a property on an element, and why — no browser
+npx largen slot --slot S --at CHAIN <css...>               # whether the paint rule applies a slot, or it reverts, and to what
+npx largen probe --page URL --select SEL --prop P          # emit a browser harness for what static checks cannot see
 ```
 
 `verify` lints the files you point it at, or the component stylesheets it finds

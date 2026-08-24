@@ -2,6 +2,35 @@
  "$comment": "The release log, as data rather than prose, for two reasons. RELEASES.md is generated from it by `largen contract`, so the published log cannot drift from this file. And every entry carries `signals` — strings that must be present in, or absent from, the frozen bytes at site/public/v/<version>/ — so a claim about a release is checked against the artifact that release actually shipped rather than believed. `largen releases --check` runs that. `signals` is also the machine-readable delta list a per-project upgrade check needs: given a project's CSS and the version it vendored, the `present` strings of every later release are exactly what to grep for.",
  "releases": [
   {
+   "version": "0.3.4",
+   "date": "2026-08-24",
+   "summary": "The conformance assertions now run, the four-axes claim is checked, and `largen eval` scores authored components offline. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
+   "breaking": [],
+   "added": [
+    "`largen eval <dir> [dir2]` scores authored components against the authoring contract — colour-literal and raw-token escapes, layer placement, whether declarations actually apply, axis coverage, tokens per component. Offline and deterministic: no model, no key, no network. Two-directory mode reports both and declares no winner.",
+    "`genai/matrix.js` — the axis matrix. For every reference component it resolves whether tone, variant, size and theme reach its slots, and a rendered sample confirms `color-mix()` and `calc()` genuinely compute different values, which static resolution cannot show.",
+    "`inferEntry` moved into `genai/layers.js` beside `orderFromImports`, and `discover` into `skill/scripts/paths.mjs`. Both had been written twice, once in `verify` and once in `eval`, and the copies had already drifted."
+   ],
+   "fixed": [
+    {
+     "change": "The eleven conformance assertions are executed rather than published.",
+     "why": "`demo/conformance.html` has run eleven checks about the one mechanism largen has no fallback for since before 0.3.0, computing pass or fail into a banner, and nothing ran it. `verify` asserted the file existed; the screenshot suite photographed it. Its checks executed only when a person opened the page, which is a footnote for a reader and a false stop condition for an agent looping generate, validate, repair. The runner also fails when the page reports fewer checks than its source defines, because a page reporting zero of zero passed is otherwise green."
+    },
+    "`site/test/shots.mjs` screenshotted `/demo/`, removed three releases earlier and returning 404 since. It writes images and asserted nothing, so the dead path produced a picture of an error page and no complaint. It now checks every path resolves before shooting."
+   ],
+   "tooling": [],
+   "signals": {
+    "present": [
+     "--line-height",
+     "--letter-spacing"
+    ],
+    "absent": [
+     "--leading"
+    ]
+   },
+   "package": "9795345e815f058d1a18ebeb47afb905088d28ce1791fac64732c3cf9e41034b"
+  },
+  {
    "version": "0.3.3",
    "date": "2026-08-24",
    "summary": "`largen verify` resolves the cascade across your files. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
