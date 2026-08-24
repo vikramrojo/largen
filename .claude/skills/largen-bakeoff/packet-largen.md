@@ -1,7 +1,8 @@
 # Arm A — build it with largen
 
-You are one of two agents building the same page from the same brief. The other is
-using a different substrate. You will not see its work and it will not see yours.
+You are one of two agents rebuilding the same two screens from the same reference
+images. The other is using a different substrate. You will not see its work and it
+will not see yours.
 
 ## Your substrate
 
@@ -21,7 +22,21 @@ without it there is no dark theme to inherit, and the brief asks for one.
 ## What to write
 
 - `components.css` — your components, inside `@layer largen.components`
-- `index.html` — the page, linking `largen.css` then `components.css`
+- `index.html` — screen 1, linking `largen.css`, `theme-dark.css`, then `components.css`
+- `content.html` — screen 2, linking the same three in the same order
+
+One stylesheet across both screens. Two screens that share a substrate and not a
+stylesheet is a result worth avoiding on its own merits.
+
+## Read the images
+
+`screen-1-landing.png` and `screen-2-content.png` are in your directory. Open them.
+They are the specification — the brief gives you the words and the required ids and
+deliberately describes no layout, spacing or type scale, because reading that off
+the reference is the task.
+
+The reference is **dark**. Build so that `data-theme="dark"` produces it, and let
+the light rendering fall out of the tokens.
 
 ## Rules that are not style preferences
 
@@ -39,6 +54,11 @@ These come from the contract and getting them wrong fails silently:
 Run `npx largen verify components.css` before you finish, and fix what it reports.
 If you want to know why a declaration is not applying, `npx largen cascade` answers
 it without a browser.
+
+One warning worth understanding rather than silencing: `--pad` written in `rem`
+stops responding to `data-size`. Component padding belongs in `em`, which scales
+with the element's own font size. The rem `--space-*` scale is for `--gap` and
+layout rhythm, where there is nothing to scale against.
 
 ## Constraints
 

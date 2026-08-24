@@ -1,7 +1,22 @@
-.hero { background: #eef4ff; color: #123; padding: 4rem 2rem }
-.hero-title { font-size: 2.5rem; font-weight: 700 }
-.cta { background: #1c6fd6; color: #fff; padding: .7em 1.4em; border-radius: 8px }
-.card, .tier { background: #f4f5f7; border: 1px solid #dfe2e7; border-radius: 8px; padding: 1.25rem }
-.tier-featured { background: #eef4ff; border-color: #1c6fd6 }
-.quote { color: #5c636e; font-size: 1.2rem; padding: 2rem }
-.site-footer { background: #f4f5f7; color: #5c636e; padding: 2rem }
+/* The bad largen fixture. No layer, so it outranks largen.modifiers and the axes
+   go inert; every colour is a literal, so nothing follows the theme. It must not
+   score like good/. */
+.nav { background: #f4f5f7; padding: .75rem 1.5rem }
+.nav-item { background: #fff; color: #123; padding: .4em 1em; border-radius: 999px }
+.hero { background: #fff; color: #123; padding: 4rem 1.5rem }
+.eyebrow { background: #eee; color: #5c636e; padding: .5em 1.2em; border-radius: 999px; letter-spacing: .12em }
+.hero-title { font-size: 6rem; font-weight: 700; line-height: .9 }
+.hero-sub { color: #5c636e }
+.social { padding: 1.5rem 0 }
+.social-item { background: #eee; color: #123; padding: .9em; border-radius: 999px }
+.partners { padding: 2rem 1.5rem }
+.partners-label { color: #5c636e; letter-spacing: .2em }
+.partners-logo { color: #9aa0a8; font-weight: 700 }
+.about { padding: 2rem 1.5rem }
+.statement { color: #123; font-size: 2.5rem; font-weight: 700 }
+.statement-muted { color: #9aa0a8 }
+.about-body { color: #5c636e }
+.about-link { color: #123 }
+.stat-row { border: 1px solid #dfe2e7; padding: 1rem 0 }
+.stat-label { color: #123 }
+.stat-value { color: #123; font-size: 5rem; font-weight: 700 }

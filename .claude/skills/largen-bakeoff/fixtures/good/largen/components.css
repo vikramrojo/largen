@@ -1,12 +1,37 @@
+/* The good largen fixture: every paint decision goes through a slot, every value
+   through a token, and the whole file sits in the components layer. It is not a
+   handsome page — it exists so the harness has something that should score clean.
+
+   --pad is in em throughout, --gap on the rem scale. That split is the contract's
+   own rule: padding in rem stops responding to data-size, and a fixture called
+   "good" that trips largen's own lint rule is not a fixture, it is a bug. */
 @layer largen.components {
-  .hero { --bg: var(--tone-soft); --fg: var(--tone-ink); --pad: 4rem 2rem; --gap: 1rem }
-  .hero-title { --font-size: calc(2.5rem * var(--scale)); --weight: var(--weight-bold) }
-  .cta { --bg: var(--tone); --fg: var(--tone-contrast); --pad: .7em 1.4em; --radius: var(--radius-md) }
-  .card { --bg: var(--surface); --border-color: var(--line); --border-width: var(--hairline);
-          --border-style: solid; --radius: var(--radius-md); --pad: 1.25rem }
-  .tier { --bg: var(--surface); --border-color: var(--line); --border-width: var(--hairline);
-          --border-style: solid; --radius: var(--radius-md); --pad: 1.25rem }
-  .tier-featured { --bg: var(--tone-soft); --fg: var(--tone-ink); --border-color: var(--tone) }
-  .quote { --fg: var(--ink-muted); --font-size: calc(1.2rem * var(--scale)); --pad: 2rem }
-  .site-footer { --bg: var(--surface); --fg: var(--ink-muted); --pad: 2rem }
+  .nav { --bg: var(--surface); --pad: .75em 1.5em; --gap: var(--space-2) }
+  .nav-item { --bg: var(--surface); --fg: var(--ink); --pad: .4em 1em; --radius: var(--radius-lg) }
+
+  .hero { --bg: var(--canvas); --fg: var(--ink); --pad: 4em 1.5em; --gap: var(--space-4) }
+  .eyebrow { --bg: var(--surface); --fg: var(--ink-muted); --pad: .5em 1.2em;
+             --radius: var(--radius-lg); --letter-spacing: .12em; --font-size: calc(.75rem * var(--scale)) }
+  .hero-title { --font-size: calc(6rem * var(--scale)); --weight: var(--weight-bold); --line-height: .9 }
+  .hero-sub { --fg: var(--ink-muted); --font-size: calc(1rem * var(--scale)) }
+
+  .social { --gap: var(--space-4); --pad: 1.5em 0 }
+  .social-item { --bg: var(--surface); --fg: var(--ink); --pad: .9em;
+                 --radius: var(--radius-lg); --font-size: calc(.8rem * var(--scale)) }
+
+  .partners { --pad: 2em 1.5em; --gap: var(--space-6) }
+  .partners-label { --fg: var(--ink-muted); --letter-spacing: .2em; --font-size: calc(.7rem * var(--scale)) }
+  .partners-logo { --fg: var(--ink-muted); --weight: var(--weight-bold); --pad: .5em }
+
+  .about { --pad: 2em 1.5em; --gap: var(--space-6) }
+  .statement { --fg: var(--ink); --font-size: calc(2.5rem * var(--scale));
+               --weight: var(--weight-bold); --line-height: 1.1 }
+  .statement-muted { --fg: var(--ink-muted) }
+  .about-body { --fg: var(--ink-muted); --font-size: calc(.9rem * var(--scale)) }
+  .about-link { --fg: var(--ink); --font-size: calc(.85rem * var(--scale)) }
+
+  .stat-row { --border-color: var(--line); --border-width: var(--hairline);
+              --border-style: solid; --pad: 1em 0 }
+  .stat-label { --fg: var(--ink); --font-size: calc(.85rem * var(--scale)) }
+  .stat-value { --fg: var(--ink); --font-size: calc(5rem * var(--scale)); --weight: var(--weight-bold) }
 }

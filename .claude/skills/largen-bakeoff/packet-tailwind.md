@@ -1,7 +1,8 @@
 # Arm B — build it with Tailwind
 
-You are one of two agents building the same page from the same brief. The other is
-using a different substrate. You will not see its work and it will not see yours.
+You are one of two agents rebuilding the same two screens from the same reference
+images. The other is using a different substrate. You will not see its work and it
+will not see yours.
 
 ## Your substrate
 
@@ -22,8 +23,18 @@ oversight and it is not something for you to correct.
 
 ## What to write
 
-- `index.html` — the page
+- `index.html` — screen 1
+- `content.html` — screen 2
 - `styles.css` — optional, only if you need it
+
+## Read the images
+
+`screen-1-landing.png` and `screen-2-content.png` are in your directory. Open them.
+They are the specification — the brief gives you the words and the required ids and
+deliberately describes no layout, spacing or type scale, because reading that off
+the reference is the task.
+
+The reference is **dark**. Build so that `class="dark"` on the root produces it.
 
 ## Both light and dark
 

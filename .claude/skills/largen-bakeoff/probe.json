@@ -1,7 +1,18 @@
 {
-  "$comment": "The neutral instrument. Identical for both arms, which is only possible because the brief mandates ids rather than classes — how each substrate styles #hero is its own business, but both must have one. Properties chosen because every substrate has to produce them somehow: they are what a browser resolves, not what anyone authored.",
-  "selectors": ["#hero", "#hero-title", "#cta", "#feature-card", "#price-highlight", "#price-plain", "#quote", "#footer"],
-  "properties": ["color", "background-color", "border-color", "padding", "font-size", "font-weight", "border-radius"],
+  "$comment": "The neutral instrument. Identical for both arms, which is only possible because the brief mandates ids rather than classes — how each substrate styles #hero is its own business, but both must have one. Properties chosen because every substrate has to produce them somehow: they are what a browser resolves, not what anyone authored. Selectors are per page: a hook that belongs to content.html would otherwise read as missing on index.html, and the harness would report every second-screen hook as a hole in the first screen.",
+  "pages": [
+    {
+      "file": "index.html",
+      "reference": "screen-1-landing.png",
+      "selectors": ["#nav", "#nav-item", "#eyebrow", "#hero", "#hero-title", "#hero-sub", "#social", "#social-item"]
+    },
+    {
+      "file": "content.html",
+      "reference": "screen-2-content.png",
+      "selectors": ["#partners", "#partners-label", "#partners-logo", "#about", "#statement", "#statement-muted", "#about-body", "#about-link", "#stat-row", "#stat-label", "#stat-value"]
+    }
+  ],
+  "properties": ["color", "background-color", "border-color", "padding", "font-size", "font-weight", "letter-spacing", "border-radius"],
   "themes": ["light", "dark"],
   "viewport": { "width": 1280, "height": 900 }
 }

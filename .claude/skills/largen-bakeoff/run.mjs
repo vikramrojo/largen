@@ -1,6 +1,7 @@
 /* The bake-off harness. No model runs in here.
  *
- * Two agents build the same page from the same brief on different substrates.
+ * Two agents rebuild the same two screens from the same reference images on
+ * different substrates.
  * Everything after that is arithmetic, and it is deliberately separated from the
  * generation so a result can be recomputed without spending a model again.
  *
@@ -64,7 +65,7 @@ async function deriveEntry(dir) {
      `verify --entry` accepted CSS alone; both take an HTML entry directly today,
      so the copy is gone rather than left to drift. */
   const { linkOrder } = await import(join(repo, 'genai/layers.js'))
-  const hrefs = linkOrder(readFileSync(join(dir, 'index.html'), 'utf8'))
+  const hrefs = linkOrder(readFileSync(join(dir, PROBE.pages[0].file), 'utf8'))
   if (!hrefs.length) return null
   writeFileSync(join(dir, '_entry.css'), hrefs.map((h) => `@import url("${h}");`).join('\n') + '\n')
   return { file: '_entry.css', order: hrefs }
@@ -72,9 +73,9 @@ async function deriveEntry(dir) {
 
 /* --- rendering ------------------------------------------------------------ */
 
-/** A copy of the page pinned to one theme, by whichever lever the arm uses. */
-function themedCopy(dir, arm, theme) {
-  const html = readFileSync(join(dir, 'index.html'), 'utf8')
+/** A copy of one page pinned to one theme, by whichever lever the arm uses. */
+function themedCopy(dir, arm, page, theme) {
+  const html = readFileSync(join(dir, page), 'utf8')
   const lever = THEME_LEVER[arm]
   let out
   if (lever.kind === 'attribute') {
@@ -90,7 +91,7 @@ function themedCopy(dir, arm, theme) {
         : withoutDark.replace(/<html\b/i, '<html class="dark"'))
       : withoutDark
   }
-  const file = join(dir, `_${theme}.html`)
+  const file = join(dir, `_${page.replace(/\.html$/, '')}-${theme}.html`)
   writeFileSync(file, out)
   return file
 }
@@ -136,13 +137,20 @@ async function serve(dir) {
   return { port: server.address().port, close: () => server.close() }
 }
 
-async function probeArm(dir, arm) {
+/* One probe run per page, rather than one run listing both.
+ *
+ * The two screens do not share hooks. A single run would ask index.html for
+ * #stat-value and content.html for #hero-title, get `missing` for each, and
+ * report every second-screen hook as a hole in the first — a fabricated finding
+ * from a page that is entirely correct. Per-page runs keep `missing` meaning
+ * what it says. */
+async function probePage(dir, arm, page) {
   const { buildProbe } = await import(join(repo, 'genai/probe.js'))
   const lever = THEME_LEVER[arm]
   const doc = buildProbe({
     kind: 'computed',
-    pages: ['./index.html'],
-    selectors: PROBE.selectors,
+    pages: ['./' + page.file],
+    selectors: page.selectors,
     properties: PROBE.properties,
     themes: PROBE.themes,
     viewport: PROBE.viewport,
@@ -152,11 +160,12 @@ async function probeArm(dir, arm) {
     ...(lever.kind === 'class' ? { themeClass: true } : { themeAttribute: lever.name }),
     timeout: 15_000,
   })
-  writeFileSync(join(dir, '_probe.html'), doc)
+  writeFileSync(join(dir, `_probe-${page.file.replace(/\.html$/, '')}.html`), doc)
   const site = await serve(dir)
   try {
     const { stdout } = await run(CHROME, ['--headless', '--disable-gpu',
-      '--virtual-time-budget=20000', '--dump-dom', `http://127.0.0.1:${site.port}/_probe.html`],
+      '--virtual-time-budget=20000', '--dump-dom',
+      `http://127.0.0.1:${site.port}/_probe-${page.file.replace(/\.html$/, '')}.html`],
       { timeout: 180_000, maxBuffer: 64 * 1024 * 1024 })
     const m = stdout.match(/<pre id="json"[^>]*>([\s\S]*?)<\/pre>/)
     if (!m || !m[1].trim()) return { ran: false, error: 'the probe never completed', rows: [] }
@@ -171,7 +180,7 @@ async function probeArm(dir, arm) {
    thing; Tailwind's CDN build is not on disk at all, so excluding both is the only
    symmetric choice available. */
 const FRAMEWORK = new Set(['largen.css', 'theme-dark.css', '_entry.css'])
-const GENERATED = /^_(light|dark|probe)\.html$/
+const GENERATED = /^_(.+-(light|dark)|probe-.+)\.html$/
 
 function authored(dir) {
   const files = readdirSync(dir).filter((f) => {
@@ -199,10 +208,15 @@ function authored(dir) {
   return { files, bytes, colourLiterals: literals }
 }
 
-/** Did the rendered values actually change between light and dark? */
-function themeSurvival(probe) {
+/** Did the rendered values actually change between light and dark?
+ *
+ * Folded across both screens, keyed by page and selector so that #hero-title on
+ * one page and #stat-value on the other are never mistaken for each other. */
+function themeSurvival(probes) {
   const byTheme = {}
-  for (const row of probe.rows ?? []) {
+  const rows = Object.entries(probes).flatMap(([file, p]) =>
+    (p.rows ?? []).map((r) => ({ ...r, selector: `${file} ${r.selector}` })))
+  for (const row of rows) {
     if (row.missing || row.themeUnstable) continue
     const theme = row.theme?.requested ?? (row.label.includes('dark') ? 'dark' : 'light')
     ;(byTheme[theme] ??= {})[row.selector] = row.values
@@ -226,9 +240,11 @@ function themeSurvival(probe) {
 }
 
 /** Elements that resolved to nothing — the page did not produce a required hook. */
-function missingHooks(probe) {
+function missingHooks(probes) {
   const missing = new Set()
-  for (const row of probe.rows ?? []) if (row.missing) missing.add(row.selector)
+  for (const [file, p] of Object.entries(probes)) {
+    for (const row of p.rows ?? []) if (row.missing) missing.add(`${file} ${row.selector}`)
+  }
   return [...missing]
 }
 
@@ -264,8 +280,15 @@ const report = { run: basename(runDir), arms: {}, generatedAt: null }
 
 for (const arm of ['largen', 'tailwind']) {
   const dir = join(runDir, arm)
-  if (!existsSync(join(dir, 'index.html'))) {
-    report.arms[arm] = { error: 'no index.html — the arm produced nothing to measure' }
+
+  /* Which of the two screens the arm actually built. A missing screen is a
+     result, not a crash: the run still measures the one that exists and the
+     summary names the one that does not, because an arm that shipped half the
+     brief and an arm that shipped none of it are different outcomes. */
+  const pages = PROBE.pages.filter((pg) => existsSync(join(dir, pg.file)))
+  const absent = PROBE.pages.filter((pg) => !pages.includes(pg)).map((pg) => pg.file)
+  if (!pages.length) {
+    report.arms[arm] = { error: `no pages — expected ${PROBE.pages.map((pg) => pg.file).join(' and ')}` }
     continue
   }
 
@@ -291,31 +314,40 @@ for (const arm of ['largen', 'tailwind']) {
   const shots = {}
   const site = await serve(dir)
   try {
-    for (const theme of PROBE.themes) {
-      const page = basename(themedCopy(dir, arm, theme))
-      const url = `http://127.0.0.1:${site.port}/${page}`
-      const out = join(dir, `shot-${theme}.png`)
-      try {
-        const res = await fetch(url)
-        if (!res.ok) throw new Error(`${url} returned ${res.status}`)
-        await shoot(url, out)
-        shots[theme] = { file: `${arm}/shot-${theme}.png`, bytes: statSync(out).size }
-      } catch (e) { shots[theme] = { error: e.message } }
+    for (const pg of pages) {
+      const stem = pg.file.replace(/\.html$/, '')
+      for (const theme of PROBE.themes) {
+        const file = basename(themedCopy(dir, arm, pg.file, theme))
+        const url = `http://127.0.0.1:${site.port}/${file}`
+        const name = `shot-${stem}-${theme}.png`
+        const out = join(dir, name)
+        try {
+          const res = await fetch(url)
+          if (!res.ok) throw new Error(`${url} returned ${res.status}`)
+          /* Screen 2 is a tall band; screen 1 is a viewport. Shooting both at the
+             same height would either crop the content section or pad the hero
+             with empty page, and neither is what the reference shows. */
+          await shoot(url, out, { height: stem === 'index' ? 900 : 1600 })
+          shots[`${stem}/${theme}`] = { file: `${arm}/${name}`, bytes: statSync(out).size }
+        } catch (e) { shots[`${stem}/${theme}`] = { error: e.message } }
+      }
     }
   } finally { site.close() }
 
-  const probe = await probeArm(dir, arm)
+  const probes = {}
+  for (const pg of pages) probes[pg.file] = await probePage(dir, arm, pg)
 
   report.arms[arm] = {
     authored: authored(dir),
     entry,
+    screens: { built: pages.map((pg) => pg.file), absent },
     shots,
     probe: {
-      ran: probe.ran ?? false,
-      error: probe.error ?? null,
-      failures: probe.failures ?? null,
-      missingHooks: missingHooks(probe),
-      themeSurvival: themeSurvival(probe),
+      ran: Object.values(probes).every((p) => p.ran),
+      error: Object.values(probes).map((p) => p.error).filter(Boolean).join('; ') || null,
+      failures: Object.values(probes).reduce((n, p) => n + (p.failures ?? 0), 0),
+      missingHooks: missingHooks(probes),
+      themeSurvival: themeSurvival(probes),
     },
     /* Labelled, not compared. See the header. */
     largenConformance: arm === 'largen' ? await evalArm(dir, entry) : 'not applicable — this arm does not use largen',
@@ -329,9 +361,11 @@ console.log(`\n  wrote ${join(runDir, 'summary.md')} and report.json\n`)
 for (const [arm, a] of Object.entries(report.arms)) {
   if (a.error) { console.log(`  ${arm.padEnd(9)} ${a.error}`); continue }
   const t = a.probe.themeSurvival
-  console.log(`  ${arm.padEnd(9)} ${a.authored.bytes} authored bytes, ${a.authored.colourLiterals} colour literal(s), ` +
+  console.log(`  ${arm.padEnd(9)} ${a.screens.built.length}/${a.screens.built.length + a.screens.absent.length} screens, ` +
+    `${a.authored.bytes} authored bytes, ${a.authored.colourLiterals} colour literal(s), ` +
     `theme changed ${t.changed}/${t.compared}` +
-    (a.probe.missingHooks.length ? `, ${a.probe.missingHooks.length} hook(s) missing` : ''))
+    (a.probe.missingHooks.length ? `, ${a.probe.missingHooks.length} hook(s) missing` : '') +
+    (a.screens.absent.length ? `, NOT BUILT: ${a.screens.absent.join(', ')}` : ''))
 }
 console.log()
 
@@ -343,12 +377,18 @@ function renderSummary(r) {
 
   const out = [
     `# Bake-off — ${r.run}`, '',
-    'Two agents, one brief, one model, two substrates. Everything below the first',
-    'table was computed without a model.', '',
+    'Two agents rebuilt the same two screens from the same reference images, on the',
+    'same model, on different substrates. Everything below the first table was',
+    'computed without a model.', '',
+    'The reference is dark. `shot-*-dark.png` is what to compare against the images',
+    'in `target/`; `shot-*-light.png` is whatever each substrate\'s own theming did',
+    'with a design that was never drawn light.', '',
     '## Compared — both arms, same instrument', '',
     'Measured by `emit_probe`, which reads computed styles from the rendered page.',
     'It is the only instrument that means the same thing on both arms.', '',
     '| | largen | tailwind |', '|---|---|---|',
+    `| screens built | ${cell(L, (x) => x.screens.built.join(', ') || 'none')} | ${cell(T, (x) => x.screens.built.join(', ') || 'none')} |`,
+    `| screens not built | ${cell(L, (x) => x.screens.absent.join(', ') || 'none')} | ${cell(T, (x) => x.screens.absent.join(', ') || 'none')} |`,
     `| authored bytes | ${cell(L, (x) => x.authored.bytes)} | ${cell(T, (x) => x.authored.bytes)} |`,
     `| colour literals | ${cell(L, (x) => x.authored.colourLiterals)} | ${cell(T, (x) => x.authored.colourLiterals)} |`,
     `| theme survival (values changed) | ${surv(L)} | ${surv(T)} |`,
@@ -390,8 +430,13 @@ function renderSummary(r) {
     '**confounded**: it could be the substrate, or it could be the unfamiliarity, and',
     'this design cannot separate them. Doing so needs a few-shot or fine-tuned',
     'control arm, which this is not.', '',
-    'Conformance is also not appearance. Every number above can be perfect on a page',
-    'that looks wrong. That is what the screenshots are for.', '')
+    'Conformance is also not appearance, and none of these numbers score fidelity to',
+    'the reference. Nothing here can tell you whether the headline is the right size',
+    'or the stat rows sit on the right rhythm — the probe reads what a browser',
+    'resolved, not whether it matches a picture. Put `shot-*-dark.png` beside the',
+    'images in `target/` and judge that by eye; it is the one part of this that is',
+    'not arithmetic, and pretending otherwise would be the easiest way to make the',
+    'harness lie.', '')
 
   return out.join('\n')
 }
