@@ -58,4 +58,4 @@
 - [x] 6.4 Assert the checks decline rather than guess when the order is ambiguous.
 - [x] 6.5 All suites: 78 MCP, 17 discovery, 11 cascade-diff, 9 probe-theme,
       7 verify-cascade. `contract --check` and `releases --check` clean.
-- [ ] 6.6 Run against the deployed origin after shipping.
+- [x] 6.6 Run against the deployed origin — 78/78 and 17/17 at `https://largen.exe.xyz`.
