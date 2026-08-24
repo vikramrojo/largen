@@ -200,7 +200,10 @@ const write = (rel, body) => {
  * a response.
  */
 
-function contractPages(c, page, inline, esc) {
+/* Exported so the sitemap can list these without a second hand-maintained list of
+   the same paths. Two lists of the same thing is how the site came to advertise a
+   version it had not shipped for three releases. */
+export function contractPages(c, page, inline, esc) {
   const specRow = (name, note) =>
     `  <div class="spec-row"><span class="spec-name">${esc(name)}</span>` +
     `<span class="spec-note">${note ? inline(note) : ''}</span></div>`

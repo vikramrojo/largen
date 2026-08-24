@@ -1,0 +1,45 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://largen.exe.xyz/api/mcp",
+      "service-doc": [
+        {
+          "href": "https://largen.exe.xyz/docs/mcp.html",
+          "type": "text/html",
+          "title": "MCP server documentation"
+        }
+      ],
+      "service-desc": [
+        {
+          "href": "https://largen.exe.xyz/.well-known/mcp/server-card.json",
+          "type": "application/json",
+          "title": "MCP server card"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://largen.exe.xyz/health",
+          "type": "application/json",
+          "title": "Health"
+        }
+      ]
+    },
+    {
+      "anchor": "https://largen.exe.xyz/largen.css",
+      "describedby": [
+        {
+          "href": "https://largen.exe.xyz/llms-compact.txt",
+          "type": "text/plain",
+          "title": "The authoring contract, inline"
+        }
+      ],
+      "service-desc": [
+        {
+          "href": "https://largen.exe.xyz/build.json",
+          "type": "application/json",
+          "title": "Byte lengths, sha256 and SRI for every stylesheet served"
+        }
+      ]
+    }
+  ]
+}

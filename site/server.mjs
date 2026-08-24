@@ -54,6 +54,8 @@ const TYPES = {
   '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
+  '.md': 'text/markdown; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.woff2': 'font/woff2',
@@ -106,13 +108,17 @@ async function serveFile(res, file, { immutable = false, status = 200, etag = nu
     }
 
     const body = await readFile(file)
+    /* Caller headers last, so they win. The extension map is a default, and a
+       file whose media type is not implied by its extension — /.well-known/api-catalog
+       is application/linkset+json with no extension at all — needs to be able to
+       say so. Spreading them first silently discarded the override. */
     send(res, status, body, {
       etag: tag,
-      ...headers,
       'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
       'cache-control': immutable
         ? 'public, max-age=31536000, immutable'
         : 'public, max-age=60',
+      ...headers,
     })
     return true
   } catch { return false }
@@ -253,11 +259,40 @@ const server = createServer(async (req, res) => {
       }
     }
 
+    /* --- Discovery surfaces -------------------------------------------------- */
+
+    /* RFC 8288 Link headers, so a client that fetches the homepage learns what is
+       here without parsing HTML. Relative references by design: RFC 8288 resolves
+       them against the request URL, so they stay correct on largen.exe.xyz and on
+       largen.dev without the server knowing which one answered. */
+    const LINKS = [
+      '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
+      '</docs/mcp.html>; rel="service-doc"; type="text/html"',
+      '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
+      '</llms-compact.txt>; rel="describedby"; type="text/plain"',
+      '</sitemap.xml>; rel="sitemap"; type="application/xml"',
+      '</health>; rel="status"; type="application/json"',
+    ].join(', ')
+
+    /* --- api-catalog ---------------------------------------------------------- */
+
+    /* `/.well-known/api-catalog` has no file extension and a media type of its own
+       (RFC 9727), so the extension-driven TYPES map cannot answer for it. Served
+       explicitly rather than falling through to application/octet-stream, which is
+       what a catalogue nobody can parse looks like. */
+    if (path === '/.well-known/api-catalog') {
+      const file = safeJoin(PUBLIC, path)
+      if (file && await serveFile(res, file, {
+        headers: { ...CDN, 'content-type': 'application/linkset+json; charset=utf-8' },
+      })) return
+    }
+
     /* --- Static site --------------------------------------------------------- */
     const rel = path === '/' ? '/index.html' : path
     const candidate = safeJoin(PUBLIC, rel)
+    const linkHeader = path === '/' ? { link: LINKS } : {}
     if (candidate) {
-      if (await serveFile(res, candidate)) return
+      if (await serveFile(res, candidate, { headers: linkHeader })) return
       if (!extname(rel) && await serveFile(res, candidate + '.html')) return
       if (!extname(rel) && await serveFile(res, join(candidate, 'index.html'))) return
     }
