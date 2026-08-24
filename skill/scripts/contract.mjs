@@ -351,40 +351,51 @@ export async function contract(args = []) {
   const { renderReleases } = await import('./releases.mjs')
   const releaseLog = renderReleases()
 
+  const { page, inline, esc } = await import('../../site/mcp/page.mjs')
+  const pages = contractPages(c, page, inline, esc)
+
+  /* ONE list, used by both the check and the write.
+   *
+   * Keeping two lists is what went wrong, three times. Writing four files and
+   * comparing four files is fine until a fifth is added to one list and not the
+   * other, and then --check reports "all generated surfaces are current" about a
+   * set that no longer means all of them. It happened here to contract.html,
+   * axes.html and authoring.html: this command writes them and the check never
+   * opened them, so a nav change left a dead link in three pages and the check
+   * said everything was fine.
+   *
+   * The comment that used to sit on the check said a partial check is worse than
+   * no check because it is believed. It was right, and it was attached to a
+   * partial check. Deriving both from one list is the only version of that
+   * sentence a future edit cannot quietly falsify. */
+  const surfaces = [
+    ['skill/SKILL.md', skill],
+    ['site/public/llms.txt', index],
+    ['site/public/llms-compact.txt', compact],
+    ['RELEASES.md', releaseLog],
+    ...Object.entries(pages),
+  ]
+
   if (check) {
-    /* Every generated surface, not just the first one. A --check that covers a
-       subset reports "all current" while something it never opened is stale,
-       which is worse than no check because it is believed. */
-    const stale = [
-      ['skill/SKILL.md', skill],
-      ['site/public/llms.txt', index],
-      ['site/public/llms-compact.txt', compact],
-      ['RELEASES.md', releaseLog],
-    ].filter(([rel, want]) => {
+    const stale = surfaces.filter(([rel, want]) => {
       try { return readFileSync(at(rel), 'utf8') !== want } catch { return true }
     })
     if (stale.length) {
       throw new Error(`out of date — run \`largen contract\`:\n${stale.map(([f]) => `    ${f}`).join('\n')}`)
     }
 
-    /* The hand-written pages are generated too, and were the ones that actually
-       rotted: they are committed and served off disk, so no build step touches
-       them and nothing compared them to their generator. */
-    const { pages } = await import('./pages.mjs')
-    await pages(['--check'])
+    /* The hand-written pages have their own generator and the same problem: they
+       are committed and served off disk, so nothing regenerates them and nothing
+       compared them either. */
+    const { pages: handWritten } = await import('./pages.mjs')
+    await handWritten(['--check'])
 
-    console.log('  contract: all generated surfaces are current\n')
+    console.log(`  contract: ${surfaces.length} generated surface(s) are current\n`)
     return 0
   }
 
-  const a = write('skill/SKILL.md', skill)
-  const b = write('site/public/llms.txt', index)
-  const d = write('site/public/llms-compact.txt', compact)
-  write('RELEASES.md', releaseLog)
-
-  const { page, inline, esc } = await import('../../site/mcp/page.mjs')
-  const pages = contractPages(c, page, inline, esc)
-  for (const [path, html] of Object.entries(pages)) write(path, html)
+  for (const [rel, body] of surfaces) write(rel, body)
+  const a = skill.length, b = index.length, d = compact.length
 
   const kb = (n) => (n / 1024).toFixed(2) + 'kb'
   console.log('\n  largen contract — generated from site/mcp/contract.mjs\n')
