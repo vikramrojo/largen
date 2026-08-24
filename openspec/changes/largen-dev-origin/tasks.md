@@ -50,7 +50,8 @@ advertising six MCP tools when there were twelve.
 - [x] 4.3 Assert the absent files stay absent — if authentication is ever added, that
       assertion is what should fail first.
 - [x] 4.4 Confirm `contract --check` covers all five, individually.
-- [ ] 4.5 Re-run against the deployed origin once shipped.
+- [x] 4.5 Re-run against the deployed origin — 17/17 at `https://largen.exe.xyz`, with the
+      rebase a no-op, so this checked what is actually served.
 
 ## 5. DNS-AID
 
