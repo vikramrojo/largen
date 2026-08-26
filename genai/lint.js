@@ -262,8 +262,87 @@ export function lintComponentCss(css, { slots = [] } = {}) {
       '10px 20px. In rem it stays 8px 16px at every size: the type grows and the ' +
       'box does not. Use `em` for a component\'s own padding and keep `--space-*` ' +
       'for the rhythm between things, which should not resize. If the fixed ' +
-      'padding is deliberate, this is a note rather than a fault.')
+      'padding is deliberate, this is a note rather than a fault.\n\n' +
+      'This is a heuristic and cannot be more than one. Whether padding should ' +
+      'respond to `data-size` depends on where the element sits at runtime, which ' +
+      'no stylesheet contains — a narrowing that only warned when the rule also ' +
+      'set `--font-size` was measured against two real pages and cleared the ' +
+      'broken one as readily as the correct one. `largen probe --size-axis` ' +
+      'renders the page under two sizes and is authoritative where they disagree. ' +
+      'It also catches what this cannot: `em` padding still will not move unless ' +
+      'something multiplies `--font-size` by `var(--scale)`, so a component can ' +
+      'pass this rule and sit outside the size axis entirely.')
   })
+
+  /* --- 4c. a gradient routed through a paint slot -------------------------
+   *
+   * `--bg` drives `background-color`, which does not accept an image value. The
+   * declaration is dropped and the element paints nothing — no warning, no
+   * fallback, an invisible surface. It has been failure mode #9 in the contract
+   * for a release and had no check behind it, which is the shape of the whole
+   * finding this rule belongs to: the one composition topic that changed a real
+   * page was the one a rule could fail on.
+   *
+   * The other image-valued slots are not affected: --shadow, --transition and
+   * the border slots all take what they are given. Only the two colour slots
+   * resolve to a <color>, and --fg with a gradient is rare enough that flagging
+   * it too costs nothing. */
+  lines.forEach((line, i) => {
+    const m = line.match(/(?:^|[;{\s])(--bg|--fg)\s*:\s*([^;}]+)/)
+    if (!m) return
+    if (!/\b(linear|radial|conic|repeating-linear|repeating-radial|repeating-conic)-gradient\s*\(/.test(m[2])) return
+    const prop = m[1]
+    const paints = prop === '--bg' ? 'background-color' : 'color'
+    add('slot-gradient', 'warning', at(i),
+      `\`${prop}\` is set to a gradient, and \`${paints}\` cannot take one`,
+      `\`${prop}\` drives \`${paints}\`, which resolves to a <color>. A gradient is ` +
+      'an image, so the declaration is dropped and the element paints nothing at ' +
+      'all — silently, with no fallback. Write the slot, then the plain property ' +
+      'beside it: `--bg: var(--canvas); background-image: radial-gradient(…, ' +
+      'var(--shade), transparent)`. The slot keeps tone, variant and theme ' +
+      'reaching the element; the plain declaration adds what has no slot. Keep ' +
+      'every colour stop on a token — a literal in a gradient is still a literal ' +
+      'and cannot follow a theme.')
+  })
+
+  /* --- 4d. layout that a shipped utility already does ----------------------
+   *
+   * `.row` is `display:flex` + `align-items:center` + `--gap`. `.cluster` is the
+   * same plus `flex-wrap`. A rule that writes those by hand is not wrong, but it
+   * has left the algebra: `gap` written directly is no longer `--gap`, so it is
+   * no longer a slot and nothing downstream can reach it.
+   *
+   * A bake-off arm used `.row` five times and then hand-wrote this ten more
+   * times, with fifteen `align-items` beside it, because the compact contract
+   * listed seven utility names and nothing else. The documentation is the fix;
+   * this is the check that says whether the documentation worked.
+   *
+   * `info`, not `warning`. Hand-writing flex is legitimate — a `space-between`
+   * header, a `flex: 1 1 auto` child — and a finding a correct choice cannot
+   * clear is a loop that cannot exit. It names the utility because a suggestion
+   * that does not say what to use instead is not actionable, and it only names
+   * one when the match is unambiguous. */
+  for (const m of region.matchAll(/\{([^{}]*)\}/g)) {
+    const block = m[1]
+    if (!/(?:^|[;{\s])display\s*:\s*flex\b/.test(block)) continue
+    /* Only when the rule is doing what a utility does: flex plus alignment or a
+       gap. Bare `display:flex` with custom children is nobody's `.row`. */
+    const aligns = /(?:^|[;{\s])align-items\s*:/.test(block)
+    const gaps = /(?:^|[;{\s])gap\s*:/.test(block)
+    if (!aligns && !gaps) continue
+    const wraps = /(?:^|[;{\s])flex-wrap\s*:\s*wrap\b/.test(block)
+    const column = /(?:^|[;{\s])flex-direction\s*:\s*column\b/.test(block)
+    const utility = column ? 'stack' : wraps ? 'cluster' : 'row'
+    const line = region.slice(0, m.index).split('\n').length
+    add('layout-by-hand', 'info', line,
+      `this is \`.${utility}\` — largen ships it`,
+      `\`.${utility}\` already does this, and is configured by \`--gap\` plus ` +
+      '`data-align` / `data-justify` rather than by more declarations. Writing it ' +
+      'by hand leaves the algebra: `gap` set directly is not `--gap`, so it stops ' +
+      'being a slot and nothing can reach it — no tone, no size, no override. ' +
+      'Legitimate exceptions exist (a `space-between` bar, a child that needs its ' +
+      'own `flex`), which is why this is a hint and not a fault.')
+  }
 
   /* --- 5. --tone-contrast does not follow --tone ---------------------------
    *
@@ -305,3 +384,62 @@ export function lintComponentCss(css, { slots = [] } = {}) {
 }
 
 export default lintComponentCss
+
+/* --- the page, not the stylesheet ----------------------------------------
+ *
+ * Section rhythm is the one composition claim that is not a property of any
+ * stylesheet. "A page whose sections butt together reads as unfinished however
+ * good each section is" is about the relationship between a container and its
+ * children, and the container is in the HTML.
+ *
+ * So this takes the document. `verify --entry index.html` already reads one for
+ * its <link> order; this is the second use of the same file.
+ *
+ * Tested against the three bake-off runs on disk before being written: the run
+ * that visibly lacked rhythm fires, and the two that had it clear. Three is a
+ * small sample and this is a hint accordingly — it cannot see a page that spaces
+ * its sections some other legitimate way, only that it did not use the obvious
+ * one.
+ */
+export function lintPageHtml(html, { css = '' } = {}) {
+  const findings = []
+  const add = (rule, severity, line, message, why) =>
+    findings.push({ rule, severity, line, message, why })
+
+  const body = html.match(/<body\b([^>]*)>([\s\S]*)<\/body>/i)
+  if (!body) return { ok: true, findings }
+  const [, bodyAttrs, inner] = body
+
+  /* Top-level sections only. A nested <section> is not a page section, and
+     counting it would fire on any page with a rich single section. */
+  let depth = 0
+  let sections = 0
+  for (const m of inner.matchAll(/<(\/?)(section|main|header|footer|article|div)\b[^>]*?(\/?)>/gi)) {
+    const closing = m[1] === '/'
+    const selfClosing = m[3] === '/'
+    const tag = m[2].toLowerCase()
+    if (!closing && depth === 0 && /^(section|main|article|header|footer)$/.test(tag)) sections++
+    if (selfClosing) continue
+    depth += closing ? -1 : 1
+    if (depth < 0) depth = 0
+  }
+  if (sections < 3) return { ok: true, findings }
+
+  /* Either lever counts. A `stack` on the body is the documented way; setting
+     --gap on body or a wrapper in CSS is equally correct and more explicit. */
+  const stacked = /\bclass\s*=\s*["'][^"']*\b(stack|grid)\b/i.test(bodyAttrs)
+  const inlineGap = /--gap\s*:/.test(bodyAttrs)
+  const cssGap = /(?:^|[\s,>+~])(?:body|html)[^{}]*\{[^{}]*--gap\s*:/m.test(strip(css))
+  if (stacked || inlineGap || cssGap) return { ok: true, findings }
+
+  add('section-rhythm', 'info', null,
+    `${sections} top-level sections and nothing setting the space between them`,
+    'Padding a section does nothing for the gap after it — two padded sections ' +
+    'still butt together, and a page whose sections touch reads as unfinished ' +
+    'however good each one is. Set the rhythm on the container: `<body ' +
+    'class="stack" style="--gap: var(--space-24)">`, or set `--gap` on body in ' +
+    'CSS. This is a hint because a page can space its sections another way; it ' +
+    'means the obvious lever is unused, not that the page is wrong.')
+
+  return { ok: true, findings }
+}

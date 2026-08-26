@@ -93,6 +93,35 @@ await check('padding in rem does not, which is why the lint rule exists', () => 
   return `${sm} at every size`
 })
 
+await check('`pad-in-rem` says it is a heuristic and names what outranks it', () => {
+  /* The rule cannot decide pattern-vs-component from a stylesheet. Saying so in
+     the `why` is not humility for its own sake: an agent that trusts a warning
+     it should have overruled writes worse code than one that never saw it. */
+  const f = lintComponentCss('@layer largen.components{.a{--pad:1rem}}', { slots })
+    .findings.find((x) => x.rule === 'pad-in-rem')
+  assert(/heuristic/.test(f.why), 'the why does not admit it is a heuristic')
+  assert(/--size-axis/.test(f.why), 'the why does not name the rendered check')
+  assert(/var\(--scale\)/.test(f.why), 'the why does not mention the second half of the requirement')
+  return 'admits its limit and points at the renderer'
+})
+
+await check('em padding alone does NOT put a component on the size axis', () => {
+  /* The finding that justified moving this to the renderer. A component can use
+     `em` padding, clear `pad-in-rem`, and still not move at all — because `em` is
+     relative to a font-size that nothing multiplied by `var(--scale)`.
+     
+     Measured on a real page: every component in bake-off run 3 uses em padding,
+     passes the lint rule, and is frozen across sm and xl, because that stylesheet
+     consumes `var(--scale)` zero times. Static analysis reported it clean. */
+  const emOnly = rows['#em-sm'] && rows['#em-xl']
+  assert(emOnly, 'the em fixture did not render')
+  /* The fixture's own em component DOES scale, because it sets --font-size from
+     --scale. That is the control: em padding plus a scaled font-size moves. */
+  assert(rows['#em-sm'].padding !== rows['#em-xl'].padding,
+    'the control em component stopped scaling — the premise of the whole rule is wrong')
+  return 'em + a --scale-multiplied font-size is the requirement, not em alone'
+})
+
 await check('`pad-in-rem` fires on the rem component and not the em one', () => {
   const warns = (css) => lintComponentCss(css, { slots }).findings.filter((f) => f.rule === 'pad-in-rem').length
   assert(warns('@layer largen.components{.a{--pad:var(--space-2) var(--space-4)}}') === 1, 'did not warn on the rem scale')

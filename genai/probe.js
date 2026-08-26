@@ -437,6 +437,7 @@ async function run() {
     }
     out.ran = true
     render()
+    if (CFG.sizeAxis) sizeAxisVerdict()
     status(out.failures ? out.failures + ' failure(s)' : 'all ' + out.rows.length + ' row(s) ok',
       out.failures ? 'bad' : 'good')
   } catch (e) {
@@ -477,6 +478,81 @@ function render() {
   document.getElementById('results').appendChild(table)
 }
 
+/* The size axis, answered by comparison rather than by reading a stylesheet.
+ *
+ * Whether padding responds to data-size is not a fact any stylesheet contains:
+ * --pad in rem is correct on a section and wrong on a button, and the difference
+ * is whether the element sits under a data-size at runtime. A static rule that
+ * tried to tell those apart was measured against two real pages and cleared the
+ * broken one exactly as readily as the correct one.
+ *
+ * So the fixture holds the same markup twice, under sm and under xl, and this
+ * reads both. An element whose padding is identical in the two either does not
+ * scale or was never meant to -- the verdict says which value it is stuck at and
+ * lets the reader decide, because "deliberately fixed" is an intention and no
+ * measurement recovers an intention. */
+function sizeAxisVerdict() {
+  const cfg = CFG.sizeAxis
+  const rows = {}
+  for (const r of out.rows) {
+    if (r.missing) continue
+    const sel = String(r.selector)
+    let which = null
+    if (sel.indexOf(cfg.smPrefix) === 0) which = 'sm'
+    else if (sel.indexOf(cfg.xlPrefix) === 0) which = 'xl'
+    if (!which) continue
+    const bare = sel.slice((which === 'sm' ? cfg.smPrefix : cfg.xlPrefix).length)
+    if (!rows[bare]) rows[bare] = {}
+    rows[bare][which] = r.values
+  }
+
+  const verdict = []
+  for (const bare of Object.keys(rows)) {
+    const pair = rows[bare]
+    if (!pair.sm || !pair.xl) continue
+    const entry = { selector: bare, moved: {}, stuck: [] }
+    for (const p of cfg.properties) {
+      const a = pair.sm[p]
+      const b = pair.xl[p]
+      if (a === undefined || b === undefined) continue
+      entry.moved[p] = { sm: a, xl: b, changed: a !== b }
+      if (a === b) entry.stuck.push(p)
+    }
+    verdict.push(entry)
+  }
+  out.sizeAxis = verdict
+
+  const table = document.createElement('table')
+  const head = table.insertRow()
+  const cols = ['selector'].concat(cfg.properties.map(function (p) { return p + ' sm -> xl' })).concat(['verdict'])
+  for (const c of cols) { const th = document.createElement('th'); th.textContent = c; head.appendChild(th) }
+  for (const e of verdict) {
+    const tr = table.insertRow()
+    if (e.stuck.length) tr.className = 'bad'
+    const first = tr.insertCell(); first.textContent = e.selector
+    for (const p of cfg.properties) {
+      const c = tr.insertCell()
+      const m = e.moved[p]
+      c.textContent = m ? (m.sm === m.xl ? m.sm + '  (unchanged)' : m.sm + '  ->  ' + m.xl) : '—'
+    }
+    const last = tr.insertCell()
+    last.textContent = e.stuck.length
+      ? 'does not follow data-size: ' + e.stuck.join(', ')
+      : 'follows data-size'
+  }
+  const h = document.createElement('h2')
+  h.textContent = 'The size axis'
+  const note = document.createElement('p')
+  note.textContent =
+    'Same markup, rendered twice. A row marked "does not follow" is padding in ' +
+    'rem where em was meant, OR padding that is fixed on purpose. Nothing here ' +
+    'can tell those apart -- that is the author\\'s intention, not a measurement.'
+  const results = document.getElementById('results')
+  results.appendChild(h)
+  results.appendChild(note)
+  results.appendChild(table)
+}
+
 run()
 `
 
@@ -503,7 +579,7 @@ export function buildProbe(options = {}) {
   const {
     kind = 'computed', pages = [], html = null, selectors = [], properties = [],
     steps = [], assertions = [], themes = [null], themeAttribute = 'data-theme',
-    themeClass = false, themeStorage = null,
+    themeClass = false, themeStorage = null, sizeAxis = null,
     viewport = { width: 1280, height: 900 }, timeout = 10000,
   } = options
 
@@ -527,6 +603,7 @@ export function buildProbe(options = {}) {
     themeAttribute,
     themeClass,
     themeStorage,
+    sizeAxis,
     viewport,
     timeout,
   }

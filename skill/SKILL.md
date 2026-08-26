@@ -141,6 +141,21 @@ selector already contributes no specificity, so there is nothing to wrap. Note
 `background-color`, not the `background` shorthand, which would also reset
 `background-image` and the rest of the family.
 
+Universal is also what keeps generated CSS uniform. Because every element is
+paintable the same way, "is this element paintable?" is never a question you
+have to answer — and a question you do not answer is one you cannot answer
+differently twice. Narrow the rule and it becomes a real decision, slots here
+and plain CSS there, made fresh for every component; that choice point is where
+drift enters. The closed vocabulary depends on it too: CSS has hundreds of
+properties and this algebra has fourteen slots, and an element outside the rule
+is an element where the only option left is arbitrary CSS. Uniformity then
+follows by construction rather than by discipline — every painted surface goes
+through the same slots, so tone, variant, size and theme reach all of it. A
+narrowed rule would sort elements into two tiers and produce pages where some
+parts follow the theme and some quietly do not. It is also nothing to remember:
+an allowlist would have to be carried in this contract and consulted correctly
+every time, while `*` costs no tokens and cannot be misremembered.
+
 ## The slots
 
 `--bg --fg --border-color --border-width --border-style --radius --pad --gap
@@ -380,6 +395,43 @@ Fix: Route the colour through a token or a `--tone*` derivation.
 Theme swapping works by changing what the tokens resolve to. Anything that
 bypasses the tokens is simply not part of that mechanism.
 
+## Layout utilities
+
+Seven utilities, configured by custom properties the same way components are —
+`--gap` is a slot, so the paint rule applies it. Responsiveness is intrinsic:
+`switcher` and `sidebar` reflow on the CONTAINER, so there are no breakpoints
+and no `sm:` / `xl:` variants to learn.
+
+```
+stack     vertical flow
+row       horizontal, does not wrap
+cluster   horizontal, wraps — tags, icon groups, metadata
+center    constrained measure, centred
+grid      as many columns as fit, no breakpoints
+switcher  a row that becomes a stack below a container width
+sidebar   side column plus fluid main, collapses when main gets too narrow
+```
+
+| utility | reads |
+|---|---|
+| `stack` | `--gap (1rem)` |
+| `row` | `--gap (1rem)` |
+| `cluster` | `--gap (0.5rem)` |
+| `center` | `--measure (56rem), --pad` |
+| `grid` | `--gap (1rem), --min-item (16rem)` |
+| `switcher` | `--gap (1rem), --threshold (24rem)` |
+| `sidebar` | `--gap (2rem), --side (16rem), --min-content (50%)` |
+
+Alignment is attributes, not classes:
+`data-align="start|center|end|baseline|stretch"` and
+`data-justify="start|center|end|between"`. They are orthogonal, so the utilities
+stay knob-driven instead of sprouting a class per combination. Reach for these
+before writing `align-items` by hand.
+
+Do not hand-write `display: flex` with `align-items` and `gap`. That is `row` or
+`cluster` plus `data-align`, and the hand-written version leaves the algebra —
+`--gap` set as `gap` is no longer a slot, so nothing can reach it.
+
 ## Composing a page
 
 The rules above say what largen guarantees and how it fails. This is the other
@@ -412,22 +464,52 @@ var(--shade-strong)`) for the one thing you want picked out.
 Restraint is the whole of it. If everything is raised, nothing is. A recommended
 pricing tier earns `--lift-2`; the tiers either side earn `--lift-1` or nothing.
 
-**What a slot cannot express**
+**Depth: write the slot, then the plain property**
 
-Fourteen slots do not cover everything, and the ones they miss fail silently
-rather than loudly. A gradient is the common one: `--bg` drives
-`background-color`, so `--bg: linear-gradient(…)` paints nothing.
-
-Write the slot, then the plain property:
+Atmosphere is usually a gradient, and a gradient needs one extra line because
+`--bg` drives `background-color`. Set the slot, then add what has no slot beside
+it:
 
     .hero {
-      --bg: var(--tone);
-      background-image: linear-gradient(160deg, transparent, var(--shade-strong));
+      --bg: var(--canvas);
+      background-image:
+        radial-gradient(60rem 40rem at 20% 0%, var(--shade), transparent 70%),
+        radial-gradient(50rem 40rem at 90% 30%, var(--shade), transparent 70%);
     }
 
 The slot keeps the element inside the algebra — tone, variant and theme still
-reach it — and the plain declaration adds what has no slot. Note the gradient
-stop is a token: a literal there is still a literal, and `verify` will say so.
+reach it — and the plain declaration adds the rest. A soft wash behind a large
+headline is most of the difference between a page that looks composed and one
+that looks unstyled, and it costs two lines.
+
+Two things to get right. Every colour stop is a token: `--shade` and
+`--shade-strong` are there for this, and a literal in a gradient is still a
+literal that cannot follow a theme. And `--bg: linear-gradient(…)` paints
+NOTHING — no warning, no fallback, an element that silently does not appear.
+`verify` reports it.
+
+The same shape covers anything the fourteen slots miss: set the slot for what is
+in the algebra, write the plain property for what is not.
+
+**The axes are not only for colourful designs**
+
+A restrained or monochrome page is where authors quietly assume the tone axis is
+not for them, and then hand-write the variation it would have given free. It is
+for them. `--tone` can be `--neutral`; a near-black surface, a hairline and its
+text are `--tone-soft`, `--tone-line` and `--tone-ink` whether or not there is a
+hue in sight.
+
+The test for tone is not "is this colourful" but "does a group of elements vary
+together". If a section, a card and its button should all shift when one
+attribute changes, that is `data-tone` on the ancestor and nothing on the
+children — tone inherits, which is the whole reason it is an axis and not a
+class.
+
+Size is narrower and it is honest to say so: `--scale` is consumed by
+components, not by page layout. A hero or a section has nothing to scale against
+and should not pretend otherwise. Reach for `data-size` on the things that come
+in sizes — buttons, inputs, badges, a compact table — and let the page around
+them stay on the rem scale.
 
 **Text on a toned surface takes its colour from the tone**
 

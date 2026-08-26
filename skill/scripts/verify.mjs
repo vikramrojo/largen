@@ -45,7 +45,7 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { at, root, discover } from './paths.mjs'
-import { lintComponentCss, registeredSlots, classifySheet } from '../../genai/lint.js'
+import { lintComponentCss, registeredSlots, classifySheet, lintPageHtml } from '../../genai/lint.js'
 import { checkLayerOrder, orderFromImports, orderFromHtml, inferEntry } from '../../genai/layers.js'
 import { checkComponentsApply } from '../../genai/cascade.js'
 
@@ -225,7 +225,7 @@ export async function verify(args = []) {
   }
 
   const slots = registeredSlots(read('src/properties.css'))
-  let errors = 0, warnings = 0, clean = 0
+  let errors = 0, warnings = 0, hints = 0, clean = 0
 
   /* Discovery finds every stylesheet; only some declare components. A theme, a
      token file or a reset is not a component and judging it by component rules
@@ -256,6 +256,10 @@ export async function verify(args = []) {
     for (const f of findings) {
       const where = `${rel}${f.line ? `:${f.line}` : ''}`
       if (f.severity === 'error') { errors++; console.log(`  FAIL  ${where}\n        ${f.message}\n        ${f.why}`) }
+      /* `info` is a suggestion about reuse, not a report of a defect. It is
+         counted apart from warnings so that a page full of correct-but-could-be-
+         a-utility layout does not read as a page with fifteen problems. */
+      else if (f.severity === 'info') { hints++; console.log(`  hint  ${where} — ${f.message}`) }
       else { warnings++; console.log(`  note  ${where} — ${f.message}`) }
     }
   }
@@ -298,6 +302,20 @@ export async function verify(args = []) {
       try { all.unshift({ name: entry, css: readFileSync(entry, 'utf8') }) }
       catch { console.log(`  NOT RUN  the cascade checks — cannot read ${entry}`) }
     }
+    /* Section rhythm is not a property of any stylesheet — it is about a
+       container and its children, and the container is in the document. This is
+       the second use of the file already being read for its <link> order. */
+    if (fromHtml) {
+      try {
+        const page = readFileSync(entry, 'utf8')
+        const sheets = all.filter((f) => f.name !== entry).map((f) => f.css).join('\n')
+        for (const f of lintPageHtml(page, { css: sheets }).findings) {
+          hints++
+          console.log(`  hint  ${relative(process.cwd(), entry) || entry} — ${f.message}`)
+        }
+      } catch { /* unreadable entry is already reported by the branch below */ }
+    }
+
     let derived = null
     try { derived = fromHtml ? orderFromHtml(all, entry) : orderFromImports(all, entry) } catch (e) {
       console.log(`  NOT RUN  the cascade checks — ${e.message}`)
@@ -339,7 +357,8 @@ export async function verify(args = []) {
   console.log()
   const total = errors + failures
   if (total) { console.log(`  ${total} problem(s)\n`); return 1 }
-  console.log(`  all checks passed${warnings ? ` (${warnings} note(s))` : ''}`)
+  const tail = [warnings && `${warnings} note(s)`, hints && `${hints} hint(s)`].filter(Boolean).join(', ')
+  console.log(`  all checks passed${tail ? ` (${tail})` : ''}`)
   /* Say what was checked and what was not, rather than one word that covers
      both. "static only" was true of every check here and is no longer. */
   console.log(entry

@@ -69,7 +69,9 @@ COMPONENTS  whatever this project needs                                 ← YOU 
   box-shadow: var(--shadow, revert-layer);
   transition: var(--transition, revert-layer);
 }</pre>
-  <p class="spec-note">One rule, applied to every element. It is safe universally only because an unset slot is guaranteed-invalid, so <span class="tok">var(…, revert-layer)</span> fires and hands the property straight back to the UA stylesheet — a <span class="tok">&lt;ul&gt;</span> keeps its indent, an <span class="tok">&lt;h1&gt;</span> its size. The selector is a bare <span class="tok">*</span>, not <span class="tok">:where(*)</span>: the universal selector already contributes no specificity, so there is nothing to wrap. Note <span class="tok">background-color</span>, not the <span class="tok">background</span> shorthand, which would also reset <span class="tok">background-image</span> and the rest of the family.</p>
+  <p class="spec-note">One rule, applied to every element. It is safe universally only because an unset slot is guaranteed-invalid, so <span class="tok">var(…, revert-layer)</span> fires and hands the property straight back to the UA stylesheet — a <span class="tok">&lt;ul&gt;</span> keeps its indent, an <span class="tok">&lt;h1&gt;</span> its size. The selector is a bare <span class="tok">*</span>, not <span class="tok">:where(*)</span>: the universal selector already contributes no specificity, so there is nothing to wrap. Note <span class="tok">background-color</span>, not the <span class="tok">background</span> shorthand, which would also reset <span class="tok">background-image</span> and the rest of the family.
+
+Universal is also what keeps generated CSS uniform. Because every element is paintable the same way, "is this element paintable?" is never a question you have to answer — and a question you do not answer is one you cannot answer differently twice. Narrow the rule and it becomes a real decision, slots here and plain CSS there, made fresh for every component; that choice point is where drift enters. The closed vocabulary depends on it too: CSS has hundreds of properties and this algebra has fourteen slots, and an element outside the rule is an element where the only option left is arbitrary CSS. Uniformity then follows by construction rather than by discipline — every painted surface goes through the same slots, so tone, variant, size and theme reach all of it. A narrowed rule would sort elements into two tiers and produce pages where some parts follow the theme and some quietly do not. It is also nothing to remember: an allowlist would have to be carried in this contract and consulted correctly every time, while <span class="tok">*</span> costs no tokens and cannot be misremembered.</p>
 </section>
 
 <section class="stack" style="--gap:.5rem">
@@ -135,7 +137,7 @@ COMPONENTS  whatever this project needs                                 ← YOU 
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.4.0 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.1 — a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

@@ -9,6 +9,39 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.5.1 — 2026-08-26
+
+Documentation only. The stylesheet is unchanged — the build id stays `5445bbba`, and the frozen files differ from 0.5.0 only in the version string inside their banner comment. Nothing pinned to /v/0.5.0/ is affected, and the CSS anyone vendored is the same CSS.
+
+### Added
+
+- The paint rule now says why it is universal, not only why it is safe. Applying to every element is what keeps generated CSS uniform: "is this element paintable?" is never a question anyone has to answer, and a question nobody answers is one nobody can answer differently twice. Narrowing it to an allowlist would make it a real decision — slots here, plain CSS there, made fresh per component — and that choice point is where drift enters.
+
+## 0.5.0 — 2026-08-24
+
+Documentation that can fail. No CSS change — build id stays `5445bbba`, so vendored copies are unaffected and this is a tooling and contract release.
+
+### Added
+
+- The seven layout utilities are documented: what each does and the custom properties it reads (`--gap`, `--measure`, `--min-item`, `--threshold`, `--side`, `--min-content`), plus `data-align` and `data-justify`, which were undocumented on every surface. A page built from the previous contract used `.row` five times and hand-wrote `display: flex` ten more, with fifteen `align-items` beside it.
+- A `slot-gradient` warning from `largen verify`. `--bg` drives `background-color`, so a gradient given to it paints nothing at all, silently. This was failure mode #9 in the contract for a full release with no check behind it.
+- A `layout-by-hand` hint naming the utility that matches — `stack`, `row` or `cluster`. `info` severity, reported as `hint` and counted apart from warnings, because hand-writing flex is sometimes right and a finding a correct choice cannot clear is a loop that cannot exit.
+- A `section-rhythm` hint from `largen verify --entry <page>.html`: three or more top-level sections with nothing setting the space between them. Rhythm is not a property of any stylesheet, so this reads the document that was already being read for its `<link>` order.
+- `largen probe --size-axis --page <file> --select <sel>`. Renders the same markup twice, under `data-size="sm"` and `"xl"`, and reports which properties did not move. Whether padding should respond to the size axis depends on where the element sits at runtime, which no stylesheet contains.
+- A composition topic on when to reach for the axes, and one reframing depth as an instruction rather than a limitation.
+
+### Fixed
+
+- Composition guidance that nothing could check did not change what agents wrote.
+  0.4.0 shipped five composition topics. A bake-off then ran the shipped contract with no addendum and exactly one topic changed the output: the only one with a lint rule behind it. The gradient topic had a complete, copy-pasteable snippet and produced zero gradients. Re-running with the documentation of this release and nothing else changed took hand-written `display: flex` from 10 to 3, `justify-content` from 10 to 0, `data-align`/`data-justify` from 0 to 12, and gradients from 0 to 3.
+- `pad-in-rem` now says it is a heuristic and names what outranks it.
+  The obvious narrowing — warn only when the rule also sets `--font-size` — was measured against two real pages and cleared the broken one exactly as readily as the correct one. Worse, the rendered check found that `em` padding alone is not enough: a component whose `--font-size` is never multiplied by `var(--scale)` sits outside the size axis while passing every static check.
+
+### Tooling
+
+- `largen verify` gains an `info` severity, rendered as `hint` and counted separately from notes.
+- `site/test/composition-rules.mjs`, 11 tests covering all three new rules for both halves — that each fires on the defect and clears on correct code.
+
 ## 0.4.0 — 2026-08-24
 
 A spacing scale, and a contract that teaches composition. First CSS change since 0.3.0 — build id `b9fc348c` becomes `5445bbba`, so vendored copies change.

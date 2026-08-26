@@ -2,6 +2,67 @@
  "$comment": "The release log, as data rather than prose, for two reasons. RELEASES.md is generated from it by `largen contract`, so the published log cannot drift from this file. And every entry carries `signals` — strings that must be present in, or absent from, the frozen bytes at site/public/v/<version>/ — so a claim about a release is checked against the artifact that release actually shipped rather than believed. `largen releases --check` runs that. `signals` is also the machine-readable delta list a per-project upgrade check needs: given a project's CSS and the version it vendored, the `present` strings of every later release are exactly what to grep for.",
  "releases": [
   {
+   "version": "0.5.1",
+   "date": "2026-08-26",
+   "summary": "Documentation only. The stylesheet is unchanged — the build id stays `5445bbba`, and the frozen files differ from 0.5.0 only in the version string inside their banner comment. Nothing pinned to /v/0.5.0/ is affected, and the CSS anyone vendored is the same CSS.",
+   "breaking": [],
+   "added": [
+    "The paint rule now says why it is universal, not only why it is safe. Applying to every element is what keeps generated CSS uniform: \"is this element paintable?\" is never a question anyone has to answer, and a question nobody answers is one nobody can answer differently twice. Narrowing it to an allowlist would make it a real decision — slots here, plain CSS there, made fresh per component — and that choice point is where drift enters."
+   ],
+   "fixed": [],
+   "tooling": [],
+   "signals": {
+    "present": [
+     "--space-4",
+     "--line-height",
+     "--letter-spacing"
+    ],
+    "absent": [
+     "--leading"
+    ]
+   },
+   "package": "606cfac3da78e909e6c60d6dddf99775004dfe097b3795d3f928845e82377734"
+  },
+  {
+   "version": "0.5.0",
+   "date": "2026-08-24",
+   "summary": "Documentation that can fail. No CSS change — build id stays `5445bbba`, so vendored copies are unaffected and this is a tooling and contract release.",
+   "breaking": [],
+   "added": [
+    "The seven layout utilities are documented: what each does and the custom properties it reads (`--gap`, `--measure`, `--min-item`, `--threshold`, `--side`, `--min-content`), plus `data-align` and `data-justify`, which were undocumented on every surface. A page built from the previous contract used `.row` five times and hand-wrote `display: flex` ten more, with fifteen `align-items` beside it.",
+    "A `slot-gradient` warning from `largen verify`. `--bg` drives `background-color`, so a gradient given to it paints nothing at all, silently. This was failure mode #9 in the contract for a full release with no check behind it.",
+    "A `layout-by-hand` hint naming the utility that matches — `stack`, `row` or `cluster`. `info` severity, reported as `hint` and counted apart from warnings, because hand-writing flex is sometimes right and a finding a correct choice cannot clear is a loop that cannot exit.",
+    "A `section-rhythm` hint from `largen verify --entry <page>.html`: three or more top-level sections with nothing setting the space between them. Rhythm is not a property of any stylesheet, so this reads the document that was already being read for its `<link>` order.",
+    "`largen probe --size-axis --page <file> --select <sel>`. Renders the same markup twice, under `data-size=\"sm\"` and `\"xl\"`, and reports which properties did not move. Whether padding should respond to the size axis depends on where the element sits at runtime, which no stylesheet contains.",
+    "A composition topic on when to reach for the axes, and one reframing depth as an instruction rather than a limitation."
+   ],
+   "fixed": [
+    {
+     "change": "Composition guidance that nothing could check did not change what agents wrote.",
+     "why": "0.4.0 shipped five composition topics. A bake-off then ran the shipped contract with no addendum and exactly one topic changed the output: the only one with a lint rule behind it. The gradient topic had a complete, copy-pasteable snippet and produced zero gradients. Re-running with the documentation of this release and nothing else changed took hand-written `display: flex` from 10 to 3, `justify-content` from 10 to 0, `data-align`/`data-justify` from 0 to 12, and gradients from 0 to 3."
+    },
+    {
+     "change": "`pad-in-rem` now says it is a heuristic and names what outranks it.",
+     "why": "The obvious narrowing — warn only when the rule also sets `--font-size` — was measured against two real pages and cleared the broken one exactly as readily as the correct one. Worse, the rendered check found that `em` padding alone is not enough: a component whose `--font-size` is never multiplied by `var(--scale)` sits outside the size axis while passing every static check."
+    }
+   ],
+   "tooling": [
+    "`largen verify` gains an `info` severity, rendered as `hint` and counted separately from notes.",
+    "`site/test/composition-rules.mjs`, 11 tests covering all three new rules for both halves — that each fires on the defect and clears on correct code."
+   ],
+   "signals": {
+    "present": [
+     "--space-4",
+     "--line-height",
+     "--letter-spacing"
+    ],
+    "absent": [
+     "--leading"
+    ]
+   },
+   "package": "45c6cf6fc6b13b1a63275dd1a6e852ed2a7a60d26d2b60bdacb723f31645fbfc"
+  },
+  {
    "version": "0.4.0",
    "date": "2026-08-24",
    "summary": "A spacing scale, and a contract that teaches composition. First CSS change since 0.3.0 — build id `b9fc348c` becomes `5445bbba`, so vendored copies change.",

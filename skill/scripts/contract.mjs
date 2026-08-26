@@ -81,6 +81,16 @@ function skillMarkdown(c) {
       wrap(f.why), '')
   }
 
+  L.push('## Layout utilities', '')
+  L.push(wrap(c.utilities.intro), '')
+  const uw = Math.max(...c.utilities.list.map((u) => u.name.length))
+  L.push('```')
+  for (const u of c.utilities.list) L.push(`${u.name.padEnd(uw)}  ${u.does}`)
+  L.push('```', '')
+  L.push('| utility | reads |', '|---|---|')
+  for (const u of c.utilities.list) L.push(`| \`${u.name}\` | \`${u.reads}\` |`)
+  L.push('', wrap(c.utilities.alignment), '', wrap(c.utilities.why), '')
+
   L.push('## Composing a page', '')
   L.push(wrap('The rules above say what largen guarantees and how it fails. This is ' +
     'the other half — a page built to the rules alone comes out correct and plain.'), '')
@@ -194,6 +204,20 @@ function llmsCompact(c) {
      the same model produced rhythm, elevation and readable toned text when it was
      present, and none of them when it was not. A pointer would have reproduced
      the original result. */
+
+  /* The utilities were seven words in the overview map and nothing anywhere else.
+     A bake-off arm read that, used two of them, and hand-wrote `display: flex`
+     ten more times with fifteen `align-items` beside it — every knob below was
+     undocumented on every surface when that run happened. */
+  L.push('## Layout utilities', '')
+  L.push(wrap(c.utilities.intro), '')
+  const uw = Math.max(...c.utilities.list.map((u) => u.name.length))
+  const rw = Math.max(...c.utilities.list.map((u) => u.does.length))
+  for (const u of c.utilities.list) {
+    L.push(`${u.name.padEnd(uw)}  ${u.does.padEnd(rw)}  ${u.reads}`)
+  }
+  L.push('', wrap(c.utilities.alignment), '', wrap(c.utilities.why), '')
+
   L.push('## Composing a page', '')
   for (const part of Object.values(c.composition)) {
     L.push(wrap(part.title.toUpperCase()), '')

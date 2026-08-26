@@ -232,6 +232,49 @@ export const RULES = [
  * else fixed all three.
  *
  * None of it changes a rule. Every line is expressible in the algebra already. */
+
+/* The layout utilities, with what each one reads.
+ *
+ * The overview map lists these as seven words, which is enough to know they
+ * exist and not enough to use them. A bake-off arm read that line, used `.row`
+ * five times and `.stack` once, then hand-wrote `display: flex` ten more times
+ * with fifteen `align-items` and ten `justify-content` beside it — 48% of its
+ * stylesheet was layout the library already ships. Every knob below was
+ * undocumented in every generated surface when that run happened.
+ *
+ * The point the bare list loses is that these are configured by custom
+ * properties exactly as components are. `--gap` is a slot, so the universal
+ * paint rule applies it, and a layout utility and a component are the same kind
+ * of thing. An agent that knows that reaches for `--gap` instead of `gap`.
+ *
+ * Transcribed from src/layout.css, which has always said all of this. */
+export const UTILITIES = {
+  intro:
+    'Seven utilities, configured by custom properties the same way components ' +
+    'are — `--gap` is a slot, so the paint rule applies it. Responsiveness is ' +
+    'intrinsic: `switcher` and `sidebar` reflow on the CONTAINER, so there are ' +
+    'no breakpoints and no `sm:` / `xl:` variants to learn.',
+  list: [
+    { name: 'stack', does: 'vertical flow', reads: '--gap (1rem)' },
+    { name: 'row', does: 'horizontal, does not wrap', reads: '--gap (1rem)' },
+    { name: 'cluster', does: 'horizontal, wraps — tags, icon groups, metadata', reads: '--gap (0.5rem)' },
+    { name: 'center', does: 'constrained measure, centred', reads: '--measure (56rem), --pad' },
+    { name: 'grid', does: 'as many columns as fit, no breakpoints', reads: '--gap (1rem), --min-item (16rem)' },
+    { name: 'switcher', does: 'a row that becomes a stack below a container width', reads: '--gap (1rem), --threshold (24rem)' },
+    { name: 'sidebar', does: 'side column plus fluid main, collapses when main gets too narrow', reads: '--gap (2rem), --side (16rem), --min-content (50%)' },
+  ],
+  alignment:
+    'Alignment is attributes, not classes: `data-align="start|center|end|' +
+    'baseline|stretch"` and `data-justify="start|center|end|between"`. They are ' +
+    'orthogonal, so the utilities stay knob-driven instead of sprouting a class ' +
+    'per combination. Reach for these before writing `align-items` by hand.',
+  why:
+    'Do not hand-write `display: flex` with `align-items` and `gap`. That is ' +
+    '`row` or `cluster` plus `data-align`, and the hand-written version leaves ' +
+    'the algebra — `--gap` set as `gap` is no longer a slot, so nothing can ' +
+    'reach it.',
+}
+
 export const COMPOSITION = {
   space: {
     title: 'Space is a scale, and the unit carries meaning',
@@ -260,21 +303,59 @@ export const COMPOSITION = {
       'recommended pricing tier earns `--lift-2`; the tiers either side earn ' +
       '`--lift-1` or nothing.',
   },
-  beyond: {
-    title: 'What a slot cannot express',
+  /* This used to be titled "What a slot cannot express" and it produced nothing.
+     Filed among the failures, the recipe underneath reads as a workaround for a
+     hazard rather than an instruction — a bake-off arm with this exact snippet
+     in its prompt wrote zero gradients and shipped a flat hero against a
+     reference with an ambient wash. The technique is now stated as a technique.
+     The hazard stays in FAILURE_MODES, where a hazard belongs. */
+  depth: {
+    title: 'Depth: write the slot, then the plain property',
     body:
-      'Fourteen slots do not cover everything, and the ones they miss fail ' +
-      'silently rather than loudly. A gradient is the common one: `--bg` drives ' +
-      '`background-color`, so `--bg: linear-gradient(…)` paints nothing.\n\n' +
-      'Write the slot, then the plain property:\n\n' +
+      'Atmosphere is usually a gradient, and a gradient needs one extra line ' +
+      'because `--bg` drives `background-color`. Set the slot, then add what has ' +
+      'no slot beside it:\n\n' +
       '    .hero {\n' +
-      '      --bg: var(--tone);\n' +
-      '      background-image: linear-gradient(160deg, transparent, var(--shade-strong));\n' +
+      '      --bg: var(--canvas);\n' +
+      '      background-image:\n' +
+      '        radial-gradient(60rem 40rem at 20% 0%, var(--shade), transparent 70%),\n' +
+      '        radial-gradient(50rem 40rem at 90% 30%, var(--shade), transparent 70%);\n' +
       '    }\n\n' +
       'The slot keeps the element inside the algebra — tone, variant and theme ' +
-      'still reach it — and the plain declaration adds what has no slot. Note the ' +
-      'gradient stop is a token: a literal there is still a literal, and `verify` ' +
-      'will say so.',
+      'still reach it — and the plain declaration adds the rest. A soft wash ' +
+      'behind a large headline is most of the difference between a page that ' +
+      'looks composed and one that looks unstyled, and it costs two lines.\n\n' +
+      'Two things to get right. Every colour stop is a token: `--shade` and ' +
+      '`--shade-strong` are there for this, and a literal in a gradient is still ' +
+      'a literal that cannot follow a theme. And `--bg: linear-gradient(…)` ' +
+      'paints NOTHING — no warning, no fallback, an element that silently does ' +
+      'not appear. `verify` reports it.\n\n' +
+      'The same shape covers anything the fourteen slots miss: set the slot for ' +
+      'what is in the algebra, write the plain property for what is not.',
+  },
+  /* Added because a page built entirely from this contract used `data-tone`
+     zero times, `data-size` zero times and `var(--scale)` zero times — three of
+     the four headline axes untouched. The design was achromatic, and nothing in
+     the contract said the axes were still for it. The axes chapter explains what
+     each one does at length; none of it says when to reach for one. */
+  axes: {
+    title: 'The axes are not only for colourful designs',
+    body:
+      'A restrained or monochrome page is where authors quietly assume the tone ' +
+      'axis is not for them, and then hand-write the variation it would have ' +
+      'given free. It is for them. `--tone` can be `--neutral`; a near-black ' +
+      'surface, a hairline and its text are `--tone-soft`, `--tone-line` and ' +
+      '`--tone-ink` whether or not there is a hue in sight.\n\n' +
+      'The test for tone is not "is this colourful" but "does a group of elements ' +
+      'vary together". If a section, a card and its button should all shift when ' +
+      'one attribute changes, that is `data-tone` on the ancestor and nothing on ' +
+      'the children — tone inherits, which is the whole reason it is an axis and ' +
+      'not a class.\n\n' +
+      'Size is narrower and it is honest to say so: `--scale` is consumed by ' +
+      'components, not by page layout. A hero or a section has nothing to scale ' +
+      'against and should not pretend otherwise. Reach for `data-size` on the ' +
+      'things that come in sizes — buttons, inputs, badges, a compact table — and ' +
+      'let the page around them stay on the rem scale.',
   },
   contrast: {
     title: 'Text on a toned surface takes its colour from the tone',
@@ -594,6 +675,35 @@ export function buildContract() {
           'guaranteed-invalid when unset.',
       },
     },
+    /* WHY `*` AND NOT AN ALLOWLIST OF ELEMENTS
+     *
+     * The recurring instinct is to narrow this to the tags largen actually styles
+     * — div, section, a, span. The list is genuinely feasible, which is the
+     * strongest argument for it: measured across 21 real pages in this repo,
+     * 2,484 element instances resolve to only 45 distinct tags.
+     *
+     *   ordinary HTML elements                        2,281   92%
+     *   head / void / non-visual (meta, link, script)   199    8%
+     *   SVG internals                                     4    0%
+     *   custom elements                                   0    0%
+     *
+     * It loses on arithmetic. The only elements an allowlist excludes are the 8%
+     * that browsers do not render anyway, while the largest single category —
+     * `span`, 751 instances, 30% of everything — is a legitimate component target
+     * that has to stay in. There is no large, safely-excludable middle, and the
+     * cost is a new silent failure every time a tag is missing from the list.
+     *
+     * Custom elements are the sharp edge: 27 are supported in the reference CSS
+     * and zero appear in any markup on disk, so the affordance is unused today and
+     * would break the moment someone wrote <my-card>.
+     *
+     * The one shape that would overturn this is icon-heavy UI. Four SVG internals
+     * across 21 pages is not a sample; an app with inline icons has hundreds of
+     * <path> per screen that will never carry a slot, and that IS a real
+     * excludable middle. If that appears, re-decide against that page and a
+     * benchmark rather than against this comment. The runtime cost has not been
+     * measured — the argument above is structural, and the largest page here is
+     * 168 elements. */
     paint: {
       rule: readPaintRule(),
       why:
@@ -603,7 +713,22 @@ export function buildContract() {
         'an `<h1>` its size. The selector is a bare `*`, not `:where(*)`: the universal ' +
         'selector already contributes no specificity, so there is nothing to wrap. ' +
         'Note `background-color`, not the `background` shorthand, which would also ' +
-        'reset `background-image` and the rest of the family.',
+        'reset `background-image` and the rest of the family.\n\n' +
+        'Universal is also what keeps generated CSS uniform. Because every element ' +
+        'is paintable the same way, "is this element paintable?" is never a question ' +
+        'you have to answer — and a question you do not answer is one you cannot ' +
+        'answer differently twice. Narrow the rule and it becomes a real decision, ' +
+        'slots here and plain CSS there, made fresh for every component; that choice ' +
+        'point is where drift enters. The closed vocabulary depends on it too: CSS ' +
+        'has hundreds of properties and this algebra has fourteen slots, and an ' +
+        'element outside the rule is an element where the only option left is ' +
+        'arbitrary CSS. Uniformity then follows by construction rather than by ' +
+        'discipline — every painted surface goes through the same slots, so tone, ' +
+        'variant, size and theme reach all of it. A narrowed rule would sort ' +
+        'elements into two tiers and produce pages where some parts follow the theme ' +
+        'and some quietly do not. It is also nothing to remember: an allowlist would ' +
+        'have to be carried in this contract and consulted correctly every time, ' +
+        'while `*` costs no tokens and cannot be misremembered.',
     },
     axes,
     layers: {
@@ -618,6 +743,7 @@ export function buildContract() {
     },
     rules: RULES,
     failureModes: FAILURE_MODES,
+    utilities: UTILITIES,
     composition: COMPOSITION,
     commands: { list: COMMANDS, caveat: COMMANDS_CAVEAT },
     generativeUI: GENERATIVE_UI,
@@ -648,7 +774,7 @@ export function assertAxesAgree() {
 }
 
 export const SECTIONS = ['overview', 'slots', 'paint', 'axes', 'layers', 'rules', 'failureModes',
-  'composition', 'commands', 'generativeUI', 'notes']
+  'utilities', 'composition', 'commands', 'generativeUI', 'notes']
 
 /** One section of the contract, for `get_contract`'s `section` argument. */
 export function getSection(name) {
