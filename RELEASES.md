@@ -9,6 +9,21 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.5.2 — 2026-09-17
+
+The @property fallback. A new lowest-sorting layer, `largen.fallback`, preserves the guaranteed-invalid mechanism in the two engine ranges that have everything largen needs except `@property` — Firefox 113–127 (including ESR 115) and Safari 16.2–16.3. First CSS change since 0.4.0; the build id moves off `5445bbba`.
+
+### Added
+
+- src/fallback.css — Tailwind v4.1's compiled fallback transposed onto largen's slots, behind the same engine-sniff `@supports`, verbatim. Every non-inheriting slot is re-declared to `initial` on every element (on an unregistered custom property, `initial` IS the guaranteed-invalid value, so this fakes `inherits: false` per element) and `--scale` is seeded to its registered initial-value at `:root`, where inheritance keeps working. In every engine with `@property` the guard matches nothing and the file is inert. The floor set by `color-mix()` is unchanged: below Safari 16.2 / Firefox 113 the design still fails rather than degrades.
+- The canonical layer order grows to eight, `largen.fallback` first. A consumer preflight `@layer` statement must list all eight — a sublayer the statement omits is created when largen loads and appended after `largen.modifiers`, where the resets would beat every component in exactly the engines the fallback exists for. The contract's failure modes, MIGRATING.md and the conformance page all carry this.
+
+### Tooling
+
+- `largen verify` gains an invariant: the fallback's reset set must mirror the `inherits: false` registrations exactly, `--scale` seeded at `:root` and never reset per element. Drift between the two files is invisible in every engine a developer is likely to test in, which is why it is asserted statically.
+- The conformance page grows to 13 checks: the fallback layer is declared first, and its resets mirror the paint slots — structure only, because the guard is false in every engine that can run the headless tier. Opening the page in Firefox ESR 115 or Safari 16.2–16.3 remains the only true-positive test.
+- `largen releases --check` now verifies the README's pinned CDN example: the pinned version must have an entry in this log and its SRI hash must match that version's frozen build.json.
+
 ## 0.5.1 — 2026-08-26
 
 Documentation only. The stylesheet is unchanged — the build id stays `5445bbba`, and the frozen files differ from 0.5.0 only in the version string inside their banner comment. Nothing pinned to /v/0.5.0/ is affected, and the CSS anyone vendored is the same CSS.

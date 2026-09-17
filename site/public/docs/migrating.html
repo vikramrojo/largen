@@ -226,9 +226,11 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 <p class="doc-p"><strong>Declare every layer in one statement, before largen loads.</strong> A layer's position is fixed the first time it is mentioned, so whatever order your <span class="tok">@layer</span> statement lists, layers largen named first keep theirs and yours are appended after. Put a preflight ahead of largen explicitly or it sorts last and flattens every heading, list and border largen styled — and because layer order beats specificity, no selector weight recovers it.</p>
 
 <pre class="code" data-lang="css">@layer app-base,
-       largen.reset, largen.tokens, largen.paint, largen.tone,
-       largen.elements, largen.components, largen.modifiers,
+       largen.fallback, largen.reset, largen.tokens, largen.paint,
+       largen.tone, largen.elements, largen.components, largen.modifiers,
        app-overrides;</pre>
+
+<p class="doc-p">List all eight largen sublayers, <span class="tok">largen.fallback</span> first. A sublayer the statement omits is created when largen loads and appended after the ones listed — and for <span class="tok">largen.fallback</span> that puts its per-element resets above <span class="tok">largen.components</span> in exactly the engines the fallback exists for, while looking correct in every engine you are likely to test in.</p>
 
 <p class="doc-p"><strong>Use flat names, not sublayers, for your own halves.</strong> <span class="tok">app.base</span> and <span class="tok">app.overrides</span> are children of one <span class="tok">app</span> layer with one position, so they cannot straddle largen: once <span class="tok">app</span> is placed, <span class="tok">app.overrides</span> is stuck wherever its sibling put it. <span class="tok">app-base</span> and <span class="tok">app-overrides</span> are independent and can sit on either side. This fails silently — the statement reads correctly and does something else.</p>
 
@@ -404,7 +406,7 @@ rm tailwind.config.* postcss.config.*</pre>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.1 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.2 — a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

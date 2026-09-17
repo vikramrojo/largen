@@ -5,13 +5,15 @@
  *
  * Layer order is the load-bearing detail:
  *
- *   reset < tokens < paint < tone < elements < components < modifiers
- *                                        ^          ^           ^
- *                                        |          |           `-- an explicit
- *                                        |          |    variant must BEAT both
- *                                        |          `-- a component class beats
- *                                        |              the bare-element default
- *                                        `-- bare HTML defaults are the floor
+ *   fallback < reset < tokens < paint < tone < elements < components < modifiers
+ *      ^                                    ^          ^           ^
+ *      |                                    |          |           `-- an explicit
+ *      |                                    |          |    variant must BEAT both
+ *      |                                    |          `-- a component class beats
+ *      |                                    |              the bare-element default
+ *      |                                    `-- bare HTML defaults are the floor
+ *      `-- below everything: the @property fallback, inert in every engine
+ *          that has @property (see fallback.css)
  *
  * Everything is layered and every selector is :where()-wrapped, so consumer CSS
  * always wins without !important.
@@ -23,10 +25,11 @@
  * keep going.
  */
 
-@layer largen.reset, largen.tokens, largen.paint, largen.tone,
-  largen.elements, largen.components, largen.modifiers;
+@layer largen.fallback, largen.reset, largen.tokens, largen.paint,
+  largen.tone, largen.elements, largen.components, largen.modifiers;
 
 @import url("./properties.css");   /* the slots — registration, not a layer */
+@import url("./fallback.css");     /* the same registration, for engines without @property */
 @import url("./reset.css");
 @import url("./tokens.css");
 @import url("./paint.css");        /* the one universal rule */

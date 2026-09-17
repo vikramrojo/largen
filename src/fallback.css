@@ -1,0 +1,61 @@
+/* largen — the @property fallback.
+ *
+ * Engines that shipped everything else largen needs before they shipped
+ * @property — Firefox 113–127 (including ESR 115) and Safari 16.2–16.3 —
+ * parse properties.css as nothing at all. The slots then behave as ordinary
+ * custom properties: they inherit, so a card's --bg cascades onto every
+ * element inside it and the paint rule repaints the card's whole subtree.
+ * Measured on a real page: 158 of 168 elements broke.
+ *
+ * The fix mirrors Tailwind v4.1's compiled output. On an UNREGISTERED custom
+ * property, `initial` IS the guaranteed-invalid value, so re-declaring every
+ * non-inheriting slot to `initial` on every element fakes `inherits: false`:
+ * an element that sets a slot still wins from any later layer, and one that
+ * does not holds guaranteed-invalid, so `var(--x, revert-layer)` fires
+ * exactly as it does in a conforming engine.
+ *
+ * The @supports condition is an engine sniff, verbatim from Tailwind v4.1 —
+ * CSS has no direct way to ask whether @property is supported. It matches
+ * WebKit before margin-trim (Safari <= 16.3) or Gecko before relative color
+ * syntax (Firefox <= 127). In every engine with @property it matches nothing
+ * and this file is inert; the registrations stay authoritative.
+ *
+ * This layer must sort BELOW every other largen layer — largen.css lists it
+ * first — and a consumer preflight @layer statement must list it too. A
+ * sublayer omitted from the preflight is created when largen loads and
+ * appended after largen.modifiers, where these resets would beat every
+ * component in exactly the engines this file exists for, while looking
+ * correct in every engine a developer is likely to test in.
+ *
+ * It does not lower the floor set by color-mix(), @layer, revert-layer and
+ * :where(). It covers only the gap where @property arrived last.
+ */
+
+@layer largen.fallback {
+  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline)))
+      or ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --bg: initial;
+      --fg: initial;
+      --border-color: initial;
+      --border-width: initial;
+      --border-style: initial;
+      --radius: initial;
+      --pad: initial;
+      --gap: initial;
+      --font-size: initial;
+      --weight: initial;
+      --line-height: initial;
+      --letter-spacing: initial;
+      --shadow: initial;
+      --transition: initial;
+    }
+
+    /* --scale inherits by design — the size axis sets it on [data-size] and
+       whole subtrees read it — so it is NOT reset per element. Seed the
+       registration's initial-value at the root instead. */
+    :root {
+      --scale: 1;
+    }
+  }
+}

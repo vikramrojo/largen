@@ -269,8 +269,8 @@ check('the example component set satisfies the contract', () => {
 
 /* --- the tools added from the field report ------------------------------- */
 
-const LARGEN_LAYERS = '@layer largen.reset, largen.tokens, largen.paint, largen.tone, ' +
-  'largen.elements, largen.components, largen.modifiers;'
+const LARGEN_LAYERS = '@layer largen.fallback, largen.reset, largen.tokens, largen.paint, ' +
+  'largen.tone, largen.elements, largen.components, largen.modifiers;'
 
 const batch = await call('check_component_css', { files: [
   { name: 'good.css', css: '@layer largen.components{.a{--bg:var(--tone-soft);--pad:1em}}' },
@@ -328,8 +328,8 @@ check('check_layer_order catches a framework base sorting after largen', () => {
 })
 
 const achievable = await call('check_layer_order', { files: [
-  { name: 'app.css', css: '@layer app-base, largen.reset, largen.tokens, largen.paint, ' +
-    'largen.tone, largen.elements, largen.components, largen.modifiers, app-overrides;' },
+  { name: 'app.css', css: '@layer app-base, largen.fallback, largen.reset, largen.tokens, ' +
+    'largen.paint, largen.tone, largen.elements, largen.components, largen.modifiers, app-overrides;' },
   { name: 'largen.css', css: LARGEN_LAYERS },
 ] })
 check('check_layer_order passes on an order that is achievable', () => {

@@ -15,9 +15,10 @@
  *
  * No syntax lowering, no colour rewriting, no property reordering, no merging of
  * adjacent rules. largen's browser floor is set by the features it cannot live
- * without — @property, color-mix(), @layer, revert-layer — so there is nothing
- * below that floor to lower to, and every "clever" transform is a chance to
- * change meaning. Concatenation and whitespace are the safe operations.
+ * without — color-mix(), @layer, revert-layer (@property carries its own
+ * compiled fallback in src/fallback.css) — so there is nothing below that floor
+ * to lower to, and every "clever" transform is a chance to change meaning.
+ * Concatenation and whitespace are the safe operations.
  */
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'

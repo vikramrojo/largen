@@ -61,8 +61,8 @@ const SITE_SUBLAYER = `@layer site.base, site.overrides;
 
 /* The repair verify's own guidance describes: one statement, before anything
    creates a layer, with flat names so the two halves are independent. */
-const FIXED_ENTRY = `@layer site-base, largen.reset, largen.tokens, largen.paint, largen.tone,
-  largen.elements, largen.components, largen.modifiers, site-overrides;
+const FIXED_ENTRY = `@layer site-base, largen.fallback, largen.reset, largen.tokens, largen.paint,
+  largen.tone, largen.elements, largen.components, largen.modifiers, site-overrides;
 
 @import url("largen.css");
 @import url("components.css");

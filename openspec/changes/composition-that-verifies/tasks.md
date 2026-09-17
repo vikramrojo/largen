@@ -284,3 +284,10 @@ five composition topics, one changed the output: the only one with a verifier.
       the entry says so.
       `releases --check` demanded the bump before it was made (MCP suite 77/78);
       78/78 after. Not deployed and not published — that is a separate decision.
+- [x] 12.6 Back-record, written 2026-09-17 from the `property-fallback` change:
+      **0.5.0** was published to npm after 12.5 was written; the registry now
+      ends at 0.5.0. **0.5.1** was frozen at `/v/0.5.1/` on 2026-08-26
+      (documentation only, same build id `5445bbba`) and was never published to
+      npm and never deployed — this change's wave cut both versions and nothing
+      wrote the deploy half down. The last recorded deploy remains 0.4.0 (6.5
+      above).
