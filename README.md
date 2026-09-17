@@ -136,13 +136,13 @@ for a demo and wrong for production — and CDNs cache it for hours, so it is no
 either.
 
 A version is immutable in a way a URL convention cannot be: npm will not accept a second
-publish of a version that already exists, so `largen@0.4.0/dist/largen.css` is the same
+publish of a version that already exists, so `largen@0.5.2/dist/largen.css` is the same
 file forever.
 
 ```html
 <link rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/largen@0.4.0/dist/largen.css"
-      integrity="sha384-KmQt1Cuu5/Q4NO9kj2n6Vz0491t6UjN4sAvxNK/mrNE6V/cv2rj6gOKDkAgaD645"
+      href="https://cdn.jsdelivr.net/npm/largen@0.5.2/dist/largen.css"
+      integrity="sha384-J4z0ZgNQ8H8T1CdwNFfvZ76JfN3Y4h4vGx/1RrcL5ZfX9ytAEEjBPancxbJIROA6"
       crossorigin="anonymous">
 ```
 
@@ -153,7 +153,7 @@ you wanted. Pin the version if you want the check.
 To get the hash for any version, from the bytes you will actually be served:
 
 ```
-curl -s https://cdn.jsdelivr.net/npm/largen@0.4.0/dist/largen.css |
+curl -s https://cdn.jsdelivr.net/npm/largen@0.5.2/dist/largen.css |
   openssl dgst -sha384 -binary | openssl base64 -A
 ```
 
@@ -163,9 +163,12 @@ The release check enforces that rather than assuming it.
 
 The `+abcd1234` suffix in the banner is the *build id*: a hash of the bundle before the
 banner was added. It names the build but is not the file's digest, and two versions
-sharing one build id have identical CSS differing only in the version string — 0.3.5, 0.3.4, 0.3.3, 0.3.2, 0.3.1 and
-0.3.0 were exactly that; 0.4.0 is the first build since to change the CSS. [RELEASES.md](RELEASES.md) says when that happened, and every
-entry there is checked against the bytes that version shipped.
+sharing one build id have identical CSS differing only in the version string — 0.3.0
+through 0.3.5 were one such run, and 0.4.0, 0.5.0 and 0.5.1 another (`5445bbba`; the
+0.5.x pair changed tooling and documentation, not CSS). 0.5.2 is the first build since
+0.4.0 to change the CSS — the `@property` fallback layer. [RELEASES.md](RELEASES.md)
+says when each happened, and every entry there is checked against the bytes that
+version shipped.
 
 ### Measuring a themed page
 
@@ -235,8 +238,8 @@ render the demo pages in a browser too.
 and squeezes whitespace, which is all largen's own stylesheet needs. Measured
 against [lightningcss](https://lightningcss.dev), the difference is 46 gzipped
 bytes, and largen has nothing to transpile: its browser floor is set by
-`@property`, `color-mix()`, `@layer` and `revert-layer`, so there is nothing
-below it to lower to.
+`color-mix()`, `@layer` and `revert-layer` (`@property` carries its own
+compiled fallback), so there is nothing below it to lower to.
 
 Your stylesheet is a different question. A real minifier earns its keep when you
 have a large theme or component set of your own, and it is the answer if you need
@@ -263,7 +266,7 @@ handler, so its safety property is structural rather than defensive.
 Two pages, both evidence rather than showcase.
 
 ```
-demo/conformance.html the one mechanism with no fallback, asserted — prints PASS/FAIL
+demo/conformance.html the guaranteed-invalid mechanism and its @property fallback, asserted — prints PASS/FAIL
 demo/tests.html       the load-bearing claims, visible on one page
 ```
 
@@ -275,14 +278,25 @@ The documentation site, the playground and a migration runbook are at
 
 ## Requirements
 
-Safari 16.4+, Chrome 111+, Firefox 128+ — `@property`, `color-mix()`, `@layer`,
-`:where()`, `revert-layer`. There is no fallback path; the design does not
-degrade, it fails.
+Safari 16.2+, Chrome 111+, Firefox 113+ — the floor set by `color-mix()`,
+`@layer`, `:where()` and `revert-layer`. For those there is still no fallback
+path; the design does not degrade, it fails.
+
+`@property` is the one exception. The `largen.fallback` layer — Tailwind v4.1's
+compiled fallback transposed onto largen's slots, behind the same engine-sniff
+`@supports` — re-declares every slot to `initial` per element in the two engine
+ranges that have everything above except `@property`: Firefox 113–127
+(including ESR 115) and Safari 16.2–16.3. On an unregistered custom property,
+`initial` is the guaranteed-invalid value, so the mechanism survives intact. In
+every engine with `@property` the guard matches nothing and the registrations
+stay authoritative. This does not lower the `color-mix()` floor; below it,
+nothing here helps.
 
 `demo/conformance.html` asserts the mechanism from `getComputedStyle` and prints
-a pass/fail verdict, so this is checkable rather than claimed. It reports 9/9 on
-Safari 26.5.2, Firefox 154.0 and Chrome 151. Those versions were run; the floors
-above are inferred from published support data.
+a pass/fail verdict, so this is checkable rather than claimed — 13 checks, run
+headlessly by `site/test/conformance.mjs` on every release. The floors above are
+inferred from published support data; the fallback's own behaviour is only
+exercised for real in the engines it exists for.
 
 The full explanation of how the system works lives in
 [`openspec/changes/build-largen/design.md`](openspec/changes/build-largen/design.md).

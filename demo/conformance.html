@@ -80,7 +80,8 @@
 <pre id="json" hidden></pre>
 
 <script>
-/* A conformance check for the one mechanism largen has no fallback for.
+/* A conformance check for the mechanism everything else hangs on — and, since
+ * 0.5.2, for the fallback layer that preserves it in engines without @property.
  *
  * src/paint.css applies twelve declarations to `*`. That is only non-destructive
  * because src/properties.css registers each slot with `syntax: "*"` and NO
@@ -88,10 +89,13 @@
  * `var(--pad, revert-layer)` falls back and hands the property to the UA
  * stylesheet. Assertions 1-4 below are that mechanism. 5-9 are the rest of the
  * algebra, cheap to check and able to catch an engine that passes 1-4 while
- * still being broken.
+ * still being broken. 12-13 are the fallback's structure: its @supports guard
+ * is false in every engine that has @property, so a conforming engine can only
+ * assert the shape ships — opening this page in Firefox 113-127 or Safari
+ * 16.2-16.3 is the only true-positive test of the behaviour itself.
  *
- * Everything is read from getComputedStyle, so the verdict does not depend on a
- * human reading the page correctly. */
+ * Everything is read from getComputedStyle or the CSSOM, so the verdict does
+ * not depend on a human reading the page correctly. */
 
 const results = []
 const cs = (id) => getComputedStyle(document.getElementById(id))
@@ -208,6 +212,58 @@ check('11 · guaranteed-invalid reverts to the UA value, not the ambient one', (
   assert(fixed === parent,
     `--fg: currentColor did not take the surrounding colour (got "${fixed}", parent is "${parent}")`)
   return `parent ${parent} · tinted ${dflt} · currentColor ${fixed}`
+})
+
+/* --- The fallback --------------------------------------------------------
+ *
+ * Structure only, via the CSSOM: the guard is false here, so these rules never
+ * apply in an engine running this page green, but they are still parsed and
+ * visible. Reading them needs same-origin access to ../src/largen.css — serve
+ * this page over HTTP rather than file:// if 12-13 report no rules at all. */
+
+const rules = []
+;(function collect (sheets) {
+  for (const sheet of sheets) {
+    let list
+    try { list = [...sheet.cssRules] } catch (e) { continue }
+    for (const r of list) {
+      rules.push(r)
+      if (r.styleSheet) collect([r.styleSheet])
+      if (r.cssRules) collect([{ cssRules: r.cssRules }])
+    }
+  }
+})(document.styleSheets)
+
+check('12 · the fallback layer is declared first', () => {
+  const stmt = rules.find((r) => !r.style && /^@layer\s+largen\.fallback\s*,/.test(r.cssText))
+  assert(stmt, 'no @layer statement starting with largen.fallback (if no rules were readable, serve over HTTP)')
+  const names = stmt.cssText.replace(/^@layer\s+/, '').replace(/;.*$/s, '').split(',').map((s) => s.trim())
+  const expected = ['largen.fallback', 'largen.reset', 'largen.tokens', 'largen.paint',
+    'largen.tone', 'largen.elements', 'largen.components', 'largen.modifiers']
+  assert(JSON.stringify(names) === JSON.stringify(expected),
+    `statement is ${names.join(' < ')}, expected ${expected.join(' < ')}`)
+  return names.join(' < ')
+})
+
+check('13 · the fallback mirrors the paint slots', () => {
+  const paint = rules.find((r) => /^@layer largen\.paint\b/.test(r.cssText))
+  assert(paint, 'no @layer largen.paint block found')
+  const slots = [...new Set([...paint.cssText.matchAll(/var\((--[\w-]+),\s*revert-layer\)/g)].map((m) => m[1]))]
+  assert(slots.length > 0, 'no slots parsed from the paint rule')
+  /* Require the brace: the order statement also begins "@layer largen.fallback". */
+  const fb = rules.find((r) => /^@layer largen\.fallback\s*\{/.test(r.cssText))
+  assert(fb, 'no @layer largen.fallback block found (if no rules were readable, serve over HTTP)')
+  const universal = fb.cssText.match(/\*\s*,\s*::before\s*,\s*::after\s*,\s*::backdrop\s*\{([^}]*)\}/)
+  assert(universal, 'no universal reset rule (*, ::before, ::after, ::backdrop) in the fallback layer')
+  const reset = [...universal[1].matchAll(/(--[\w-]+)\s*:\s*initial/g)].map((m) => m[1])
+  const missing = slots.filter((s) => !reset.includes(s))
+  const extra = reset.filter((s) => !slots.includes(s))
+  assert(missing.length === 0 && extra.length === 0,
+    `fallback resets differ from the paint slots — missing: [${missing}], extra: [${extra}]`)
+  assert(!reset.includes('--scale'), '--scale must not be reset per element — it inherits by design')
+  assert(/:root\s*\{[^}]*--scale:\s*1\b/.test(fb.cssText),
+    'no :root { --scale: 1 } seed in the fallback layer')
+  return `${reset.length} resets mirror the paint slots, --scale seeded at :root`
 })
 
 /* --- Report -------------------------------------------------------------- */

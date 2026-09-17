@@ -207,6 +207,37 @@ export function checkReleases(releases = load()) {
     }
   }
 
+  /* The README's pinned CDN example is hand-written while every site surface
+     derives its version from package.json, and it drifted two releases before
+     anyone noticed — worse, one drift target (0.5.1) was never even published.
+     The pin need not be the latest version (an old published pin stays true
+     forever), but it must be a version this log knows, and its SRI must be the
+     one recorded for that version's frozen build. */
+  if (existsSync(at('README.md'))) {
+    const readme = readFileSync(at('README.md'), 'utf8')
+    const pin = readme.match(/largen@(\d+\.\d+\.\d+)/)
+    if (pin) {
+      const [, v] = pin
+      if (!named.has(v)) {
+        findings.push({ version: v, severity: 'error', message: 'is pinned by README.md but has no entry in the log' })
+      }
+      const sri = readme.match(/integrity="(sha384-[^"]+)"/)
+      const buildJson = at('site/public/v', v, 'build.json')
+      if (sri && existsSync(buildJson)) {
+        const recorded = JSON.parse(readFileSync(buildJson, 'utf8')).files?.['largen.css']?.integrity
+        if (recorded && sri[1] !== recorded) {
+          findings.push({
+            version: v,
+            severity: 'error',
+            message: `README.md pins largen@${v} with SRI ${sri[1].slice(0, 20)}… but the frozen ` +
+              `build.json records ${recorded.slice(0, 20)}…. Whoever copies the example gets a ` +
+              'stylesheet the browser will refuse to apply.',
+          })
+        }
+      }
+    }
+  }
+
   return { ok: !findings.some((f) => f.severity === 'error'), findings, checked }
 }
 

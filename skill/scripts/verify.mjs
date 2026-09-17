@@ -115,11 +115,43 @@ function libraryInvariants() {
     const decl = strip(read('src/largen.css')).match(/@layer\s+([^;]+);/)
     assert(decl, 'no @layer statement in largen.css')
     const layers = decl[1].split(',').map((s) => s.trim())
-    const expected = ['largen.reset', 'largen.tokens', 'largen.paint', 'largen.tone',
-      'largen.elements', 'largen.components', 'largen.modifiers']
+    const expected = ['largen.fallback', 'largen.reset', 'largen.tokens', 'largen.paint',
+      'largen.tone', 'largen.elements', 'largen.components', 'largen.modifiers']
     assert(JSON.stringify(layers) === JSON.stringify(expected),
       `order is ${layers.join(' < ')}, expected ${expected.join(' < ')}`)
     return layers.join(' < ')
+  })
+
+  /* The fallback and the registration are one mechanism written twice — once
+     for engines with @property, once for the two ranges without it (Firefox
+     113–127, Safari 16.2–16.3). Drift between them is invisible in every
+     engine a developer is likely to test in, so it is asserted here. */
+  check('the @property fallback mirrors the registrations', () => {
+    const fb = strip(read('src/fallback.css'))
+    const props = strip(read('src/properties.css'))
+    const fixed = []
+    let scaleInitial = null
+    for (const m of props.matchAll(/@property\s+(--[\w-]+)\s*\{([^}]*)\}/g)) {
+      if (/inherits:\s*false/.test(m[2])) fixed.push(m[1])
+      else if (m[1] === '--scale') scaleInitial = (m[2].match(/initial-value:\s*([^;}]+)/) ?? [])[1]?.trim()
+    }
+    assert(/@layer\s+largen\.fallback\s*\{/.test(fb), 'src/fallback.css does not open @layer largen.fallback')
+    assert(/@supports\s*\(\(-webkit-hyphens:\s*none\)/.test(fb), 'the engine-sniff @supports guard is missing')
+    const universal = fb.match(/\*\s*,\s*::before\s*,\s*::after\s*,\s*::backdrop\s*\{([^}]*)\}/)
+    assert(universal, 'no universal reset rule (*, ::before, ::after, ::backdrop)')
+    const reset = [...universal[1].matchAll(/(--[\w-]+)\s*:\s*initial/g)].map((m) => m[1])
+    const missing = fixed.filter((s) => !reset.includes(s))
+    const extra = reset.filter((s) => !fixed.includes(s))
+    assert(missing.length === 0 && extra.length === 0,
+      `fallback out of sync with the registrations — missing: [${missing.join(', ')}], ` +
+      `extra: [${extra.join(', ')}]. In an engine without @property, a slot the ` +
+      `fallback misses inherits and leaks down the tree.`)
+    assert(!reset.includes('--scale'),
+      '--scale must not be reset per element — it inherits by design and the size axis depends on it')
+    const seed = fb.match(/:root\s*\{[^}]*--scale:\s*([^;}]+)/)
+    assert(seed && seed[1].trim() === scaleInitial,
+      `:root must seed --scale to the registered initial-value (${scaleInitial})`)
+    return `${reset.length} slots reset per element, --scale seeded ${scaleInitial} at :root`
   })
 
   check('no !important anywhere', () => {

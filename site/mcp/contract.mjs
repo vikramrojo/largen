@@ -445,8 +445,8 @@ export const FAILURE_MODES = [
       'Declare every layer in one statement, before largen loads, with flat ' +
       'names on both sides of it:\n\n' +
       '    @layer app-base,\n' +
-      '           largen.reset, largen.tokens, largen.paint, largen.tone,\n' +
-      '           largen.elements, largen.components, largen.modifiers,\n' +
+      '           largen.fallback, largen.reset, largen.tokens, largen.paint,\n' +
+      '           largen.tone, largen.elements, largen.components, largen.modifiers,\n' +
       '           app-overrides;',
     why:
       'Writing `@layer app.base, largen.components, app.overrides;` reads as ' +
@@ -460,6 +460,12 @@ export const FAILURE_MODES = [
       'framework — put its base layer in the statement ahead of largen, or it ' +
       'sorts last and flattens everything largen styled. Layer order beats ' +
       'specificity, so no amount of selector weight recovers it.\n\n' +
+      'List ALL EIGHT largen sublayers, `largen.fallback` first. A sublayer the ' +
+      'statement omits is created when largen loads and appended after the ones ' +
+      'listed — and for `largen.fallback` that puts its per-element resets above ' +
+      '`largen.components` in exactly the engines the fallback exists for ' +
+      '(Firefox 113–127, Safari 16.2–16.3), while looking correct in every ' +
+      'engine you are likely to test in.\n\n' +
       '`largen verify` cannot catch this. Layer position is a property of the ' +
       'whole document at load time — which files were seen, in what order — and ' +
       'a linter reading one stylesheet has no way to know. The browser is the ' +
@@ -739,7 +745,12 @@ export function buildContract() {
         'default fill. Consumer CSS always wins without `!important` because unlayered ' +
         'author CSS outranks every layer, and because the element and component ' +
         'selectors are `:where()`-wrapped to contribute no specificity. The paint rule ' +
-        'is the one that is not wrapped — a bare `*` is already specificity-free.',
+        'is the one that is not wrapped — a bare `*` is already specificity-free. ' +
+        '`fallback` sorts below everything and exists only for engines that predate ' +
+        '`@property` (Firefox 113–127, Safari 16.2–16.3): behind an engine-sniff ' +
+        '`@supports`, it re-declares every slot to `initial` per element so a slot ' +
+        'cannot inherit; in a conforming engine it matches nothing and the ' +
+        'registrations are authoritative.',
     },
     rules: RULES,
     failureModes: FAILURE_MODES,

@@ -146,7 +146,7 @@ export async function pages(args = []) {
     Neither is a gallery — they exist because the claims below them are the ones no
     static check can settle.</p>
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
-  ${card('/demo/conformance.html', 'Conformance', `The one mechanism largen has no fallback for: <span class="tok">revert-layer</span> against a guaranteed-invalid slot. ${words(CONFORMANCE)} checks. Open it in Safari, Firefox and Chrome — nothing static can answer this.`)}
+  ${card('/demo/conformance.html', 'Conformance', `The mechanism everything hangs on — <span class="tok">revert-layer</span> against a guaranteed-invalid slot — and the @property fallback that preserves it in Firefox 113–127 and Safari 16.2–16.3. ${words(CONFORMANCE)} checks. Open it in Safari, Firefox and Chrome — nothing static can answer this.`)}
   ${card('/demo/tests.html', 'The load-bearing tests', 'UA defaults survive the universal paint rule, tone inherits, slots do not leak to children, and modifiers outrank components.')}
     </div>
   </section>

@@ -132,12 +132,14 @@ One registered property does carry an initial value, deliberately: <span class="
     <span class="failure-line"><strong>Fix</strong> — Declare every layer in one statement, before largen loads, with flat names on both sides of it:
 
     @layer app-base,
-           largen.reset, largen.tokens, largen.paint, largen.tone,
-           largen.elements, largen.components, largen.modifiers,
+           largen.fallback, largen.reset, largen.tokens, largen.paint,
+           largen.tone, largen.elements, largen.components, largen.modifiers,
            app-overrides;</span>
     <p class="failure-line">Writing <span class="tok">@layer app.base, largen.components, app.overrides;</span> reads as "app.base lowest, app.overrides highest" and does not do that. <span class="tok">largen.components</span> already exists and keeps its position, while the new <span class="tok">app</span> parent is appended after everything — so <span class="tok">app.base</span> outranks largen and <span class="tok">app.overrides</span> can never reach past it, because both are children of one parent that has one position. Flat names avoid it: <span class="tok">app-base</span> and <span class="tok">app-overrides</span> are independent, so they can sit on either side.
 
 This is also where a preflight goes when largen runs alongside another framework — put its base layer in the statement ahead of largen, or it sorts last and flattens everything largen styled. Layer order beats specificity, so no amount of selector weight recovers it.
+
+List ALL EIGHT largen sublayers, <span class="tok">largen.fallback</span> first. A sublayer the statement omits is created when largen loads and appended after the ones listed — and for <span class="tok">largen.fallback</span> that puts its per-element resets above <span class="tok">largen.components</span> in exactly the engines the fallback exists for (Firefox 113–127, Safari 16.2–16.3), while looking correct in every engine you are likely to test in.
 
 <span class="tok">largen verify</span> cannot catch this. Layer position is a property of the whole document at load time — which files were seen, in what order — and a linter reading one stylesheet has no way to know. The browser is the only place the answer exists.</p>
   </div>
@@ -182,7 +184,7 @@ The general lesson is worth more than the recipe: returning a slot to guaranteed
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.1 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.2 — a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

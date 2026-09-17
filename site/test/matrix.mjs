@@ -62,8 +62,9 @@ const assert = (c, m) => { if (!c) throw new Error(m) }
  * is inert to parseStylesheet (it only reacts to `{`/`}`), so including the
  * whole file costs nothing. */
 const CORE = [
-  'src/largen.css', 'src/properties.css', 'src/reset.css', 'src/tokens.css',
-  'src/paint.css', 'src/algebra.css', 'src/layout.css', 'src/elements.css',
+  'src/largen.css', 'src/properties.css', 'src/fallback.css', 'src/reset.css',
+  'src/tokens.css', 'src/paint.css', 'src/algebra.css', 'src/layout.css',
+  'src/elements.css',
 ]
 const files = [
   ...CORE.map((p) => ({ name: p, css: read(p) })),
@@ -187,7 +188,7 @@ await check('every finding names a component, an axis and a reason', () => {
  * alongside this suite's output, not encoded here.) */
 await check('a component the modifiers cannot outrank is caught', () => {
   const order = { name: 'order.css', css: files[0].css /* src/largen.css: states layer order */ }
-  const base = files.slice(1, 10) /* properties, reset, tokens, paint, algebra, layout, elements, themes */
+  const base = files.slice(1, 11) /* properties, fallback, reset, tokens, paint, algebra, layout, elements, themes */
   /* The broken fixture puts the component in a layer that outranks the modifiers.
 
      Two earlier versions of this proof stopped working as the gate got sharper,
@@ -226,8 +227,8 @@ await check('a component the modifiers cannot outrank is caught', () => {
      layer rule is what reports it. */
   const brokenOrder = {
     name: 'order.css',
-    css: '@layer largen.reset, largen.tokens, largen.paint, largen.tone,\n' +
-      '  largen.elements, largen.modifiers, largen.components;',
+    css: '@layer largen.fallback, largen.reset, largen.tokens, largen.paint,\n' +
+      '  largen.tone, largen.elements, largen.modifiers, largen.components;',
   }
   const broken = { name: 'widget.css', css: '@layer largen.components { .widget { --bg: var(--tone); --radius: 50%; } }' }
 

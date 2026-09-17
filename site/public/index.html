@@ -112,12 +112,12 @@
     <pre class="code">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css"&gt;
   
   # or pinned — a published version is immutable:
-  &lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.5.1/dist/largen.css"&gt;
+  &lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.5.2/dist/largen.css"&gt;
   
   # or install it:
   npm install largen</pre>
     <p class="spec-note">For agents: <a href="/llms-compact.txt">/llms-compact.txt</a>
-    carries the whole contract inline, about 5,700 tokens.</p>
+    carries the whole contract inline, about 5,800 tokens.</p>
   </section>
   
   <section class="stack" style="--gap:.75rem">
@@ -128,7 +128,7 @@
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
     <a class="doc-card" href="/demo/conformance.html">
       <span class="doc-card-title">Conformance</span>
-      <span class="doc-card-desc">The one mechanism largen has no fallback for: <span class="tok">revert-layer</span> against a guaranteed-invalid slot. eleven checks. Open it in Safari, Firefox and Chrome — nothing static can answer this.</span>
+      <span class="doc-card-desc">The mechanism everything hangs on — <span class="tok">revert-layer</span> against a guaranteed-invalid slot — and the @property fallback that preserves it in Firefox 113–127 and Safari 16.2–16.3. 13 checks. Open it in Safari, Firefox and Chrome — nothing static can answer this.</span>
     </a>
     <a class="doc-card" href="/demo/tests.html">
       <span class="doc-card-title">The load-bearing tests</span>
@@ -139,7 +139,7 @@
   
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Releases</h2>
-    <p class="spec-note"><strong>0.5.1</strong> — Documentation only. The stylesheet is unchanged — the build id stays <code>5445bbba</code>, and the frozen files differ from 0.5.0 only in the version string inside their banner comment. Nothing pinned to /v/0.5.0/ is affected, and the CSS anyone vendored is the same CSS.</p>
+    <p class="spec-note"><strong>0.5.2</strong> — The @property fallback. A new lowest-sorting layer, <code>largen.fallback</code>, preserves the guaranteed-invalid mechanism in the two engine ranges that have everything largen needs except <code>@property</code> — Firefox 113–127 (including ESR 115) and Safari 16.2–16.3. First CSS change since 0.4.0; the build id moves off <code>5445bbba</code>.</p>
     <p class="spec-note">Every entry in the log is checked against the bytes that
     version actually shipped, so it is a claim with a witness rather than a note
     written from memory. <a href="https://github.com/vikramrojo/largen/blob/main/RELEASES.md">The
@@ -148,7 +148,7 @@
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.1 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.2 — a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

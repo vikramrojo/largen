@@ -125,19 +125,20 @@ Universal is also what keeps generated CSS uniform. Because every element is pai
 
 <section class="stack" style="--gap:.5rem">
   <h2 class="section-title">Layer order</h2>
-  <pre class="code">largen.reset
+  <pre class="code">largen.fallback
+  &lt; largen.reset
   &lt; largen.tokens
   &lt; largen.paint
   &lt; largen.tone
   &lt; largen.elements
   &lt; largen.components
   &lt; largen.modifiers</pre>
-  <p class="spec-note"><span class="tok">elements</span> sits before <span class="tok">components</span> so a component class beats a bare-element default; <span class="tok">modifiers</span> sits last so an explicit variant beats a component's own default fill. Consumer CSS always wins without <span class="tok">!important</span> because unlayered author CSS outranks every layer, and because the element and component selectors are <span class="tok">:where()</span>-wrapped to contribute no specificity. The paint rule is the one that is not wrapped — a bare <span class="tok">*</span> is already specificity-free.</p>
+  <p class="spec-note"><span class="tok">elements</span> sits before <span class="tok">components</span> so a component class beats a bare-element default; <span class="tok">modifiers</span> sits last so an explicit variant beats a component's own default fill. Consumer CSS always wins without <span class="tok">!important</span> because unlayered author CSS outranks every layer, and because the element and component selectors are <span class="tok">:where()</span>-wrapped to contribute no specificity. The paint rule is the one that is not wrapped — a bare <span class="tok">*</span> is already specificity-free. <span class="tok">fallback</span> sorts below everything and exists only for engines that predate <span class="tok">@property</span> (Firefox 113–127, Safari 16.2–16.3): behind an engine-sniff <span class="tok">@supports</span>, it re-declares every slot to <span class="tok">initial</span> per element so a slot cannot inherit; in a conforming engine it matches nothing and the registrations are authoritative.</p>
 </section>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.1 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.2 — a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

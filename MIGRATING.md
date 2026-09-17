@@ -281,10 +281,16 @@ styled — and because layer order beats specificity, no selector weight recover
 
 ```css
 @layer app-base,
-       largen.reset, largen.tokens, largen.paint, largen.tone,
-       largen.elements, largen.components, largen.modifiers,
+       largen.fallback, largen.reset, largen.tokens, largen.paint,
+       largen.tone, largen.elements, largen.components, largen.modifiers,
        app-overrides;
 ```
+
+List all eight largen sublayers, `largen.fallback` first. A sublayer the statement
+omits is created when largen loads and appended after the ones listed — and for
+`largen.fallback` that puts its per-element resets above `largen.components` in
+exactly the engines the fallback exists for, while looking correct in every engine
+you are likely to test in.
 
 **Use flat names, not sublayers, for your own halves.** `app.base` and `app.overrides`
 are children of one `app` layer with one position, so they cannot straddle largen: once
