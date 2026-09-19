@@ -119,7 +119,7 @@ await check('every URL in the sitemap resolves', async () => {
 
 await check('the sitemap lists the pages the site actually has', () => {
   /* Guards the other direction: a page added to the site and not to the sitemap. */
-  for (const want of ['/', '/docs/contract', '/docs/authoring', '/play', '/demo/conformance.html']) {
+  for (const want of ['/', '/docs/contract', '/docs/authoring', '/play', '/demo/conformance']) {
     assert(locs.some((l) => new URL(l).pathname === want), `missing ${want}`)
   }
   assert(!locs.some((l) => new URL(l).pathname === '/404.html'), '404.html should not be in a sitemap')

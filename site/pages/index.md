@@ -109,8 +109,8 @@ gallery. They exist because the claims below them are the ones no static check
 can settle.
 
 ::cards
-- [Conformance](/demo/conformance.html) The mechanism everything hangs on, `revert-layer` against a guaranteed-invalid slot, and the @property fallback that preserves it in Firefox 113–127 and Safari 16.2–16.3. {{conformance}} checks. Open it in Safari, Firefox and Chrome; nothing static can answer this.
-- [The load-bearing tests](/demo/tests.html) UA defaults survive the universal paint rule, tone inherits, slots do not leak to children, and modifiers outrank components.
+- [Conformance](/demo/conformance) The mechanism everything hangs on, `revert-layer` against a guaranteed-invalid slot, and the @property fallback that preserves it in Firefox 113–127 and Safari 16.2–16.3. {{conformance}} checks. Open it in Safari, Firefox and Chrome; nothing static can answer this.
+- [The load-bearing tests](/demo/tests) UA defaults survive the universal paint rule, tone inherits, slots do not leak to children, and modifiers outrank components.
 
 ## Releases
 

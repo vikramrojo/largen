@@ -17,8 +17,8 @@ const PAGES = [
   ['404', '/nope'],
   /* The demo pages are served from demo/ rather than copied into public/, so
      these also verify that the mount resolves their relative stylesheet links. */
-  ['demo-tests', '/demo/tests.html'],
-  ['demo-conformance', '/demo/conformance.html'],
+  ['demo-tests', '/demo/tests'],
+  ['demo-conformance', '/demo/conformance'],
 ]
 
 /* Check every path resolves before shooting any of them.

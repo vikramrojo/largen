@@ -447,7 +447,7 @@ ${names.map(componentBlock).join('\n')}
     /* The extensionless form, because that is what the nav links to and what
        the .html form now 301s to. A sitemap should name the canonical one. */
     .map((u) => u.replace(/\.html$/, ''))
-    .concat(['/demo/conformance.html', '/demo/tests.html'])
+    .concat(['/demo/conformance', '/demo/tests'])
     .sort()
 
   /* One date for every entry rather than per-file mtimes. A mtime differs between

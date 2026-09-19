@@ -251,12 +251,27 @@ const server = createServer(async (req, res) => {
     }
 
     /* --- Repository mounts --------------------------------------------------- */
+
+    /* The demo pages get the same clean URLs as the site pages: /demo/tests
+       serves demo/tests.html, and the .html spelling 301s to it. Only /demo/,
+       deliberately: it is the one mount linked as pages, and the other mounts
+       serve source files whose extensions are the point. The files themselves
+       stay hand-written HTML because they are executable fixtures, and the
+       markup is the material under test. */
+    if (path.startsWith('/demo/') && path.endsWith('.html')) {
+      const file = safeJoin(root, path)
+      if (file && existsSync(file)) {
+        return send(res, 301, '', { location: path.slice(0, -'.html'.length) + url.search })
+      }
+    }
+
     const mount = REPO_MOUNTS.find((d) => path === `/${d}` || path.startsWith(`/${d}/`))
     if (mount) {
       const file = safeJoin(root, path)
       if (file) {
         if (await serveFile(res, file)) return
         if (await serveFile(res, join(file, 'index.html'))) return
+        if (mount === 'demo' && !extname(path) && await serveFile(res, file + '.html')) return
       }
     }
 
