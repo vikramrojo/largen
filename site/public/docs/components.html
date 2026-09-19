@@ -34,30 +34,14 @@
 <main class="page">
 <div class="stack" style="--gap:.4rem">
   <h1 class="page-title">Reference components</h1>
-  <p class="page-desc">32 components, each about six lines.
-  Optional, and copy-in rather than imported. largen ships an algebra, not a
-  dependency, so take the source and it is yours to edit.</p>
+  <p class="page-desc">32 components, each about six lines. Optional, and copy-in rather than imported. largen ships an algebra, not a dependency, so take the source and it is yours to edit.</p>
 </div>
 
 <section class="stack" style="--gap:.5rem">
-  <p class="spec-note">There is no button here, and no input, select or table. Those are
-  elements, and <span class="tok">src/elements.css</span> already themes them. They
-  answer to <span class="tok">data-tone</span>, <span class="tok">data-variant</span> and
-  <span class="tok">data-size</span> exactly like everything below. A component class
-  duplicating them would be a worse copy of something the platform provides.</p>
-  <p class="spec-note">Each example below is rendered from a validated spec by the same
-  validator and renderer the <a href="/docs/mcp.html">MCP server</a> uses, so nothing on
-  this page is something <span class="tok">validate_spec</span> would reject. Fetch any
-  source with <span class="tok">get_component_source</span>, or read
-  <a href="/components/reference.css">reference.css</a> whole.</p>
-  <p class="spec-note">Every component below answers to all four axes,
-  <span class="tok">data-tone</span>, <span class="tok">data-variant</span>,
-  <span class="tok">data-size</span> and real DOM state, without naming any of them.
-  That is not stated per component because it does not vary: it is the whole point of the
-  algebra. Set <span class="tok">data-tone</span> on any ancestor and everything below
-  re-tones.</p>
-  <p class="spec-note">Entries marked <em>fragment</em> are meant to sit inside a parent;
-  shown alone they are a piece, not a demonstration.</p>
+  <p class="spec-note">There is no button here, and no input, select or table. Those are elements, and <span class="tok">src/elements.css</span> already themes them. They answer to <span class="tok">data-tone</span>, <span class="tok">data-variant</span> and <span class="tok">data-size</span> exactly like everything below. A component class duplicating them would be a worse copy of something the platform provides.</p>
+    <p class="spec-note">Each example below is rendered from a validated spec by the same validator and renderer the <a href="/docs/mcp.html">MCP server</a> uses, so nothing on this page is something <span class="tok">validate_spec</span> would reject. Fetch any source with <span class="tok">get_component_source</span>, or read <a href="/components/reference.css">reference.css</a> whole.</p>
+    <p class="spec-note">Every component below answers to all four axes, <span class="tok">data-tone</span>, <span class="tok">data-variant</span>, <span class="tok">data-size</span> and real DOM state, without naming any of them. That is not stated per component because it does not vary: it is the whole point of the algebra. Set <span class="tok">data-tone</span> on any ancestor and everything below re-tones.</p>
+    <p class="spec-note">Entries marked <em>fragment</em> are meant to sit inside a parent; shown alone they are a piece, not a demonstration.</p>
 </section>
 
 <section class="stack" style="--gap:.6rem">
@@ -730,8 +714,7 @@
   <h2 class="section-title">Using them</h2>
   <pre class="code">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css"&gt;
 &lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.components.css"&gt;</pre>
-  <p class="spec-note">Or copy one component's source and skip the file entirely. That is
-  the intended path. The set exists to be read and taken from, not depended on.</p>
+  <p class="spec-note">Or copy one component's source and skip the file entirely. That is the intended path. The set exists to be read and taken from, not depended on.</p>
 </section>
 </main>
 

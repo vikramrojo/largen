@@ -16,6 +16,7 @@ import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { at } from './paths.mjs'
 import { renderMarkdown } from './markdown.mjs'
+import { loadCopy } from './copy.mjs'
 
 const w = (p, s) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, s) }
 
@@ -59,6 +60,25 @@ export async function pages(args = []) {
      Escape first, then promote code spans — the other order would let a summary
      inject markup. */
   const ticks = (text) => esc(text).replace(/`([^`]+)`/g, '<code>$1</code>')
+  /* The prose, from site/copy/*.md. The numbers stay derived here; a fragment
+     only ever sees the finished string, so a count can no more go stale in the
+     copy than it could in the old template literals. */
+  const VALUES = {
+    slots: SLOTS,
+    tools: TOOLS,
+    rules: words(RULES),
+    modes: words(MODES),
+    components: COMPONENTS,
+    tones: words(TONES),
+    variants: words(VARIANTS),
+    sizes: words(SIZES),
+    combos: COMBOS,
+    compactTokens: COMPACT_TOKENS.toLocaleString('en-US'),
+    conformance: words(CONFORMANCE),
+    version: v,
+  }
+  const copy = (name) => loadCopy(name, VALUES)
+
   const written = []
   const produced = new Map()
   const record = (rel, html) => { produced.set(rel, html); if (!check) w(at(rel), html); written.push(rel) }
@@ -71,14 +91,13 @@ export async function pages(args = []) {
   
   /* ── Landing ─────────────────────────────────────────────────────────── */
   
+  const home = copy('index')
   record('site/public/index.html', page({
     title: 'largen: a property algebra for CSS', current: null, version: v,
     description: `A property algebra for CSS. ${SLOTS} slots, four axes, one paint rule, and components you write yourself. No build step.`,
     body: `<section class="hero">
     <h1 class="hero-title">A property algebra for CSS.</h1>
-    <p class="hero-lede">${SLOTS} custom-property slots, four axes, and one universal
-    paint rule. The components are yours to write. Plain CSS, with no build step,
-    no preprocessor and no plugin.</p>
+    ${home('hero-lede', 'hero-lede')}
     <div class="cluster" style="--gap:.6rem">
       <a class="pill" data-tone="primary" href="/docs/contract.html">Read the contract</a>
       <a class="pill" data-tone="neutral" href="/docs/mcp.html">MCP server</a>
@@ -103,68 +122,37 @@ export async function pages(args = []) {
       align-items: center;
     }
   }`)}</pre>
-    <p class="spec-note">It gets ${words(TONES)} tones, ${words(VARIANTS)} variants,
-    ${words(SIZES)} sizes, every state and both themes, and it mentions none of them.
-    Everything above the component row is already solved, so the component is the only
-    thing left to write.</p>
+    ${home('complete-component-note')}
   </section>
 
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">Slots, the mechanism</h2>
-    <p class="spec-note">Plain CSS decides a colour and applies it in the same rule, so
-    every change after that needs another rule that knows the component. With
-    ${words(TONES)} tones, ${words(VARIANTS)} variants and ${words(SIZES)} sizes, that
-    is ${COMBOS} combinations per component before hover and dark mode. A slot splits
-    deciding from applying.</p>
+    ${home('slots-intro')}
     <pre class="code">${esc(`.chip { --bg: var(--tone); }                     /* the component fills a blank */
 * { background-color: var(--bg, revert-layer); } /* one shared rule applies it  */
 [data-variant="outline"] { --bg: transparent; }  /* an axis changes the answer  */`)}</pre>
-    <p class="spec-note">The outline rule knows nothing about chips, so it works on
-    every component, including ones not written yet. The cost of the system drops from
-    axes times components to axes plus components.</p>
+    ${home('slots-outro')}
   </section>
 
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">Four features make it hold</h2>
-    <p class="spec-note"><span class="tok">@property</span> registers each slot as
-    non-inheriting, so a slot stops at its element. A card's background stays on the
-    card.</p>
-    <p class="spec-note"><span class="tok">revert-layer</span> is the fallback when a
-    slot is unset, so an empty blank leaves the element as the browser drew it.</p>
-    <p class="spec-note"><span class="tok">@layer</span> keeps every largen rule in a
-    named layer, so your page CSS always beats largen without
-    <span class="tok">!important</span>.</p>
-    <p class="spec-note"><span class="tok">color-mix()</span> derives the soft, ink and
-    line shades from the one tone in scope, so dark mode needs no per-component
-    rules.</p>
+    ${home('four-features')}
   </section>
 
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">It is not a catalog</h2>
-    <p class="spec-note">Most CSS libraries ship components and ask you to configure
-    them. largen ships the algebra underneath components and expects you to write your
-    own, named in your application's own language: <span class="tok">.entry-card</span>,
-    not <span class="tok">.card-lg-bordered</span>.</p>
-    <p class="spec-note">Each tier is paired with a check. A component that sets a
-    colour literal, reaches past the tone axis, sets an unregistered slot or forgets
-    its layer fails <span class="tok">largen verify</span> and
-    <span class="tok">check_component_css</span>, and a spec that names an unapproved
-    component fails <span class="tok">validate_spec</span>. With one legal way to
-    colour a thing, anything hand-set is easy for a machine to spot.</p>
-    <p class="spec-note">That premise shapes the <a href="/docs/mcp.html">MCP server</a>
-    too. It cannot know your components, so every tool takes an optional manifest of
-    them and answers in your vocabulary rather than largen's.</p>
+    ${home('not-a-catalog')}
   </section>
-  
+
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">Start here</h2>
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
-  ${card('/docs/contract.html', 'The contract', `${SLOTS} slots, the layer rule, the paint rule. What the library guarantees.`)}
-  ${card('/docs/axes.html', 'The axes', 'tone, variant, size, state, and why only two of them inherit.')}
-  ${card('/docs/authoring.html', 'Authoring', `${words(RULES)} rules for writing a component, and the ${words(MODES)} ways it goes wrong.`)}
-  ${card('/docs/components.html', 'Reference components', `${COMPONENTS} optional components. Copy them or ignore them.`)}
-  ${card('/docs/mcp.html', 'MCP server', `${TOOLS} tools for agents. No API key, no generate_ui.`)}
-  ${card('/play', 'Playground', 'Render a spec. Share it in a URL with no server involved.')}
+  ${card('/docs/contract.html', 'The contract', home.raw('card-contract'))}
+  ${card('/docs/axes.html', 'The axes', home.raw('card-axes'))}
+  ${card('/docs/authoring.html', 'Authoring', home.raw('card-authoring'))}
+  ${card('/docs/components.html', 'Reference components', home.raw('card-components'))}
+  ${card('/docs/mcp.html', 'MCP server', home.raw('card-mcp'))}
+  ${card('/play', 'Playground', home.raw('card-play'))}
     </div>
   </section>
   
@@ -177,30 +165,25 @@ export async function pages(args = []) {
   
   # or install it:
   npm install largen`)}</pre>
-    <p class="spec-note">For agents: <a href="/llms-compact.txt">/llms-compact.txt</a>
-    carries the whole contract inline, about ${COMPACT_TOKENS.toLocaleString('en-US')} tokens.</p>
+    ${home('use-note')}
   </section>
-  
+
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">Evidence, not a showcase</h2>
-    <p class="spec-note">Two pages that run in your browser and report what they find.
-    Neither is a gallery. They exist because the claims below them are the ones no
-    static check can settle.</p>
+    ${home('evidence-intro')}
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
-  ${card('/demo/conformance.html', 'Conformance', `The mechanism everything hangs on, <span class="tok">revert-layer</span> against a guaranteed-invalid slot, and the @property fallback that preserves it in Firefox 113–127 and Safari 16.2–16.3. ${words(CONFORMANCE)} checks. Open it in Safari, Firefox and Chrome; nothing static can answer this.`)}
-  ${card('/demo/tests.html', 'The load-bearing tests', 'UA defaults survive the universal paint rule, tone inherits, slots do not leak to children, and modifiers outrank components.')}
+  ${card('/demo/conformance.html', 'Conformance', home.raw('card-conformance'))}
+  ${card('/demo/tests.html', 'The load-bearing tests', home.raw('card-tests'))}
     </div>
   </section>
-  
+
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Releases</h2>
     <p class="spec-note"><strong>${LATEST.version}</strong>: ${ticks(LATEST.summary)}</p>
-    <p class="spec-note">Every entry in the log is checked against the bytes that
-    version actually shipped.
-    <a href="https://github.com/vikramrojo/largen/blob/main/RELEASES.md">The
-    full log</a> · <a href="https://www.npmjs.com/package/largen">npm</a></p>
+    ${home('releases-note')}
   </section>`,
   }))
+  home.assertAllUsed()
   
   /* ── Reference components ─────────────────────────────────────────────
    *
@@ -264,32 +247,14 @@ ${renderNode(result.value, 3)}
   </section>`
   }
 
+  const comps = copy('components')
   const componentsBody = `<div class="stack" style="--gap:.4rem">
   <h1 class="page-title">Reference components</h1>
-  <p class="page-desc">${manifest.components.length} components, each about six lines.
-  Optional, and copy-in rather than imported. largen ships an algebra, not a
-  dependency, so take the source and it is yours to edit.</p>
+  ${comps('page-desc', 'page-desc')}
 </div>
 
 <section class="stack" style="--gap:.5rem">
-  <p class="spec-note">There is no button here, and no input, select or table. Those are
-  elements, and <span class="tok">src/elements.css</span> already themes them. They
-  answer to <span class="tok">data-tone</span>, <span class="tok">data-variant</span> and
-  <span class="tok">data-size</span> exactly like everything below. A component class
-  duplicating them would be a worse copy of something the platform provides.</p>
-  <p class="spec-note">Each example below is rendered from a validated spec by the same
-  validator and renderer the <a href="/docs/mcp.html">MCP server</a> uses, so nothing on
-  this page is something <span class="tok">validate_spec</span> would reject. Fetch any
-  source with <span class="tok">get_component_source</span>, or read
-  <a href="/components/reference.css">reference.css</a> whole.</p>
-  <p class="spec-note">Every component below answers to all four axes,
-  <span class="tok">data-tone</span>, <span class="tok">data-variant</span>,
-  <span class="tok">data-size</span> and real DOM state, without naming any of them.
-  That is not stated per component because it does not vary: it is the whole point of the
-  algebra. Set <span class="tok">data-tone</span> on any ancestor and everything below
-  re-tones.</p>
-  <p class="spec-note">Entries marked <em>fragment</em> are meant to sit inside a parent;
-  shown alone they are a piece, not a demonstration.</p>
+  ${comps('intro')}
 </section>
 
 ${GROUPS.map(([label, names]) => `<section class="stack" style="--gap:.6rem">
@@ -301,8 +266,7 @@ ${names.map(componentBlock).join('\n')}
   <h2 class="section-title">Using them</h2>
   <pre class="code">${esc(`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.components.css">`)}</pre>
-  <p class="spec-note">Or copy one component's source and skip the file entirely. That is
-  the intended path. The set exists to be read and taken from, not depended on.</p>
+  ${comps('using-note')}
 </section>`
 
   record('site/public/docs/components.html', page({
@@ -310,163 +274,84 @@ ${names.map(componentBlock).join('\n')}
     description: "largen's reference components, each shown rendered with its source. Copy them into your project or ignore them.",
     body: componentsBody,
   }))
+  comps.assertAllUsed()
 
   /* ── MCP ──────────────────────────────────────────────────────────────── */
   
+  const mcp = copy('mcp')
+
+  /* The page's tool order, checked against the server's tool set. The order is
+     editorial (orientation tools first, then checks, then diagnostics); the SET
+     is not, and a tool the server gained or lost fails generation here rather
+     than leaving the page quietly under- or over-reporting — which it did once,
+     for six tools and three releases. */
+  const TOOL_ORDER = ['get_contract', 'list_components', 'get_component_source',
+    'validate_spec', 'check_component_css', 'render_spec', 'lookup_property',
+    'check_layer_order', 'resolve_cascade', 'explain_slot', 'emit_probe', 'get_build']
+  {
+    const server = TOOL_DEFINITIONS.map((t) => t.name).sort()
+    const listed = [...TOOL_ORDER].sort()
+    if (server.join() !== listed.join()) {
+      throw new Error('docs/mcp.html lists different tools than the server exposes:\n' +
+        `  server: ${server.join(', ')}\n  page:   ${listed.join(', ')}`)
+    }
+  }
+  const toolBlock = (name) => `    <div class="tool">
+      <span class="tool-name">${name}</span>
+      <p class="tool-desc">${mcp.raw(`tool-${name}`)}</p>
+    </div>`
+
   record('site/public/docs/mcp.html', page({
     title: 'MCP server · largen', current: 'mcp', version: v,
     description: `${TOOLS} MCP tools for agents building with largen. Streamable HTTP, no authentication, and deliberately no generate_ui.`,
     body: `<div class="stack" style="--gap:.4rem">
     <h1 class="page-title">MCP server</h1>
-    <p class="page-desc">${TOOLS} tools, over Streamable HTTP, with no authentication.
-    Everything here is public documentation or a pure function over what you send.</p>
+    ${mcp('page-desc', 'page-desc')}
   </div>
-  
+
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Connect</h2>
     <pre class="code">${esc('claude mcp add largen --transport http https://largen.dev/api/mcp')}</pre>
-    <p class="spec-note">No key, no account, no configuration.</p>
+    ${mcp('connect-note')}
   </section>
-  
+
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">The tools</h2>
-  
-    <div class="tool">
-      <span class="tool-name">get_contract</span>
-      <p class="tool-desc">The slots, the axes and their permitted values, the layer
-      rule, the authoring rules and the known failure modes. Takes an optional
-      <span class="tok">section</span>. Call it before authoring a component.</p>
-    </div>
-  
-    <div class="tool">
-      <span class="tool-name">list_components</span>
-      <p class="tool-desc">Every component a spec may name, with descriptions, elements,
-      slots and permitted children.</p>
-    </div>
-  
-    <div class="tool">
-      <span class="tool-name">get_component_source</span>
-      <p class="tool-desc">The CSS of one reference component, for copying in. Names are
-      resolved against a known list and never against a path.</p>
-    </div>
-  
-    <div class="tool">
-      <span class="tool-name">validate_spec</span>
-      <p class="tool-desc">Checks a model-emitted node tree against the allowlist.
-      Rejects unknown components and axis values, and rejects
-      <span class="tok">style</span>, <span class="tok">onclick</span>,
-      <span class="tok">className</span> or
-      <span class="tok">dangerouslySetInnerHTML</span> rather than dropping them.
-      A model emitting one of those is a signal worth surfacing.</p>
-    </div>
-  
-    <div class="tool">
-      <span class="tool-name">check_component_css</span>
-      <p class="tool-desc">Lints CSS you just wrote: layer membership, colour literals,
-      reaching past the tone axis, unregistered slots. This tool has no equivalent
-      elsewhere, because elsewhere the components are fixed. Here you write them, so the
-      most useful thing a server can do is tell you whether what you wrote is correct.</p>
-    </div>
-  
-    <div class="tool">
-      <span class="tool-name">render_spec</span>
-      <p class="tool-desc">Validates, renders, and returns the HTML inline plus a preview
-      URL. Takes <span class="tok">theme</span> and <span class="tok">css</span>, so your
-      own components appear as they do in your project.</p>
-    </div>
 
-    <div class="tool">
-      <span class="tool-name">lookup_property</span>
-      <p class="tool-desc">Answers whether a CSS property is driven by a slot, and which.
-      Derived from the paint rule, so it follows the library rather than a list kept
-      beside it.</p>
-    </div>
-
-    <div class="tool">
-      <span class="tool-name">check_layer_order</span>
-      <p class="tool-desc">Resolves where each <span class="tok">@layer</span> actually
-      sorts across your stylesheets and reports where that differs from the order
-      declared. Catches the cross-file failures a single-file linter cannot see.</p>
-    </div>
-
-    <div class="tool">
-      <span class="tool-name">resolve_cascade</span>
-      <p class="tool-desc">Given stylesheets and an element's ancestor chain, returns
-      every matching declaration of a property in cascade order, the winner, and which
-      cascade step decided it. No browser involved. Rules it cannot decide from a chain
-      are reported, never dropped.</p>
-    </div>
-
-    <div class="tool">
-      <span class="tool-name">explain_slot</span>
-      <p class="tool-desc">For one slot on one element: is it set, and does the paint
-      rule paint it, or does it revert to the user-agent stylesheet? Catches
-      <span class="tok">--fg: inherit</span>, which reads as "use the surrounding
-      colour" and does the opposite.</p>
-    </div>
-
-    <div class="tool">
-      <span class="tool-name">emit_probe</span>
-      <p class="tool-desc">Returns a self-contained HTML harness you run against your
-      own build, for the questions static analysis cannot reach. The server generates
-      the file and never executes anything.</p>
-    </div>
-
-    <div class="tool">
-      <span class="tool-name">get_build</span>
-      <p class="tool-desc">Version, build id, and per-file sha256 and integrity strings
-      for the served stylesheets. Use it to check a vendored copy for drift.</p>
-    </div>
+${TOOL_ORDER.map(toolBlock).join('\n  \n')}
   </section>
-  
+
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Your components, not ours</h2>
-    <p class="spec-note">largen's premise is that you write your own components, so a
-    server holding a catalog could only ever describe largen's reference set, which is
-    useless in the project you are actually working in. Instead every tool takes an
-    optional <span class="tok">components</span> manifest.</p>
+    ${mcp('yours-not-ours')}
     <pre class="code">${esc('npx largen manifest src/components.css --out largen.manifest.json')}</pre>
-    <p class="spec-note">Pass that object as <span class="tok">components</span> and the
-    tools answer in your vocabulary. Omit it and they fall back to the reference set. A
-    malformed manifest is an error, never a silent fallback. Answering confidently in
-    the wrong vocabulary is worse than refusing.</p>
+    ${mcp('yours-not-ours-note')}
   </section>
-  
+
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">There is no generate_ui</h2>
-    <p class="spec-note">This is a position, not a gap.</p>
-    <p class="spec-note">A <span class="tok">generate_ui</span> tool takes natural
-    language and returns a UI spec, which requires a model on the server. You are already
-    a capable model, and you know the application being built, its data and its
-    conventions. A model here would know none of that, and would add an API key, a cost
-    and a latency budget to every call in exchange for a worse answer.</p>
-    <p class="spec-note">So this server equips you with
-    <span class="tok">get_contract</span>, <span class="tok">list_components</span> and
-    <span class="tok">get_component_source</span>, and then checks your work with
-    <span class="tok">validate_spec</span>, <span class="tok">check_component_css</span>
-    and <span class="tok">render_spec</span>. You do the generating.</p>
+    ${mcp('no-generate-ui')}
   </section>
-  
+
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Without MCP</h2>
-    <p class="spec-note">Fetch <a href="/llms-compact.txt">/llms-compact.txt</a>: the
-    whole contract inline, roughly ${COMPACT_TOKENS.toLocaleString('en-US')} tokens, enough to author a correct component
-    without another request.</p>
+    ${mcp('without-mcp')}
   </section>`,
   }))
+  mcp.assertAllUsed()
   
   /* ── 404 ──────────────────────────────────────────────────────────────── */
   
+  const lost = copy('404')
   record('site/public/404.html', page({
     title: 'Not found · largen', current: null, version: v,
     description: 'Not found.',
     body: `<div class="stack" style="--gap:.5rem">
     <h1 class="page-title">Not found</h1>
-    <p class="page-desc">That page does not exist. Try
-    <a href="/docs/contract.html">the contract</a> or
-    <a href="/">the front page</a>.</p>
+    ${lost('page-desc', 'page-desc')}
   </div>`,
   }))
+  lost.assertAllUsed()
   
   
     const EXAMPLE = JSON.stringify({
@@ -481,11 +366,10 @@ ${names.map(componentBlock).join('\n')}
     ],
   }, null, 2)
   
+  const play = copy('play')
   const body = `<div class="stack" style="--gap:.4rem">
     <h1 class="page-title">Playground</h1>
-    <p class="page-desc">Edit a spec and watch it validate and render. The validator and
-    the renderer here are the same modules the MCP server imports, not a reimplementation
-    of them, so this page cannot disagree with <span class="tok">validate_spec</span>.</p>
+    ${play('page-desc', 'page-desc')}
   </div>
   
   <div class="play-grid">
@@ -496,8 +380,7 @@ ${names.map(componentBlock).join('\n')}
         <button id="share" data-tone="primary" data-variant="soft">Copy share link</button>
         <span class="spec-note" id="shared"></span>
       </div>
-      <p class="spec-note">The share link carries the spec in the URL fragment, so it
-      never reaches the server and needs nothing stored to work.</p>
+      ${play('share-note')}
     </div>
   
     <div class="stack" style="--gap:.5rem">
@@ -573,6 +456,7 @@ ${names.map(componentBlock).join('\n')}
     description: 'Render a largen spec in the browser. Shareable through the URL fragment, with nothing stored server-side.',
     body,
   }))
+  play.assertAllUsed()
   
   /* The migration guide: one source, two surfaces. */
   const guide = renderMarkdown(readFileSync(at('MIGRATING.md'), 'utf8'))
