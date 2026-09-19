@@ -15,12 +15,9 @@
 <header class="site-header">
   <a class="wordmark" href="/">largen</a>
   <nav class="cluster" style="--gap:1rem">
-        <a class="nav-link" href="/docs/contract.html">contract</a>
-        <a class="nav-link" href="/docs/axes.html">axes</a>
-        <a class="nav-link" href="/docs/authoring.html">authoring</a>
-        <a class="nav-link" href="/docs/components.html">components</a>
-        <a class="nav-link" href="/docs/mcp.html">mcp</a>
-        <a class="nav-link" href="/docs/migrating.html" aria-current="page">migrating</a>
+        <a class="nav-link" href="/docs/contract">contract</a>
+        <a class="nav-link" href="/docs/authoring">authoring</a>
+        <a class="nav-link" href="/docs/migrating" aria-current="page">migrating</a>
         <a class="nav-link" href="/play">play</a>
     <label class="theme-toggle">
       <input type="checkbox" hidden onchange="
@@ -35,9 +32,9 @@
 <article class="doc">
 <h1 class="page-title" id="migrating-a-site-to-largen">Migrating a site to largen</h1>
 
-<p class="doc-p">A runbook, written against a migration that actually happened: a personal site with a blog, a project list and 24 mathematical callout types. It finished at <strong>556 lines of CSS</strong> — 488 of components, 57 of theme, 11 of imports — replacing <span class="tok">tailwindcss</span>, <span class="tok">daisyui</span>, a <span class="tok">shadcn</span>/<span class="tok">radix</span> <span class="tok">ui/*.tsx</span> registry, <span class="tok">class-variance-authority</span>, <span class="tok">clsx</span>, <span class="tok">tailwind-merge</span> and a hand-written <span class="tok">typography.css</span>. Built, it was <strong>20.1kb, 4.8kb gzipped</strong>, and it needed no build step to work at all.</p>
+<p class="doc-p">A runbook, written against a migration that actually happened: a personal site with a blog, a project list and 24 mathematical callout types. It finished at <strong>556 lines of CSS</strong>: 488 of components, 57 of theme, 11 of imports. It replaced <span class="tok">tailwindcss</span>, <span class="tok">daisyui</span>, a <span class="tok">shadcn</span>/<span class="tok">radix</span> <span class="tok">ui/*.tsx</span> registry, <span class="tok">class-variance-authority</span>, <span class="tok">clsx</span>, <span class="tok">tailwind-merge</span> and a hand-written <span class="tok">typography.css</span>. Built, it was <strong>20.1kb, 4.8kb gzipped</strong>, and it needed no build step to work at all.</p>
 
-<p class="doc-p">Every figure below is measured from that migration. They are reported so the shape is concrete, not because you can re-run them — that site is not in this repository. What <em>is</em> here is <span class="tok">sites/example/</span>, a smaller worked component set that demonstrates the patterns; it is a different artifact and not the source of these numbers.</p>
+<p class="doc-p">Every figure below is measured from that migration. They are reported so the shape is concrete, not because you can re-run them. That site is not in this repository. What <em>is</em> here is <span class="tok">sites/example/</span>, a smaller worked component set that demonstrates the patterns; it is a different artifact and not the source of these numbers.</p>
 
 <p class="doc-p">Read that as a shape rather than a promise. Your site is not that site. But the sequence below is the one that produced it, and the mistakes flagged are the ones that are expensive to make.</p>
 
@@ -45,19 +42,19 @@
 
 <h2 class="section-title" id="the-idea-you-have-to-accept-first">The idea you have to accept first</h2>
 
-<p class="doc-p">largen is not a component library you adopt. It is an algebra, and <strong>you write the components</strong>. A migration is therefore not "swap <span class="tok">.btn</span> for <span class="tok">.button</span>" — it is <em>deleting</em> a component catalog and replacing it with about six lines per component of your own, named in your own domain language.</p>
+<p class="doc-p">largen is not a component library you adopt. It is an algebra, and <strong>you write the components</strong>. A migration is therefore not "swap <span class="tok">.btn</span> for <span class="tok">.button</span>". It is <em>deleting</em> a component catalog and replacing it with about six lines per component of your own, named in your own domain language.</p>
 
 <p class="doc-p">That component set contained no <span class="tok">card</span>, no <span class="tok">alert</span>, no <span class="tok">button</span>. It contained <span class="tok">entry-card</span>, <span class="tok">callout</span>, <span class="tok">work-entry</span>, <span class="tok">toc-link</span>, <span class="tok">post-nav-item</span>. Those are nouns from a site about writing, not nouns from a UI kit. If your migrated stylesheet reads like a UI kit, you have ported the catalog instead of replacing it, and you have kept the coupling you were trying to remove.</p>
 
-<p class="doc-p">The corollary is what makes migration cheap: <strong>you are not porting the variant matrix.</strong> Tone, variant, size, state and both themes come from underneath. Every line in your old stylesheet that exists to express "the danger version of this, in dark mode, at large size" has no counterpart. It evaporates.</p>
+<p class="doc-p">The corollary is what makes migration cheap: <strong>you are not porting the variant matrix.</strong> Tone, variant, size, state and both themes come from underneath. Every line in your old stylesheet that exists to express "the danger version of this, in dark mode, at large size" has no counterpart and is deleted.</p>
 
 <hr class="doc-rule">
 
-<h2 class="section-title" id="phase-0-decide-what-you-are-not-migrating">Phase 0 — Decide what you are <em>not</em> migrating</h2>
+<h2 class="section-title" id="phase-0-decide-what-you-are-not-migrating">Phase 0: Decide what you are <em>not</em> migrating</h2>
 
 <p class="doc-p">Do this first, and write it down, because it is the decision most likely to be made badly under momentum.</p>
 
-<p class="doc-p"><strong>largen replaces theming. It does not replace behaviour.</strong> That migration kept <span class="tok">radix</span>'s <span class="tok">ScrollArea</span> and its PDF viewer, and the note left in the stylesheet says why: <em>"Those are behaviour, not theming."</em> Focus trapping, virtual scrolling, drag and drop, date-picker keyboard semantics, combobox ARIA — none of that is CSS, and a stylesheet cannot give it to you.</p>
+<p class="doc-p"><strong>largen replaces theming. It does not replace behaviour.</strong> That migration kept <span class="tok">radix</span>'s <span class="tok">ScrollArea</span> and its PDF viewer, and the note left in the stylesheet says why: <em>"Those are behaviour, not theming."</em> Focus trapping, virtual scrolling, drag and drop, date-picker keyboard semantics, combobox ARIA. None of that is CSS, and a stylesheet cannot give it to you.</p>
 
 <p class="doc-p">Sort every dependency into three piles:</p>
 
@@ -75,7 +72,7 @@
 
 <hr class="doc-rule">
 
-<h2 class="section-title" id="phase-1-inventory-what-is-genuinely-in-use">Phase 1 — Inventory what is genuinely in use</h2>
+<h2 class="section-title" id="phase-1-inventory-what-is-genuinely-in-use">Phase 1: Inventory what is genuinely in use</h2>
 
 <p class="doc-p">Two questions, and the second matters more.</p>
 
@@ -103,11 +100,11 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 
 <hr class="doc-rule">
 
-<h2 class="section-title" id="phase-2-one-theme-one-dialect">Phase 2 — One theme, one dialect</h2>
+<h2 class="section-title" id="phase-2-one-theme-one-dialect">Phase 2: One theme, one dialect</h2>
 
 <p class="doc-p">Before any component, write your theme: the tokens, once.</p>
 
-<p class="doc-p">That site had declared its palette <strong>twice</strong> — once as shadcn tokens (<span class="tok">--background</span>, <span class="tok">--foreground</span>, <span class="tok">--muted</span>, <span class="tok">--destructive</span>) and again, in parallel and entirely unused, as daisyUI's (<span class="tok">--color-base-100</span>, <span class="tok">--color-base-content</span>). That is normal for a site that accreted two systems, and it is exactly the redundancy a migration should collect.</p>
+<p class="doc-p">That site had declared its palette <strong>twice</strong>: once as shadcn tokens (<span class="tok">--background</span>, <span class="tok">--foreground</span>, <span class="tok">--muted</span>, <span class="tok">--destructive</span>) and again, in parallel and entirely unused, as daisyUI's (<span class="tok">--color-base-100</span>, <span class="tok">--color-base-content</span>). That is normal for a site that accreted two systems, and it is exactly the redundancy a migration should collect.</p>
 
 <p class="doc-p">You need eleven or so values, and a dark block that overrides the same names:</p>
 
@@ -136,14 +133,14 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 
 <ul class="doc-list">
   <li><strong>A near-monochrome site is normal.</strong> That site's "primary" was near-black, so <span class="tok">neutral</span> carried almost all of its UI. Do not invent a colour system you do not have.</li>
-  <li><strong>Site-wide typography is a theme concern, not a component one.</strong> That site's identity was one monospace face, light, with tight tracking — expressed before the migration as an <span class="tok">@apply … tracking-tighter font-light</span> on the universal selector, and afterwards as three token values plus one <span class="tok">body</span> rule.</li>
+  <li><strong>Site-wide typography is a theme concern, not a component one.</strong> That site's identity was one monospace face, light, with tight tracking. Before the migration that was an <span class="tok">@apply … tracking-tighter font-light</span> on the universal selector. Afterwards it was three token values plus one <span class="tok">body</span> rule.</li>
 </ul>
 
 <p class="doc-p"><strong>This is the last time you write a colour.</strong> From here on, components name <span class="tok">var(--tone-soft)</span> and the theme decides what that is.</p>
 
 <hr class="doc-rule">
 
-<h2 class="section-title" id="phase-3-author-components-leaf-first">Phase 3 — Author components, leaf-first</h2>
+<h2 class="section-title" id="phase-3-author-components-leaf-first">Phase 3: Author components, leaf-first</h2>
 
 <p class="doc-p">Work from the inside out: the smallest, most-repeated things first (<span class="tok">tag</span>, <span class="tok">avatar</span>, <span class="tok">nav-link</span>), then the containers that hold them. Leaf-first means every container you write is already made of finished parts, and you see real results on day one.</p>
 
@@ -168,11 +165,11 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 
 <p class="doc-p">Three habits that make the difference:</p>
 
-<p class="doc-p"><strong>Write the interaction once, not per element.</strong> That site's signature was links muted until hovered — <span class="tok">text-foreground/60 hover:text-foreground transition-colors</span> repeated on every link in the codebase. It became one component with one hover rule, and every link got it. <span class="tok">sites/example/</span> shows the shape as <span class="tok">.entry-link</span>.</p>
+<p class="doc-p"><strong>Write the interaction once, not per element.</strong> That site's signature was links muted until hovered: <span class="tok">text-foreground/60 hover:text-foreground transition-colors</span> repeated on every link in the codebase. It became one component with one hover rule, and every link got it. <span class="tok">sites/example/</span> shows the shape as <span class="tok">.entry-link</span>.</p>
 
 <p class="doc-p"><strong>Multiply by <span class="tok">var(--scale)</span> wherever you set a size</strong>, and express the rest in <span class="tok">em</span>. That is what buys you the size axis for free; it is also why you never write a size variant.</p>
 
-<p class="doc-p"><strong>Set <span class="tok">--tone</span>, not colours.</strong> The headline conversion was the callout: <span class="tok">callout.astro</span> carried a 24-entry CVA config, roughly <strong>100 lines of hand-written colour strings</strong> — two per type per colour mode, like <span class="tok">border-blue-500 dark:bg-blue-950/5</span> alongside <span class="tok">text-blue-700 dark:text-blue-300</span>. It became one shape rule plus this:</p>
+<p class="doc-p"><strong>Set <span class="tok">--tone</span>, not colours.</strong> The headline conversion was the callout: <span class="tok">callout.astro</span> carried a 24-entry CVA config, roughly <strong>100 lines of hand-written colour strings</strong>: two per type per colour mode, like <span class="tok">border-blue-500 dark:bg-blue-950/5</span> alongside <span class="tok">text-blue-700 dark:text-blue-300</span>. It became one shape rule plus this:</p>
 
 <pre class="code" data-lang="css">.callout[data-type="note"]    { --tone: var(--hue-blue) }
 .callout[data-type="tip"]     { --tone: var(--hue-green) }
@@ -195,7 +192,7 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 
 <hr class="doc-rule">
 
-<h2 class="section-title" id="phase-4-convert-the-templates">Phase 4 — Convert the templates</h2>
+<h2 class="section-title" id="phase-4-convert-the-templates">Phase 4: Convert the templates</h2>
 
 <p class="doc-p">Now the markup. The pattern is: a long <span class="tok">class</span> attribute becomes a component name plus, at most, an axis attribute.</p>
 
@@ -215,7 +212,7 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 
 <p class="doc-p">Go page by page, not component by component, and <strong>keep the old stylesheet loaded until a page is fully converted</strong>. A half-converted page under both systems is readable; a half-converted codebase under neither is not.</p>
 
-<p class="doc-p">If your framework has a class-merging helper (<span class="tok">cn</span>, <span class="tok">clsx</span>, <span class="tok">twMerge</span>), delete the call rather than porting it. There is nothing left to merge — a component name and a <span class="tok">data-tone</span> do not conflict, which is the point.</p>
+<p class="doc-p">If your framework has a class-merging helper (<span class="tok">cn</span>, <span class="tok">clsx</span>, <span class="tok">twMerge</span>), delete the call rather than porting it. There is nothing left to merge. A component name and a <span class="tok">data-tone</span> do not conflict, which is the point.</p>
 
 <hr class="doc-rule">
 
@@ -223,26 +220,26 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 
 <p class="doc-p">A migration is not atomic, and largen alongside Tailwind is where the sharp edges are. Three came out of a real Astro integration.</p>
 
-<p class="doc-p"><strong>Declare every layer in one statement, before largen loads.</strong> A layer's position is fixed the first time it is mentioned, so whatever order your <span class="tok">@layer</span> statement lists, layers largen named first keep theirs and yours are appended after. Put a preflight ahead of largen explicitly or it sorts last and flattens every heading, list and border largen styled — and because layer order beats specificity, no selector weight recovers it.</p>
+<p class="doc-p"><strong>Declare every layer in one statement, before largen loads.</strong> A layer's position is fixed the first time it is mentioned, so whatever order your <span class="tok">@layer</span> statement lists, layers largen named first keep theirs and yours are appended after. Put a preflight ahead of largen explicitly or it sorts last and flattens every heading, list and border largen styled. Because layer order beats specificity, no selector weight recovers it.</p>
 
 <pre class="code" data-lang="css">@layer app-base,
        largen.fallback, largen.reset, largen.tokens, largen.paint,
        largen.tone, largen.elements, largen.components, largen.modifiers,
        app-overrides;</pre>
 
-<p class="doc-p">List all eight largen sublayers, <span class="tok">largen.fallback</span> first. A sublayer the statement omits is created when largen loads and appended after the ones listed — and for <span class="tok">largen.fallback</span> that puts its per-element resets above <span class="tok">largen.components</span> in exactly the engines the fallback exists for, while looking correct in every engine you are likely to test in.</p>
+<p class="doc-p">List all eight largen sublayers, <span class="tok">largen.fallback</span> first. A sublayer the statement omits is created when largen loads and appended after the ones listed. For <span class="tok">largen.fallback</span> that puts its per-element resets above <span class="tok">largen.components</span> in exactly the engines the fallback exists for, while looking correct in every engine you are likely to test in.</p>
 
-<p class="doc-p"><strong>Use flat names, not sublayers, for your own halves.</strong> <span class="tok">app.base</span> and <span class="tok">app.overrides</span> are children of one <span class="tok">app</span> layer with one position, so they cannot straddle largen: once <span class="tok">app</span> is placed, <span class="tok">app.overrides</span> is stuck wherever its sibling put it. <span class="tok">app-base</span> and <span class="tok">app-overrides</span> are independent and can sit on either side. This fails silently — the statement reads correctly and does something else.</p>
+<p class="doc-p"><strong>Use flat names, not sublayers, for your own halves.</strong> <span class="tok">app.base</span> and <span class="tok">app.overrides</span> are children of one <span class="tok">app</span> layer with one position, so they cannot straddle largen: once <span class="tok">app</span> is placed, <span class="tok">app.overrides</span> is stuck wherever its sibling put it. <span class="tok">app-base</span> and <span class="tok">app-overrides</span> are independent and can sit on either side. This fails silently. The statement reads correctly and does something else.</p>
 
-<p class="doc-p"><strong>Read the compiled output, not the utility name.</strong> A <span class="tok">marker:</span> utility compiles to two rules, and the descendant one does the work: a bullet belongs to <span class="tok">li::marker</span>, so styling <span class="tok">ul::marker</span> alone changes nothing. That generalises — when a utility does not do what its name suggests, look at what it compiled to before assuming the cascade is at fault.</p>
+<p class="doc-p"><strong>Read the compiled output, not the utility name.</strong> A <span class="tok">marker:</span> utility compiles to two rules, and the descendant one does the work: a bullet belongs to <span class="tok">li::marker</span>, so styling <span class="tok">ul::marker</span> alone changes nothing. That generalises. When a utility does not do what its name suggests, look at what it compiled to before assuming the cascade is at fault.</p>
 
 <h3 class="section-title" id="a-lookup-for-the-mechanical-part">A lookup for the mechanical part</h3>
 
-<p class="doc-p">Utilities, not components. <span class="tok">px-4</span> is <span class="tok">--pad: 0 1rem</span> and there is nothing to decide about it; a variant matrix is the opposite, and porting one is the mistake this guide exists to prevent. <strong>If an entry would need a judgement about naming or structure, it is not in this table</strong> — that is the work you should be doing rather than automating.</p>
+<p class="doc-p">Utilities, not components. <span class="tok">px-4</span> is <span class="tok">--pad: 0 1rem</span> and there is nothing to decide about it; a variant matrix is the opposite, and porting one is the mistake this guide exists to prevent. <strong>If an entry would need a judgement about naming or structure, it is not in this table.</strong> That is the work you should be doing rather than automating.</p>
 
 <p class="doc-p">Assumes a 4px spacing step. Check yours.</p>
 
-<p class="doc-p"><strong>Spacing</strong> — every scale value is <span class="tok">step ÷ 4</span> rem, so <span class="tok">p-3</span> is <span class="tok">0.75rem</span>.</p>
+<p class="doc-p"><strong>Spacing.</strong> Every scale value is <span class="tok">step ÷ 4</span> rem, so <span class="tok">p-3</span> is <span class="tok">0.75rem</span>.</p>
 
 <table class="doc-table">
 <thead><tr><th>utility</th><th>largen</th></tr></thead>
@@ -252,11 +249,11 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 <tr><td><span class="tok">py-2</span></td><td><span class="tok">--pad: 0.5rem 0</span></td></tr>
 <tr><td><span class="tok">px-4 py-2</span></td><td><span class="tok">--pad: 0.5rem 1rem</span></td></tr>
 <tr><td><span class="tok">gap-4</span></td><td><span class="tok">--gap: 1rem</span></td></tr>
-<tr><td><span class="tok">gap-x-4</span></td><td><span class="tok">column-gap: 1rem</span> — one axis is not a slot</td></tr>
-<tr><td><span class="tok">m-0</span></td><td><span class="tok">margin: 0</span> — margin is not a slot; it is between components, not inside one</td></tr>
+<tr><td><span class="tok">gap-x-4</span></td><td><span class="tok">column-gap: 1rem</span>. One axis is not a slot</td></tr>
+<tr><td><span class="tok">m-0</span></td><td><span class="tok">margin: 0</span>. Margin is not a slot; it is between components, not inside one</td></tr>
 </tbody></table>
 
-<p class="doc-p"><strong>Layout</strong> — largen ships these as utilities, so most convert to a class rather than a slot.</p>
+<p class="doc-p"><strong>Layout.</strong> largen ships these as utilities, so most convert to a class rather than a slot.</p>
 
 <table class="doc-table">
 <thead><tr><th>utility</th><th>largen</th></tr></thead>
@@ -270,7 +267,7 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 <tr><td><span class="tok">justify-between</span></td><td><span class="tok">justify-content: space-between</span></td></tr>
 </tbody></table>
 
-<p class="doc-p"><strong>Type</strong> — the trap is in the second column of the first row.</p>
+<p class="doc-p"><strong>Type.</strong> The trap is in the second column of the first row.</p>
 
 <table class="doc-table">
 <thead><tr><th>utility</th><th>largen</th></tr></thead>
@@ -297,23 +294,23 @@ grep -rc "dark:" src/ | grep -v ':0$' | sort -t: -k2 -rn | head -20</pre>
 <tr><td><span class="tok">transition-colors</span></td><td><span class="tok">--transition: var(--speed) color</span></td></tr>
 </tbody></table>
 
-<p class="doc-p"><strong>Not in this table, deliberately:</strong> anything with a colour in it beyond the tokens above, anything with a <span class="tok">dark:</span> prefix, and every variant utility. Colours go through tokens or <span class="tok">--tone*</span>; <span class="tok">dark:</span> should evaporate rather than convert; and variants are the matrix you are trying to delete.</p>
+<p class="doc-p"><strong>Not in this table, deliberately:</strong> anything with a colour in it beyond the tokens above, anything with a <span class="tok">dark:</span> prefix, and every variant utility. Colours go through tokens or <span class="tok">--tone*</span>; <span class="tok">dark:</span> should disappear rather than convert; and variants are the matrix you are trying to delete.</p>
 
 <h3 class="section-title" id="three-things-that-do-not-survive-the-conversion">Three things that do not survive the conversion</h3>
 
-<p class="doc-p"><strong>Line height does not come along.</strong> Tailwind's <span class="tok">text-sm</span> bundles a line-height — <span class="tok">1.25rem</span> against a <span class="tok">0.875rem</span> font, a ratio of about 1.43 — and converting only the size leaves the element on largen's document ratio of 1.55. That is 8% taller, which is what made callouts visibly wrong in one conversion after catching badge, button and crumbs the same way.</p>
+<p class="doc-p"><strong>Line height does not come along.</strong> Tailwind's <span class="tok">text-sm</span> bundles a line-height, <span class="tok">1.25rem</span> against a <span class="tok">0.875rem</span> font, a ratio of about 1.43. Converting only the size leaves the element on largen's document ratio of 1.55. That is 8% taller, which is what made callouts visibly wrong in one conversion after catching badge, button and crumbs the same way.</p>
 
-<p class="doc-p">largen's leading is <em>not</em> broken: <span class="tok">--line-height-base</span> is unitless, so it inherits as a ratio and recomputes correctly at any font size. The ratio is simply not your component's ratio. Set <span class="tok">--line-height</span> alongside <span class="tok">--font-size</span> whenever the two should differ — it is a slot, like <span class="tok">--letter-spacing</span>, so it belongs in the bundle rather than beside it.</p>
+<p class="doc-p">largen's leading is <em>not</em> broken: <span class="tok">--line-height-base</span> is unitless, so it inherits as a ratio and recomputes correctly at any font size. The ratio is simply not your component's ratio. Set <span class="tok">--line-height</span> alongside <span class="tok">--font-size</span> whenever the two should differ. It is a slot, like <span class="tok">--letter-spacing</span>, so it belongs in the bundle rather than beside it.</p>
 
 <p class="doc-p"><strong>Mix ratios do not transfer between shades.</strong> <span class="tok">bg-blue-950/5</span> is five percent of a <em>950</em> shade. Mixing a <em>500</em> shade at five percent lands several times too strong; around 1.5% matched the rendered lightness. Convert by comparing the result, not the number.</p>
 
-<p class="doc-p"><strong>Rule 3 sometimes costs parity, and it is worth saying so.</strong> A tint applied only in dark mode cannot be reproduced without a dark-mode rule. Mixing it against <span class="tok">--canvas</span> makes it follow the theme by construction, which is the right answer — and it means light mode gains a faint tint it did not have before. That is a real difference, not a rounding error. Decide it deliberately rather than discovering it in a screenshot diff.</p>
+<p class="doc-p"><strong>Rule 3 sometimes costs parity, and it is worth saying so.</strong> A tint applied only in dark mode cannot be reproduced without a dark-mode rule. Mixing it against <span class="tok">--canvas</span> makes it follow the theme by construction, which is the right answer, and it means light mode gains a faint tint it did not have before. That is a real difference, not a rounding error. Decide it deliberately rather than discovering it in a screenshot diff.</p>
 
 <h3 class="section-title" id="on-important">On <span class="tok">!important</span></h3>
 
-<p class="doc-p">Migrations inherit <span class="tok">!important</span> from whatever came before. In one real conversion none of them were load-bearing: every selector already outweighed what it was beating, and the declarations were there defensively. <span class="tok">largen verify</span> rejects <span class="tok">!important</span> outright, which is a good forcing function — largen is layered and <span class="tok">:where()</span>-wrapped precisely so your CSS wins without it.</p>
+<p class="doc-p">Migrations inherit <span class="tok">!important</span> from whatever came before. In one real conversion none of them were load-bearing: every selector already outweighed what it was beating, and the declarations were there defensively. <span class="tok">largen verify</span> rejects <span class="tok">!important</span> outright, which is a good forcing function. largen is layered and <span class="tok">:where()</span>-wrapped precisely so your CSS wins without it.</p>
 
-<h2 class="section-title" id="phase-5-verify-including-with-your-eyes">Phase 5 — Verify, including with your eyes</h2>
+<h2 class="section-title" id="phase-5-verify-including-with-your-eyes">Phase 5: Verify, including with your eyes</h2>
 
 <pre class="code" data-lang="sh">npx largen verify        # static: layers, colour literals, tone bypass, slots
 npx largen manifest src/components.css --out largen.manifest.json</pre>
@@ -343,13 +340,13 @@ grep -rln "cva(\|twMerge(\|clsx(" src/          # expect nothing</pre>
 
 <h3 class="section-title" id="the-one-failure-to-memorise">The one failure to memorise</h3>
 
-<p class="doc-p">If <span class="tok">data-variant</span> stops applying while <span class="tok">data-tone</span> and <span class="tok">data-size</span> keep working, <strong>your component is declared outside <span class="tok">@layer largen.components</span></strong>. An unlayered component outranks <span class="tok">largen.modifiers</span>, so variant loses — but tone and size act through inheriting custom properties rather than by overriding slots, so they are unaffected.</p>
+<p class="doc-p">If <span class="tok">data-variant</span> stops applying while <span class="tok">data-tone</span> and <span class="tok">data-size</span> keep working, <strong>your component is declared outside <span class="tok">@layer largen.components</span></strong>. An unlayered component outranks <span class="tok">largen.modifiers</span>, so variant loses. Tone and size act through inheriting custom properties rather than by overriding slots, so they are unaffected.</p>
 
 <p class="doc-p">One dead axis and two live ones looks like a bug in the library. It is the most expensive way to lose an afternoon in this system, and <span class="tok">largen verify</span> and <span class="tok">check_component_css</span> both catch it in a second.</p>
 
 <hr class="doc-rule">
 
-<h2 class="section-title" id="phase-6-delete-the-old-stack">Phase 6 — Delete the old stack</h2>
+<h2 class="section-title" id="phase-6-delete-the-old-stack">Phase 6: Delete the old stack</h2>
 
 <p class="doc-p">Only now, and all at once:</p>
 
@@ -358,7 +355,7 @@ rm -rf src/components/ui/       # the registry
 rm src/styles/typography.css
 rm tailwind.config.* postcss.config.*</pre>
 
-<p class="doc-p">Then confirm nothing silently depended on it — build, and screenshot again. A removed PostCSS plugin can take something with it that no static check will notice.</p>
+<p class="doc-p">Then confirm nothing silently depended on it. Build, and screenshot again. A removed PostCSS plugin can take something with it that no static check will notice.</p>
 
 <hr class="doc-rule">
 
@@ -368,15 +365,15 @@ rm tailwind.config.* postcss.config.*</pre>
 
 <table class="doc-table">
 <tbody>
-<tr><td>Component CSS</td><td><strong>488 lines</strong>, 31 components — ~16 lines each including comments and blank lines</td></tr>
+<tr><td>Component CSS</td><td><strong>488 lines</strong>, 31 components, about 16 lines each including comments and blank lines</td></tr>
 <tr><td>Theme</td><td><strong>57 lines</strong>, one dialect instead of two</td></tr>
 <tr><td>Built</td><td><strong>20.1kb</strong>, <strong>4.8kb gzipped</strong>, whole site</td></tr>
-<tr><td>Build step</td><td>none — the unbuilt stylesheet is the same stylesheet</td></tr>
+<tr><td>Build step</td><td>none. The unbuilt stylesheet is the same stylesheet</td></tr>
 <tr><td><span class="tok">dark:</span> variants</td><td>zero</td></tr>
-<tr><td>Kept deliberately</td><td>ScrollArea, PDF viewer — behaviour, not theming</td></tr>
+<tr><td>Kept deliberately</td><td>ScrollArea and the PDF viewer: behaviour, not theming</td></tr>
 </tbody></table>
 
-<p class="doc-p">The largest single conversion was the callout: ~100 lines of CVA colour strings to 24 one-line rules and one shape rule. The second largest was pagination and breadcrumbs — ~120 lines of TSX across two radix + CVA components — which became two small component rules and ordinary <span class="tok">&lt;ol&gt;</span> markup.</p>
+<p class="doc-p">The largest single conversion was the callout: ~100 lines of CVA colour strings to 24 one-line rules and one shape rule. The second largest was pagination and breadcrumbs, about 120 lines of TSX across two radix + CVA components, which became two small component rules and ordinary <span class="tok">&lt;ol&gt;</span> markup.</p>
 
 <h2 class="section-title" id="sequencing-advice">Sequencing advice</h2>
 
@@ -400,13 +397,13 @@ rm tailwind.config.* postcss.config.*</pre>
   <li>Contract, axes and authoring rules: <a href="https://largen.exe.xyz/docs/contract.html">https://largen.exe.xyz/docs/contract.html</a></li>
   <li>The whole contract in one file, for an agent: <a href="https://largen.exe.xyz/llms-compact.txt">https://largen.exe.xyz/llms-compact.txt</a></li>
   <li>MCP: <span class="tok">claude mcp add largen --transport http https://largen.exe.xyz/api/mcp</span></li>
-  <li>A worked example component set in this repository: <span class="tok">sites/example/</span> — the patterns above at a smaller scale. It is not the migration these figures were measured from.</li>
+  <li>A worked example component set in this repository: <span class="tok">sites/example/</span>, the patterns above at a smaller scale. It is not the migration these figures were measured from.</li>
 </ul>
 </article>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.2 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.2 · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

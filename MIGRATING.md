@@ -2,14 +2,14 @@
 
 A runbook, written against a migration that actually happened: a personal site
 with a blog, a project list and 24 mathematical callout types. It finished at
-**556 lines of CSS** — 488 of components, 57 of theme, 11 of imports — replacing
+**556 lines of CSS**: 488 of components, 57 of theme, 11 of imports. It replaced
 `tailwindcss`, `daisyui`, a `shadcn`/`radix` `ui/*.tsx` registry,
 `class-variance-authority`, `clsx`, `tailwind-merge` and a hand-written
 `typography.css`. Built, it was **20.1kb, 4.8kb gzipped**, and it needed no build
 step to work at all.
 
 Every figure below is measured from that migration. They are reported so the
-shape is concrete, not because you can re-run them — that site is not in this
+shape is concrete, not because you can re-run them. That site is not in this
 repository. What *is* here is `sites/example/`, a smaller worked component set
 that demonstrates the patterns; it is a different artifact and not the source of
 these numbers.
@@ -23,7 +23,7 @@ that are expensive to make.
 ## The idea you have to accept first
 
 largen is not a component library you adopt. It is an algebra, and **you write
-the components**. A migration is therefore not "swap `.btn` for `.button`" — it is
+the components**. A migration is therefore not "swap `.btn` for `.button`". It is
 *deleting* a component catalog and replacing it with about six lines per
 component of your own, named in your own domain language.
 
@@ -36,11 +36,11 @@ replacing it, and you have kept the coupling you were trying to remove.
 The corollary is what makes migration cheap: **you are not porting the variant
 matrix.** Tone, variant, size, state and both themes come from underneath. Every
 line in your old stylesheet that exists to express "the danger version of this,
-in dark mode, at large size" has no counterpart. It evaporates.
+in dark mode, at large size" has no counterpart and is deleted.
 
 ---
 
-## Phase 0 — Decide what you are *not* migrating
+## Phase 0: Decide what you are *not* migrating
 
 Do this first, and write it down, because it is the decision most likely to be
 made badly under momentum.
@@ -48,7 +48,7 @@ made badly under momentum.
 **largen replaces theming. It does not replace behaviour.** That migration kept
 `radix`'s `ScrollArea` and its PDF viewer, and the note left in the stylesheet
 says why: *"Those are behaviour, not theming."* Focus trapping, virtual
-scrolling, drag and drop, date-picker keyboard semantics, combobox ARIA — none of
+scrolling, drag and drop, date-picker keyboard semantics, combobox ARIA. None of
 that is CSS, and a stylesheet cannot give it to you.
 
 Sort every dependency into three piles:
@@ -69,7 +69,7 @@ It is the thing future-you will most want and least remember.
 
 ---
 
-## Phase 1 — Inventory what is genuinely in use
+## Phase 1: Inventory what is genuinely in use
 
 Two questions, and the second matters more.
 
@@ -107,11 +107,11 @@ now so you can check later that they are gone.
 
 ---
 
-## Phase 2 — One theme, one dialect
+## Phase 2: One theme, one dialect
 
 Before any component, write your theme: the tokens, once.
 
-That site had declared its palette **twice** — once as shadcn tokens
+That site had declared its palette **twice**: once as shadcn tokens
 (`--background`, `--foreground`, `--muted`, `--destructive`) and again, in
 parallel and entirely unused, as daisyUI's (`--color-base-100`,
 `--color-base-content`). That is normal for a site that accreted two systems, and
@@ -148,16 +148,16 @@ Two things worth knowing while you do this:
   `neutral` carried almost all of its UI. Do not invent a colour system you do
   not have.
 - **Site-wide typography is a theme concern, not a component one.** That site's
-  identity was one monospace face, light, with tight tracking — expressed before
-  the migration as an `@apply … tracking-tighter font-light` on the universal
-  selector, and afterwards as three token values plus one `body` rule.
+  identity was one monospace face, light, with tight tracking. Before the
+  migration that was an `@apply … tracking-tighter font-light` on the universal
+  selector. Afterwards it was three token values plus one `body` rule.
 
 **This is the last time you write a colour.** From here on, components name
 `var(--tone-soft)` and the theme decides what that is.
 
 ---
 
-## Phase 3 — Author components, leaf-first
+## Phase 3: Author components, leaf-first
 
 Work from the inside out: the smallest, most-repeated things first (`tag`,
 `avatar`, `nav-link`), then the containers that hold them. Leaf-first means every
@@ -188,7 +188,7 @@ Each component is a bundle of slots and a little shape:
 Three habits that make the difference:
 
 **Write the interaction once, not per element.** That site's signature was links
-muted until hovered — `text-foreground/60 hover:text-foreground transition-colors`
+muted until hovered: `text-foreground/60 hover:text-foreground transition-colors`
 repeated on every link in the codebase. It became one component with one hover
 rule, and every link got it. `sites/example/` shows the shape as `.entry-link`.
 
@@ -198,7 +198,7 @@ a size variant.
 
 **Set `--tone`, not colours.** The headline conversion was the callout:
 `callout.astro` carried a 24-entry CVA config, roughly **100 lines of
-hand-written colour strings** — two per type per colour mode, like
+hand-written colour strings**: two per type per colour mode, like
 `border-blue-500 dark:bg-blue-950/5` alongside `text-blue-700 dark:text-blue-300`.
 It became one shape rule plus this:
 
@@ -235,7 +235,7 @@ file.
 
 ---
 
-## Phase 4 — Convert the templates
+## Phase 4: Convert the templates
 
 Now the markup. The pattern is: a long `class` attribute becomes a component name
 plus, at most, an axis attribute.
@@ -263,7 +263,7 @@ until a page is fully converted**. A half-converted page under both systems is
 readable; a half-converted codebase under neither is not.
 
 If your framework has a class-merging helper (`cn`, `clsx`, `twMerge`), delete
-the call rather than porting it. There is nothing left to merge — a component
+the call rather than porting it. There is nothing left to merge. A component
 name and a `data-tone` do not conflict, which is the point.
 
 ---
@@ -277,7 +277,7 @@ Three came out of a real Astro integration.
 fixed the first time it is mentioned, so whatever order your `@layer` statement lists,
 layers largen named first keep theirs and yours are appended after. Put a preflight ahead
 of largen explicitly or it sorts last and flattens every heading, list and border largen
-styled — and because layer order beats specificity, no selector weight recovers it.
+styled. Because layer order beats specificity, no selector weight recovers it.
 
 ```css
 @layer app-base,
@@ -287,7 +287,7 @@ styled — and because layer order beats specificity, no selector weight recover
 ```
 
 List all eight largen sublayers, `largen.fallback` first. A sublayer the statement
-omits is created when largen loads and appended after the ones listed — and for
+omits is created when largen loads and appended after the ones listed. For
 `largen.fallback` that puts its per-element resets above `largen.components` in
 exactly the engines the fallback exists for, while looking correct in every engine
 you are likely to test in.
@@ -295,12 +295,12 @@ you are likely to test in.
 **Use flat names, not sublayers, for your own halves.** `app.base` and `app.overrides`
 are children of one `app` layer with one position, so they cannot straddle largen: once
 `app` is placed, `app.overrides` is stuck wherever its sibling put it. `app-base` and
-`app-overrides` are independent and can sit on either side. This fails silently — the
+`app-overrides` are independent and can sit on either side. This fails silently. The
 statement reads correctly and does something else.
 
 **Read the compiled output, not the utility name.** A `marker:` utility compiles to two
 rules, and the descendant one does the work: a bullet belongs to `li::marker`, so styling
-`ul::marker` alone changes nothing. That generalises — when a utility does not do what its
+`ul::marker` alone changes nothing. That generalises. When a utility does not do what its
 name suggests, look at what it compiled to before assuming the cascade is at fault.
 
 ### A lookup for the mechanical part
@@ -308,11 +308,11 @@ name suggests, look at what it compiled to before assuming the cascade is at fau
 Utilities, not components. `px-4` is `--pad: 0 1rem` and there is nothing to decide
 about it; a variant matrix is the opposite, and porting one is the mistake this guide
 exists to prevent. **If an entry would need a judgement about naming or structure, it is
-not in this table** — that is the work you should be doing rather than automating.
+not in this table.** That is the work you should be doing rather than automating.
 
 Assumes a 4px spacing step. Check yours.
 
-**Spacing** — every scale value is `step ÷ 4` rem, so `p-3` is `0.75rem`.
+**Spacing.** Every scale value is `step ÷ 4` rem, so `p-3` is `0.75rem`.
 
 | utility | largen |
 |---|---|
@@ -321,10 +321,10 @@ Assumes a 4px spacing step. Check yours.
 | `py-2` | `--pad: 0.5rem 0` |
 | `px-4 py-2` | `--pad: 0.5rem 1rem` |
 | `gap-4` | `--gap: 1rem` |
-| `gap-x-4` | `column-gap: 1rem` — one axis is not a slot |
-| `m-0` | `margin: 0` — margin is not a slot; it is between components, not inside one |
+| `gap-x-4` | `column-gap: 1rem`. One axis is not a slot |
+| `m-0` | `margin: 0`. Margin is not a slot; it is between components, not inside one |
 
-**Layout** — largen ships these as utilities, so most convert to a class rather than a slot.
+**Layout.** largen ships these as utilities, so most convert to a class rather than a slot.
 
 | utility | largen |
 |---|---|
@@ -336,7 +336,7 @@ Assumes a 4px spacing step. Check yours.
 | `items-center` | `align-items: center` |
 | `justify-between` | `justify-content: space-between` |
 
-**Type** — the trap is in the second column of the first row.
+**Type.** The trap is in the second column of the first row.
 
 | utility | largen |
 |---|---|
@@ -363,21 +363,21 @@ migration.
 
 **Not in this table, deliberately:** anything with a colour in it beyond the tokens above,
 anything with a `dark:` prefix, and every variant utility. Colours go through tokens or
-`--tone*`; `dark:` should evaporate rather than convert; and variants are the matrix you
+`--tone*`; `dark:` should disappear rather than convert; and variants are the matrix you
 are trying to delete.
 
 ### Three things that do not survive the conversion
 
-**Line height does not come along.** Tailwind's `text-sm` bundles a line-height —
-`1.25rem` against a `0.875rem` font, a ratio of about 1.43 — and converting only the size
+**Line height does not come along.** Tailwind's `text-sm` bundles a line-height,
+`1.25rem` against a `0.875rem` font, a ratio of about 1.43. Converting only the size
 leaves the element on largen's document ratio of 1.55. That is 8% taller, which is what
 made callouts visibly wrong in one conversion after catching badge, button and crumbs the
 same way.
 
 largen's leading is *not* broken: `--line-height-base` is unitless, so it inherits as a
 ratio and recomputes correctly at any font size. The ratio is simply not your component's
-ratio. Set `--line-height` alongside `--font-size` whenever the two should differ —
-it is a slot, like `--letter-spacing`, so it belongs in the bundle rather than beside it.
+ratio. Set `--line-height` alongside `--font-size` whenever the two should differ.
+It is a slot, like `--letter-spacing`, so it belongs in the bundle rather than beside it.
 
 **Mix ratios do not transfer between shades.** `bg-blue-950/5` is five percent of a *950*
 shade. Mixing a *500* shade at five percent lands several times too strong; around 1.5%
@@ -385,7 +385,7 @@ matched the rendered lightness. Convert by comparing the result, not the number.
 
 **Rule 3 sometimes costs parity, and it is worth saying so.** A tint applied only in dark
 mode cannot be reproduced without a dark-mode rule. Mixing it against `--canvas` makes it
-follow the theme by construction, which is the right answer — and it means light mode
+follow the theme by construction, which is the right answer, and it means light mode
 gains a faint tint it did not have before. That is a real difference, not a rounding
 error. Decide it deliberately rather than discovering it in a screenshot diff.
 
@@ -394,10 +394,10 @@ error. Decide it deliberately rather than discovering it in a screenshot diff.
 Migrations inherit `!important` from whatever came before. In one real conversion none of
 them were load-bearing: every selector already outweighed what it was beating, and the
 declarations were there defensively. `largen verify` rejects `!important` outright, which
-is a good forcing function — largen is layered and `:where()`-wrapped precisely so your CSS
+is a good forcing function. largen is layered and `:where()`-wrapped precisely so your CSS
 wins without it.
 
-## Phase 5 — Verify, including with your eyes
+## Phase 5: Verify, including with your eyes
 
 ```sh
 npx largen verify        # static: layers, colour literals, tone bypass, slots
@@ -439,7 +439,7 @@ for it.
 
 If `data-variant` stops applying while `data-tone` and `data-size` keep working,
 **your component is declared outside `@layer largen.components`**. An unlayered
-component outranks `largen.modifiers`, so variant loses — but tone and size act
+component outranks `largen.modifiers`, so variant loses. Tone and size act
 through inheriting custom properties rather than by overriding slots, so they are
 unaffected.
 
@@ -449,7 +449,7 @@ expensive way to lose an afternoon in this system, and `largen verify` and
 
 ---
 
-## Phase 6 — Delete the old stack
+## Phase 6: Delete the old stack
 
 Only now, and all at once:
 
@@ -460,7 +460,7 @@ rm src/styles/typography.css
 rm tailwind.config.* postcss.config.*
 ```
 
-Then confirm nothing silently depended on it — build, and screenshot again. A
+Then confirm nothing silently depended on it. Build, and screenshot again. A
 removed PostCSS plugin can take something with it that no static check will
 notice.
 
@@ -472,16 +472,16 @@ From that conversion, as reference points rather than targets:
 
 | | |
 |---|---|
-| Component CSS | **488 lines**, 31 components — ~16 lines each including comments and blank lines |
+| Component CSS | **488 lines**, 31 components, about 16 lines each including comments and blank lines |
 | Theme | **57 lines**, one dialect instead of two |
 | Built | **20.1kb**, **4.8kb gzipped**, whole site |
-| Build step | none — the unbuilt stylesheet is the same stylesheet |
+| Build step | none. The unbuilt stylesheet is the same stylesheet |
 | `dark:` variants | zero |
-| Kept deliberately | ScrollArea, PDF viewer — behaviour, not theming |
+| Kept deliberately | ScrollArea and the PDF viewer: behaviour, not theming |
 
 The largest single conversion was the callout: ~100 lines of CVA colour strings
 to 24 one-line rules and one shape rule. The second largest was pagination and
-breadcrumbs — ~120 lines of TSX across two radix + CVA components — which became
+breadcrumbs, about 120 lines of TSX across two radix + CVA components, which became
 two small component rules and ordinary `<ol>` markup.
 
 ## Sequencing advice
@@ -505,6 +505,6 @@ perfectly stable place to leave things for a week.
 - Contract, axes and authoring rules: <https://largen.exe.xyz/docs/contract.html>
 - The whole contract in one file, for an agent: <https://largen.exe.xyz/llms-compact.txt>
 - MCP: `claude mcp add largen --transport http https://largen.exe.xyz/api/mcp`
-- A worked example component set in this repository: `sites/example/` — the
+- A worked example component set in this repository: `sites/example/`, the
   patterns above at a smaller scale. It is not the migration these figures were
   measured from.

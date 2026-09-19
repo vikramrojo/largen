@@ -1,355 +1,355 @@
 {
- "$comment": "The release log, as data rather than prose, for two reasons. RELEASES.md is generated from it by `largen contract`, so the published log cannot drift from this file. And every entry carries `signals` — strings that must be present in, or absent from, the frozen bytes at site/public/v/<version>/ — so a claim about a release is checked against the artifact that release actually shipped rather than believed. `largen releases --check` runs that. `signals` is also the machine-readable delta list a per-project upgrade check needs: given a project's CSS and the version it vendored, the `present` strings of every later release are exactly what to grep for.",
- "releases": [
-  {
-   "version": "0.5.2",
-   "date": "2026-09-17",
-   "summary": "The @property fallback. A new lowest-sorting layer, `largen.fallback`, preserves the guaranteed-invalid mechanism in the two engine ranges that have everything largen needs except `@property` — Firefox 113–127 (including ESR 115) and Safari 16.2–16.3. First CSS change since 0.4.0; the build id moves off `5445bbba`.",
-   "breaking": [],
-   "added": [
-    "src/fallback.css — Tailwind v4.1's compiled fallback transposed onto largen's slots, behind the same engine-sniff `@supports`, verbatim. Every non-inheriting slot is re-declared to `initial` on every element (on an unregistered custom property, `initial` IS the guaranteed-invalid value, so this fakes `inherits: false` per element) and `--scale` is seeded to its registered initial-value at `:root`, where inheritance keeps working. In every engine with `@property` the guard matches nothing and the file is inert. The floor set by `color-mix()` is unchanged: below Safari 16.2 / Firefox 113 the design still fails rather than degrades.",
-    "The canonical layer order grows to eight, `largen.fallback` first. A consumer preflight `@layer` statement must list all eight — a sublayer the statement omits is created when largen loads and appended after `largen.modifiers`, where the resets would beat every component in exactly the engines the fallback exists for. The contract's failure modes, MIGRATING.md and the conformance page all carry this."
-   ],
-   "fixed": [],
-   "tooling": [
-    "`largen verify` gains an invariant: the fallback's reset set must mirror the `inherits: false` registrations exactly, `--scale` seeded at `:root` and never reset per element. Drift between the two files is invisible in every engine a developer is likely to test in, which is why it is asserted statically.",
-    "The conformance page grows to 13 checks: the fallback layer is declared first, and its resets mirror the paint slots — structure only, because the guard is false in every engine that can run the headless tier. Opening the page in Firefox ESR 115 or Safari 16.2–16.3 remains the only true-positive test.",
-    "`largen releases --check` now verifies the README's pinned CDN example: the pinned version must have an entry in this log and its SRI hash must match that version's frozen build.json."
-   ],
-   "signals": {
-    "present": [
-     "largen.fallback",
-     "-moz-orient: inline",
-     "-webkit-hyphens: none"
-    ],
-    "absent": []
-   },
-   "package": "05cb12430eb9e8af4afb488c86bf2b4c398cd234c4e5fcb39a31a4fd916a2b75"
-  },
-  {
-   "version": "0.5.1",
-   "date": "2026-08-26",
-   "summary": "Documentation only. The stylesheet is unchanged — the build id stays `5445bbba`, and the frozen files differ from 0.5.0 only in the version string inside their banner comment. Nothing pinned to /v/0.5.0/ is affected, and the CSS anyone vendored is the same CSS.",
-   "breaking": [],
-   "added": [
-    "The paint rule now says why it is universal, not only why it is safe. Applying to every element is what keeps generated CSS uniform: \"is this element paintable?\" is never a question anyone has to answer, and a question nobody answers is one nobody can answer differently twice. Narrowing it to an allowlist would make it a real decision — slots here, plain CSS there, made fresh per component — and that choice point is where drift enters."
-   ],
-   "fixed": [],
-   "tooling": [],
-   "signals": {
-    "present": [
-     "--space-4",
-     "--line-height",
-     "--letter-spacing"
-    ],
-    "absent": [
-     "--leading"
-    ]
-   },
-   "package": "606cfac3da78e909e6c60d6dddf99775004dfe097b3795d3f928845e82377734"
-  },
-  {
-   "version": "0.5.0",
-   "date": "2026-08-24",
-   "summary": "Documentation that can fail. No CSS change — build id stays `5445bbba`, so vendored copies are unaffected and this is a tooling and contract release.",
-   "breaking": [],
-   "added": [
-    "The seven layout utilities are documented: what each does and the custom properties it reads (`--gap`, `--measure`, `--min-item`, `--threshold`, `--side`, `--min-content`), plus `data-align` and `data-justify`, which were undocumented on every surface. A page built from the previous contract used `.row` five times and hand-wrote `display: flex` ten more, with fifteen `align-items` beside it.",
-    "A `slot-gradient` warning from `largen verify`. `--bg` drives `background-color`, so a gradient given to it paints nothing at all, silently. This was failure mode #9 in the contract for a full release with no check behind it.",
-    "A `layout-by-hand` hint naming the utility that matches — `stack`, `row` or `cluster`. `info` severity, reported as `hint` and counted apart from warnings, because hand-writing flex is sometimes right and a finding a correct choice cannot clear is a loop that cannot exit.",
-    "A `section-rhythm` hint from `largen verify --entry <page>.html`: three or more top-level sections with nothing setting the space between them. Rhythm is not a property of any stylesheet, so this reads the document that was already being read for its `<link>` order.",
-    "`largen probe --size-axis --page <file> --select <sel>`. Renders the same markup twice, under `data-size=\"sm\"` and `\"xl\"`, and reports which properties did not move. Whether padding should respond to the size axis depends on where the element sits at runtime, which no stylesheet contains.",
-    "A composition topic on when to reach for the axes, and one reframing depth as an instruction rather than a limitation."
-   ],
-   "fixed": [
+  "$comment": "The release log, as data rather than prose, for two reasons. RELEASES.md is generated from it by `largen contract`, so the published log cannot drift from this file. And every entry carries `signals` — strings that must be present in, or absent from, the frozen bytes at site/public/v/<version>/ — so a claim about a release is checked against the artifact that release actually shipped rather than believed. `largen releases --check` runs that. `signals` is also the machine-readable delta list a per-project upgrade check needs: given a project's CSS and the version it vendored, the `present` strings of every later release are exactly what to grep for.",
+  "releases": [
     {
-     "change": "Composition guidance that nothing could check did not change what agents wrote.",
-     "why": "0.4.0 shipped five composition topics. A bake-off then ran the shipped contract with no addendum and exactly one topic changed the output: the only one with a lint rule behind it. The gradient topic had a complete, copy-pasteable snippet and produced zero gradients. Re-running with the documentation of this release and nothing else changed took hand-written `display: flex` from 10 to 3, `justify-content` from 10 to 0, `data-align`/`data-justify` from 0 to 12, and gradients from 0 to 3."
+      "version": "0.5.2",
+      "date": "2026-09-17",
+      "summary": "The @property fallback. A new lowest-sorting layer, `largen.fallback`, preserves the guaranteed-invalid mechanism in the two engine ranges that have everything largen needs except `@property`: Firefox 113–127 (including ESR 115) and Safari 16.2–16.3. First CSS change since 0.4.0; the build id moves off `5445bbba`.",
+      "breaking": [],
+      "added": [
+        "src/fallback.css — Tailwind v4.1's compiled fallback transposed onto largen's slots, behind the same engine-sniff `@supports`, verbatim. Every non-inheriting slot is re-declared to `initial` on every element (on an unregistered custom property, `initial` IS the guaranteed-invalid value, so this fakes `inherits: false` per element) and `--scale` is seeded to its registered initial-value at `:root`, where inheritance keeps working. In every engine with `@property` the guard matches nothing and the file is inert. The floor set by `color-mix()` is unchanged: below Safari 16.2 / Firefox 113 the design still fails rather than degrades.",
+        "The canonical layer order grows to eight, `largen.fallback` first. A consumer preflight `@layer` statement must list all eight — a sublayer the statement omits is created when largen loads and appended after `largen.modifiers`, where the resets would beat every component in exactly the engines the fallback exists for. The contract's failure modes, MIGRATING.md and the conformance page all carry this."
+      ],
+      "fixed": [],
+      "tooling": [
+        "`largen verify` gains an invariant: the fallback's reset set must mirror the `inherits: false` registrations exactly, `--scale` seeded at `:root` and never reset per element. Drift between the two files is invisible in every engine a developer is likely to test in, which is why it is asserted statically.",
+        "The conformance page grows to 13 checks: the fallback layer is declared first, and its resets mirror the paint slots — structure only, because the guard is false in every engine that can run the headless tier. Opening the page in Firefox ESR 115 or Safari 16.2–16.3 remains the only true-positive test.",
+        "`largen releases --check` now verifies the README's pinned CDN example: the pinned version must have an entry in this log and its SRI hash must match that version's frozen build.json."
+      ],
+      "signals": {
+        "present": [
+          "largen.fallback",
+          "-moz-orient: inline",
+          "-webkit-hyphens: none"
+        ],
+        "absent": []
+      },
+      "package": "05cb12430eb9e8af4afb488c86bf2b4c398cd234c4e5fcb39a31a4fd916a2b75"
     },
     {
-     "change": "`pad-in-rem` now says it is a heuristic and names what outranks it.",
-     "why": "The obvious narrowing — warn only when the rule also sets `--font-size` — was measured against two real pages and cleared the broken one exactly as readily as the correct one. Worse, the rendered check found that `em` padding alone is not enough: a component whose `--font-size` is never multiplied by `var(--scale)` sits outside the size axis while passing every static check."
+      "version": "0.5.1",
+      "date": "2026-08-26",
+      "summary": "Documentation only. The stylesheet is unchanged — the build id stays `5445bbba`, and the frozen files differ from 0.5.0 only in the version string inside their banner comment. Nothing pinned to /v/0.5.0/ is affected, and the CSS anyone vendored is the same CSS.",
+      "breaking": [],
+      "added": [
+        "The paint rule now says why it is universal, not only why it is safe. Applying to every element is what keeps generated CSS uniform: \"is this element paintable?\" is never a question anyone has to answer, and a question nobody answers is one nobody can answer differently twice. Narrowing it to an allowlist would make it a real decision — slots here, plain CSS there, made fresh per component — and that choice point is where drift enters."
+      ],
+      "fixed": [],
+      "tooling": [],
+      "signals": {
+        "present": [
+          "--space-4",
+          "--line-height",
+          "--letter-spacing"
+        ],
+        "absent": [
+          "--leading"
+        ]
+      },
+      "package": "606cfac3da78e909e6c60d6dddf99775004dfe097b3795d3f928845e82377734"
+    },
+    {
+      "version": "0.5.0",
+      "date": "2026-08-24",
+      "summary": "Documentation that can fail. No CSS change — build id stays `5445bbba`, so vendored copies are unaffected and this is a tooling and contract release.",
+      "breaking": [],
+      "added": [
+        "The seven layout utilities are documented: what each does and the custom properties it reads (`--gap`, `--measure`, `--min-item`, `--threshold`, `--side`, `--min-content`), plus `data-align` and `data-justify`, which were undocumented on every surface. A page built from the previous contract used `.row` five times and hand-wrote `display: flex` ten more, with fifteen `align-items` beside it.",
+        "A `slot-gradient` warning from `largen verify`. `--bg` drives `background-color`, so a gradient given to it paints nothing at all, silently. This was failure mode #9 in the contract for a full release with no check behind it.",
+        "A `layout-by-hand` hint naming the utility that matches — `stack`, `row` or `cluster`. `info` severity, reported as `hint` and counted apart from warnings, because hand-writing flex is sometimes right and a finding a correct choice cannot clear is a loop that cannot exit.",
+        "A `section-rhythm` hint from `largen verify --entry <page>.html`: three or more top-level sections with nothing setting the space between them. Rhythm is not a property of any stylesheet, so this reads the document that was already being read for its `<link>` order.",
+        "`largen probe --size-axis --page <file> --select <sel>`. Renders the same markup twice, under `data-size=\"sm\"` and `\"xl\"`, and reports which properties did not move. Whether padding should respond to the size axis depends on where the element sits at runtime, which no stylesheet contains.",
+        "A composition topic on when to reach for the axes, and one reframing depth as an instruction rather than a limitation."
+      ],
+      "fixed": [
+        {
+          "change": "Composition guidance that nothing could check did not change what agents wrote.",
+          "why": "0.4.0 shipped five composition topics. A bake-off then ran the shipped contract with no addendum and exactly one topic changed the output: the only one with a lint rule behind it. The gradient topic had a complete, copy-pasteable snippet and produced zero gradients. Re-running with the documentation of this release and nothing else changed took hand-written `display: flex` from 10 to 3, `justify-content` from 10 to 0, `data-align`/`data-justify` from 0 to 12, and gradients from 0 to 3."
+        },
+        {
+          "change": "`pad-in-rem` now says it is a heuristic and names what outranks it.",
+          "why": "The obvious narrowing — warn only when the rule also sets `--font-size` — was measured against two real pages and cleared the broken one exactly as readily as the correct one. Worse, the rendered check found that `em` padding alone is not enough: a component whose `--font-size` is never multiplied by `var(--scale)` sits outside the size axis while passing every static check."
+        }
+      ],
+      "tooling": [
+        "`largen verify` gains an `info` severity, rendered as `hint` and counted separately from notes.",
+        "`site/test/composition-rules.mjs`, 11 tests covering all three new rules for both halves — that each fires on the defect and clears on correct code."
+      ],
+      "signals": {
+        "present": [
+          "--space-4",
+          "--line-height",
+          "--letter-spacing"
+        ],
+        "absent": [
+          "--leading"
+        ]
+      },
+      "package": "45c6cf6fc6b13b1a63275dd1a6e852ed2a7a60d26d2b60bdacb723f31645fbfc"
+    },
+    {
+      "version": "0.4.0",
+      "date": "2026-08-24",
+      "summary": "A spacing scale, and a contract that teaches composition. First CSS change since 0.3.0 — build id `b9fc348c` becomes `5445bbba`, so vendored copies change.",
+      "breaking": [],
+      "added": [
+        "`--space-1` … `--space-24`, nine steps on a 0.25rem base, for the rhythm between things. largen shipped tokens for colour, radius, type, weight and elevation and none for space, so every gap and page padding was invented per project.",
+        "A composition section in the contract, carried in full by `llms-compact.txt` and `SKILL.md` and served by `get_contract({section: 'composition'})`: the spacing scale and which unit belongs where, elevation via `--shadow` and `--lift-1`/`--lift-2`, what a slot cannot express, and contrast on toned surfaces.",
+        "A `pad-in-rem` warning from `largen verify`. Padding in `em` follows the size axis — `0.5em 1em` is 7px 14px at `sm` and 10px 20px at `xl`. The same padding taken from the spacing scale is 8px 16px at every size: the type grows, the box does not, and nothing looks wrong.",
+        "Two failure modes, taking the taxonomy from eight to ten: a gradient set through `--bg` paints nothing at all, and padding in rem stops responding to `data-size`."
+      ],
+      "fixed": [
+        {
+          "change": "The contract had a `How it fails` and no `How it looks good`.",
+          "why": "A bake-off ran one brief through one model on largen and on Tailwind. The largen page passed every check and came out plain — sections butted together, no elevation, a price suffix unreadable on a toned tier. `--lift-1` and `--lift-2` appear nowhere in the compact contract and none of the thirty-two reference components use `--shadow`, so elevation existed and could not be found by reading. Adding composition guidance to the prompt and changing nothing else produced rhythm, elevation, a working gradient and readable toned text."
+        },
+        "The `llms-compact.txt` budget moves from 16kb to 24kb. The check and its warning stay; only the number moves. Composition guidance is about 4kb and there were 463 bytes of headroom, so the old budget could not carry the material that measurably improved the output."
+      ],
+      "tooling": [],
+      "signals": {
+        "present": [
+          "--space-4",
+          "--line-height",
+          "--letter-spacing"
+        ],
+        "absent": [
+          "--leading"
+        ]
+      },
+      "package": "4f239e73150a8e153a5e3240972229efb81d7a435547810d1066c48bf1093db3"
+    },
+    {
+      "version": "0.3.5",
+      "date": "2026-08-24",
+      "summary": "`largen verify --entry` accepts an HTML file. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
+      "breaking": [],
+      "added": [
+        "`largen verify --entry index.html` derives the load order from the document's `<link>` sequence, alongside the existing `--entry main.css` which follows `@import`. `linkOrder` and `orderFromHtml` are exported from `genai/layers.js`.",
+        "`largen verify --help` prints usage."
+      ],
+      "fixed": [
+        {
+          "change": "The cascade checks reported NOT RUN for the arrangement most projects have.",
+          "why": "Which declaration wins depends on load order, and `--entry` could only follow `@import`. A page that links its framework and then its own stylesheet has no CSS entry point anywhere, so the most valuable check silently did not run. Two people found this independently within a day: the scoring harness, and an agent authoring a page, which reverse-engineered the requirement from an error message and hand-wrote a throwaway stylesheet of `@import`s mirroring its own `<link>` tags to get past it."
+        },
+        "`largen verify --help` re-ran verify against the working directory instead of printing usage, so a reader looking for the flag they needed got a clean pass and no answer."
+      ],
+      "tooling": [],
+      "signals": {
+        "present": [
+          "--line-height",
+          "--letter-spacing"
+        ],
+        "absent": [
+          "--leading"
+        ]
+      },
+      "package": "2ad98c1ce6826e1a153c56d6eeed1cbaead95a6f6d650e3cd6894faafa1d240c"
+    },
+    {
+      "version": "0.3.4",
+      "date": "2026-08-24",
+      "summary": "The conformance assertions now run, the four-axes claim is checked, and `largen eval` scores authored components offline. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
+      "breaking": [],
+      "added": [
+        "`largen eval <dir> [dir2]` scores authored components against the authoring contract — colour-literal and raw-token escapes, layer placement, whether declarations actually apply, axis coverage, tokens per component. Offline and deterministic: no model, no key, no network. Two-directory mode reports both and declares no winner.",
+        "`genai/matrix.js` — the axis matrix. For every reference component it resolves whether tone, variant, size and theme reach its slots, and a rendered sample confirms `color-mix()` and `calc()` genuinely compute different values, which static resolution cannot show.",
+        "`inferEntry` moved into `genai/layers.js` beside `orderFromImports`, and `discover` into `skill/scripts/paths.mjs`. Both had been written twice, once in `verify` and once in `eval`, and the copies had already drifted."
+      ],
+      "fixed": [
+        {
+          "change": "The eleven conformance assertions are executed rather than published.",
+          "why": "`demo/conformance.html` has run eleven checks about the one mechanism largen has no fallback for since before 0.3.0, computing pass or fail into a banner, and nothing ran it. `verify` asserted the file existed; the screenshot suite photographed it. Its checks executed only when a person opened the page, which is a footnote for a reader and a false stop condition for an agent looping generate, validate, repair. The runner also fails when the page reports fewer checks than its source defines, because a page reporting zero of zero passed is otherwise green."
+        },
+        "`site/test/shots.mjs` screenshotted `/demo/`, removed three releases earlier and returning 404 since. It writes images and asserted nothing, so the dead path produced a picture of an error page and no complaint. It now checks every path resolves before shooting."
+      ],
+      "tooling": [],
+      "signals": {
+        "present": [
+          "--line-height",
+          "--letter-spacing"
+        ],
+        "absent": [
+          "--leading"
+        ]
+      },
+      "package": "9795345e815f058d1a18ebeb47afb905088d28ce1791fac64732c3cf9e41034b"
+    },
+    {
+      "version": "0.3.3",
+      "date": "2026-08-24",
+      "summary": "`largen verify` resolves the cascade across your files. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
+      "breaking": [],
+      "added": [
+        "`largen verify` checks whether each slot a component sets is the one that actually wins on an element matching its selector, and whether the cascade layers resolve to the order they are declared in. Both need the order the document loads stylesheets in, so it is derived from an entry file's `@import` graph — inferred when unambiguous, given with `--entry` otherwise, and reported as not run when neither works. Guessing would answer confidently about a cascade you do not have.",
+        "`largen releases --check` fingerprints the code the package ships, so a release whose stylesheets are unchanged and whose tooling was rewritten no longer passes."
+      ],
+      "fixed": [
+        {
+          "change": "A component whose declaration never applies now fails verification.",
+          "why": "Every check read one file. That covers the local mistakes and is blind to the ones that cost the most, which are cross-file: a component sets `--weight: 500` inside `largen.components`, another file's sublayer sorts after it, and the declaration is correct, the file is correct, and the element paints 300. For a person that is a footnote to check in a browser. For an agent looping generate then validate then repair it is the whole thing, because the loop terminates when validate says clean — so a verifier that returns clean on a broken component ends the loop with false confidence."
+        },
+        {
+          "change": "`orderFromImports` lost the `@layer` statement that precedes a file's imports.",
+          "why": "It appended each file after everything it imported, which is right for a file's rules and wrong for the one thing allowed to come before `@import` — the statement that declares layer order. largen's own order resolved wrongly as a result."
+        },
+        "A stylesheet that sets paint slots inside a cascade layer of its own is no longer reported as a component that forgot its layer. It had not forgotten one, and a finding that survives a correct repair is a loop that cannot exit."
+      ],
+      "tooling": [],
+      "signals": {
+        "present": [
+          "--line-height",
+          "--letter-spacing"
+        ],
+        "absent": [
+          "--leading"
+        ]
+      },
+      "package": "749ecec22210d5c519b22b3be0830688040f1272f69eff58ed0ffb5f78aa1f31"
+    },
+    {
+      "version": "0.3.2",
+      "date": "2026-08-23",
+      "summary": "Drive the page theme source instead of overriding one of its outputs. 0.3.1 made a wrong answer more credible; this is the correction. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
+      "breaking": [],
+      "added": [
+        "`emit_probe` takes `themeStorage` — the localStorage key the page reads its theme from (`largen probe --theme-storage`). The probe writes it before load and the page applies the theme itself, completely, the way it does for a user. This is now the recommended way to run themed probes.",
+        "Each row reports what was observed rather than what was set: the requested theme, the attribute, the class, the resolved `color-scheme`, any custom properties pinned inline on `<html>`, and how the theme was driven.",
+        "The package ships `dist/build.json`, so byte lengths, sha256 and integrity strings are reachable from a CDN now that the stylesheets are distributed through npm."
+      ],
+      "fixed": [
+        {
+          "change": "The probe no longer reports values for a theme it only half applied.",
+          "why": "0.3.1 held the attribute override and verified it, and that verification was necessary but not sufficient: it proved the lever was in the position it was set to, and the output presented that as the theme being in effect. A page that writes its palette inline on the root element to avoid a flash of the wrong theme has an output that beats every author rule, so the attribute moved and the colours did not. What came back was a mix of two themes, in a state no user can be in — with a row attesting to the half that had been set. One report reached a real-looking light-mode bug this way and spent a session on it. The probe now detects a palette pinned inline, and a storage key the page does not read, and refuses to report values in either case."
+        }
+      ],
+      "tooling": [],
+      "signals": {
+        "present": [
+          "--line-height",
+          "--letter-spacing"
+        ],
+        "absent": [
+          "--leading"
+        ]
+      }
+    },
+    {
+      "version": "0.3.1",
+      "date": "2026-08-23",
+      "summary": "A probe that could report the wrong theme's numbers under the right theme's label. No CSS change: the stylesheets carry build id `b9fc348c`, the same as 0.3.0, so the only difference in the served bytes is the version in the banner. Nothing needs re-pinning for this — upgrade for the tooling.",
+      "breaking": [],
+      "added": [
+        "`emit_probe` takes `themeAttribute` and `themeClass`, for pages that theme by an attribute other than `data-theme` or by a class on `<html>` as Tailwind does. `largen probe --theme-class` and `--theme-attribute` on the command line."
+      ],
+      "fixed": [
+        {
+          "change": "The probe's theme override is now held for the duration of the reading, and verified before any value is reported.",
+          "why": "It set the attribute and then awaited a settle, and a page that manages its own theme re-applies it in exactly that window — Astro fires astro:page-load, any deferred module can do the same. Every value then came back as the page's theme wearing the requested theme's label. It presented as a per-element inconsistency rather than a broken override, because elements whose colour does not depend on the theme still read correctly: one report had two selectors near-white under a light theme and a third correct, and the third was correct by coincidence. A MutationObserver now re-applies the override whenever the page changes it, and the probe refuses to report values if a competing theme signal on the root element contradicts what was asked for."
+        },
+        "Each row records the theme actually in effect when it was read, so a reading describes its own conditions instead of trusting its label."
+      ],
+      "tooling": [],
+      "signals": {
+        "present": [
+          "--line-height",
+          "--letter-spacing"
+        ],
+        "absent": [
+          "--leading"
+        ]
+      }
+    },
+    {
+      "version": "0.3.0",
+      "date": "2026-08-23",
+      "summary": "Two more slots, themes that no longer outrank you, and tools that answer why a rule lost.",
+      "breaking": [
+        {
+          "change": "`--leading` is now `--line-height-base`.",
+          "why": "The slot-shaped name was taken by a token. `--line-height` is now a real per-component slot, and having a token beside it called `--leading` invited setting the wrong one.",
+          "migration": "Rename any `--leading` you set to `--line-height-base`. To set leading on one component, use the new `--line-height` slot instead."
+        }
+      ],
+      "added": [
+        "`--line-height` and `--letter-spacing` slots. Twelve paint slots become fourteen, so a component that changes its font size can say what leading it wants.",
+        "largen declares its own layer order in one `@layer` statement, rather than leaving it to the order the blocks happen to appear in.",
+        "`<progress>` and `<meter>` are themed.",
+        "Every built file carries a banner with a build id, and `build.json` records sha256 and SRI for each — the version string alone never identified a build."
+      ],
+      "fixed": [
+        {
+          "change": "Themes are layered.",
+          "why": "`themes/light.css` and `themes/dark.css` were unlayered while `src/tokens.css` was not. An unlayered theme outranks every layer, so a consumer's own overrides written inside `@layer largen.tokens` lost to it silently. Invisible in light mode, where the layered defaults were the only competition, and total in dark."
+        },
+        {
+          "change": "Tone derivations apply wherever `--tone` is set, not only on `[data-tone]`.",
+          "why": "Setting `--tone` directly in a component's own rule left the derived `--tone-soft`, `--tone-ink` and `--tone-line` at their previous values."
+        },
+        "The last row of a table no longer draws a bottom border against the table's own edge."
+      ],
+      "tooling": [
+        "`resolve_cascade` — which declaration wins for a property on an element, and which cascade step decided it. No browser.",
+        "`explain_slot` — whether the paint rule applies a slot or it reverts, and to what. Catches `--fg: inherit`, which reads as inheriting and does the opposite.",
+        "`emit_probe` — a self-contained browser harness for the questions static analysis cannot reach.",
+        "`check_layer_order` can derive load order from an entry file's `@import` graph instead of taking it on trust.",
+        "`check_component_css` classifies each file in a batch, so pointing it at a directory containing a theme no longer reports every token as a colour literal.",
+        "`largen cascade`, `largen slot` and `largen probe` expose the first three on the command line."
+      ],
+      "signals": {
+        "present": [
+          "--line-height",
+          "--letter-spacing",
+          "--line-height-base"
+        ],
+        "absent": [
+          "--leading"
+        ]
+      }
+    },
+    {
+      "version": "0.2.0",
+      "date": "2026-08-22",
+      "summary": "The reference component set and the documentation site.",
+      "breaking": [],
+      "added": [
+        "An optional reference component set, shipped separately as `largen.components.css` so the algebra stays usable without it.",
+        "A neutral example site build in place of the author's own."
+      ],
+      "fixed": [],
+      "tooling": [
+        "The MCP server and the generated contract surfaces — `SKILL.md`, `llms.txt`, `llms-compact.txt`."
+      ],
+      "signals": {
+        "present": [
+          "largen.components"
+        ],
+        "absent": [
+          "--line-height"
+        ]
+      }
+    },
+    {
+      "version": "0.1.0",
+      "date": "2026-08-21",
+      "summary": "First published build: the algebra, twelve slots, one paint rule.",
+      "breaking": [],
+      "added": [
+        "Twelve registered slots, the universal paint rule, and the four axes — tone, variant, size, state."
+      ],
+      "fixed": [],
+      "tooling": [],
+      "signals": {
+        "present": [
+          "--bg",
+          "--fg",
+          "revert-layer"
+        ],
+        "absent": [
+          "--line-height",
+          "--letter-spacing"
+        ]
+      }
     }
-   ],
-   "tooling": [
-    "`largen verify` gains an `info` severity, rendered as `hint` and counted separately from notes.",
-    "`site/test/composition-rules.mjs`, 11 tests covering all three new rules for both halves — that each fires on the defect and clears on correct code."
-   ],
-   "signals": {
-    "present": [
-     "--space-4",
-     "--line-height",
-     "--letter-spacing"
-    ],
-    "absent": [
-     "--leading"
-    ]
-   },
-   "package": "45c6cf6fc6b13b1a63275dd1a6e852ed2a7a60d26d2b60bdacb723f31645fbfc"
-  },
-  {
-   "version": "0.4.0",
-   "date": "2026-08-24",
-   "summary": "A spacing scale, and a contract that teaches composition. First CSS change since 0.3.0 — build id `b9fc348c` becomes `5445bbba`, so vendored copies change.",
-   "breaking": [],
-   "added": [
-    "`--space-1` … `--space-24`, nine steps on a 0.25rem base, for the rhythm between things. largen shipped tokens for colour, radius, type, weight and elevation and none for space, so every gap and page padding was invented per project.",
-    "A composition section in the contract, carried in full by `llms-compact.txt` and `SKILL.md` and served by `get_contract({section: 'composition'})`: the spacing scale and which unit belongs where, elevation via `--shadow` and `--lift-1`/`--lift-2`, what a slot cannot express, and contrast on toned surfaces.",
-    "A `pad-in-rem` warning from `largen verify`. Padding in `em` follows the size axis — `0.5em 1em` is 7px 14px at `sm` and 10px 20px at `xl`. The same padding taken from the spacing scale is 8px 16px at every size: the type grows, the box does not, and nothing looks wrong.",
-    "Two failure modes, taking the taxonomy from eight to ten: a gradient set through `--bg` paints nothing at all, and padding in rem stops responding to `data-size`."
-   ],
-   "fixed": [
-    {
-     "change": "The contract had a `How it fails` and no `How it looks good`.",
-     "why": "A bake-off ran one brief through one model on largen and on Tailwind. The largen page passed every check and came out plain — sections butted together, no elevation, a price suffix unreadable on a toned tier. `--lift-1` and `--lift-2` appear nowhere in the compact contract and none of the thirty-two reference components use `--shadow`, so elevation existed and could not be found by reading. Adding composition guidance to the prompt and changing nothing else produced rhythm, elevation, a working gradient and readable toned text."
-    },
-    "The `llms-compact.txt` budget moves from 16kb to 24kb. The check and its warning stay; only the number moves. Composition guidance is about 4kb and there were 463 bytes of headroom, so the old budget could not carry the material that measurably improved the output."
-   ],
-   "tooling": [],
-   "signals": {
-    "present": [
-     "--space-4",
-     "--line-height",
-     "--letter-spacing"
-    ],
-    "absent": [
-     "--leading"
-    ]
-   },
-   "package": "4f239e73150a8e153a5e3240972229efb81d7a435547810d1066c48bf1093db3"
-  },
-  {
-   "version": "0.3.5",
-   "date": "2026-08-24",
-   "summary": "`largen verify --entry` accepts an HTML file. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
-   "breaking": [],
-   "added": [
-    "`largen verify --entry index.html` derives the load order from the document's `<link>` sequence, alongside the existing `--entry main.css` which follows `@import`. `linkOrder` and `orderFromHtml` are exported from `genai/layers.js`.",
-    "`largen verify --help` prints usage."
-   ],
-   "fixed": [
-    {
-     "change": "The cascade checks reported NOT RUN for the arrangement most projects have.",
-     "why": "Which declaration wins depends on load order, and `--entry` could only follow `@import`. A page that links its framework and then its own stylesheet has no CSS entry point anywhere, so the most valuable check silently did not run. Two people found this independently within a day: the scoring harness, and an agent authoring a page, which reverse-engineered the requirement from an error message and hand-wrote a throwaway stylesheet of `@import`s mirroring its own `<link>` tags to get past it."
-    },
-    "`largen verify --help` re-ran verify against the working directory instead of printing usage, so a reader looking for the flag they needed got a clean pass and no answer."
-   ],
-   "tooling": [],
-   "signals": {
-    "present": [
-     "--line-height",
-     "--letter-spacing"
-    ],
-    "absent": [
-     "--leading"
-    ]
-   },
-   "package": "2ad98c1ce6826e1a153c56d6eeed1cbaead95a6f6d650e3cd6894faafa1d240c"
-  },
-  {
-   "version": "0.3.4",
-   "date": "2026-08-24",
-   "summary": "The conformance assertions now run, the four-axes claim is checked, and `largen eval` scores authored components offline. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
-   "breaking": [],
-   "added": [
-    "`largen eval <dir> [dir2]` scores authored components against the authoring contract — colour-literal and raw-token escapes, layer placement, whether declarations actually apply, axis coverage, tokens per component. Offline and deterministic: no model, no key, no network. Two-directory mode reports both and declares no winner.",
-    "`genai/matrix.js` — the axis matrix. For every reference component it resolves whether tone, variant, size and theme reach its slots, and a rendered sample confirms `color-mix()` and `calc()` genuinely compute different values, which static resolution cannot show.",
-    "`inferEntry` moved into `genai/layers.js` beside `orderFromImports`, and `discover` into `skill/scripts/paths.mjs`. Both had been written twice, once in `verify` and once in `eval`, and the copies had already drifted."
-   ],
-   "fixed": [
-    {
-     "change": "The eleven conformance assertions are executed rather than published.",
-     "why": "`demo/conformance.html` has run eleven checks about the one mechanism largen has no fallback for since before 0.3.0, computing pass or fail into a banner, and nothing ran it. `verify` asserted the file existed; the screenshot suite photographed it. Its checks executed only when a person opened the page, which is a footnote for a reader and a false stop condition for an agent looping generate, validate, repair. The runner also fails when the page reports fewer checks than its source defines, because a page reporting zero of zero passed is otherwise green."
-    },
-    "`site/test/shots.mjs` screenshotted `/demo/`, removed three releases earlier and returning 404 since. It writes images and asserted nothing, so the dead path produced a picture of an error page and no complaint. It now checks every path resolves before shooting."
-   ],
-   "tooling": [],
-   "signals": {
-    "present": [
-     "--line-height",
-     "--letter-spacing"
-    ],
-    "absent": [
-     "--leading"
-    ]
-   },
-   "package": "9795345e815f058d1a18ebeb47afb905088d28ce1791fac64732c3cf9e41034b"
-  },
-  {
-   "version": "0.3.3",
-   "date": "2026-08-24",
-   "summary": "`largen verify` resolves the cascade across your files. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
-   "breaking": [],
-   "added": [
-    "`largen verify` checks whether each slot a component sets is the one that actually wins on an element matching its selector, and whether the cascade layers resolve to the order they are declared in. Both need the order the document loads stylesheets in, so it is derived from an entry file's `@import` graph — inferred when unambiguous, given with `--entry` otherwise, and reported as not run when neither works. Guessing would answer confidently about a cascade you do not have.",
-    "`largen releases --check` fingerprints the code the package ships, so a release whose stylesheets are unchanged and whose tooling was rewritten no longer passes."
-   ],
-   "fixed": [
-    {
-     "change": "A component whose declaration never applies now fails verification.",
-     "why": "Every check read one file. That covers the local mistakes and is blind to the ones that cost the most, which are cross-file: a component sets `--weight: 500` inside `largen.components`, another file's sublayer sorts after it, and the declaration is correct, the file is correct, and the element paints 300. For a person that is a footnote to check in a browser. For an agent looping generate then validate then repair it is the whole thing, because the loop terminates when validate says clean — so a verifier that returns clean on a broken component ends the loop with false confidence."
-    },
-    {
-     "change": "`orderFromImports` lost the `@layer` statement that precedes a file's imports.",
-     "why": "It appended each file after everything it imported, which is right for a file's rules and wrong for the one thing allowed to come before `@import` — the statement that declares layer order. largen's own order resolved wrongly as a result."
-    },
-    "A stylesheet that sets paint slots inside a cascade layer of its own is no longer reported as a component that forgot its layer. It had not forgotten one, and a finding that survives a correct repair is a loop that cannot exit."
-   ],
-   "tooling": [],
-   "signals": {
-    "present": [
-     "--line-height",
-     "--letter-spacing"
-    ],
-    "absent": [
-     "--leading"
-    ]
-   },
-   "package": "749ecec22210d5c519b22b3be0830688040f1272f69eff58ed0ffb5f78aa1f31"
-  },
-  {
-   "version": "0.3.2",
-   "date": "2026-08-23",
-   "summary": "Drive the page theme source instead of overriding one of its outputs. 0.3.1 made a wrong answer more credible; this is the correction. No CSS change: build id `b9fc348c`, unchanged since 0.3.0.",
-   "breaking": [],
-   "added": [
-    "`emit_probe` takes `themeStorage` — the localStorage key the page reads its theme from (`largen probe --theme-storage`). The probe writes it before load and the page applies the theme itself, completely, the way it does for a user. This is now the recommended way to run themed probes.",
-    "Each row reports what was observed rather than what was set: the requested theme, the attribute, the class, the resolved `color-scheme`, any custom properties pinned inline on `<html>`, and how the theme was driven.",
-    "The package ships `dist/build.json`, so byte lengths, sha256 and integrity strings are reachable from a CDN now that the stylesheets are distributed through npm."
-   ],
-   "fixed": [
-    {
-     "change": "The probe no longer reports values for a theme it only half applied.",
-     "why": "0.3.1 held the attribute override and verified it, and that verification was necessary but not sufficient: it proved the lever was in the position it was set to, and the output presented that as the theme being in effect. A page that writes its palette inline on the root element to avoid a flash of the wrong theme has an output that beats every author rule, so the attribute moved and the colours did not. What came back was a mix of two themes, in a state no user can be in — with a row attesting to the half that had been set. One report reached a real-looking light-mode bug this way and spent a session on it. The probe now detects a palette pinned inline, and a storage key the page does not read, and refuses to report values in either case."
-    }
-   ],
-   "tooling": [],
-   "signals": {
-    "present": [
-     "--line-height",
-     "--letter-spacing"
-    ],
-    "absent": [
-     "--leading"
-    ]
-   }
-  },
-  {
-   "version": "0.3.1",
-   "date": "2026-08-23",
-   "summary": "A probe that could report the wrong theme's numbers under the right theme's label. No CSS change: the stylesheets carry build id `b9fc348c`, the same as 0.3.0, so the only difference in the served bytes is the version in the banner. Nothing needs re-pinning for this — upgrade for the tooling.",
-   "breaking": [],
-   "added": [
-    "`emit_probe` takes `themeAttribute` and `themeClass`, for pages that theme by an attribute other than `data-theme` or by a class on `<html>` as Tailwind does. `largen probe --theme-class` and `--theme-attribute` on the command line."
-   ],
-   "fixed": [
-    {
-     "change": "The probe's theme override is now held for the duration of the reading, and verified before any value is reported.",
-     "why": "It set the attribute and then awaited a settle, and a page that manages its own theme re-applies it in exactly that window — Astro fires astro:page-load, any deferred module can do the same. Every value then came back as the page's theme wearing the requested theme's label. It presented as a per-element inconsistency rather than a broken override, because elements whose colour does not depend on the theme still read correctly: one report had two selectors near-white under a light theme and a third correct, and the third was correct by coincidence. A MutationObserver now re-applies the override whenever the page changes it, and the probe refuses to report values if a competing theme signal on the root element contradicts what was asked for."
-    },
-    "Each row records the theme actually in effect when it was read, so a reading describes its own conditions instead of trusting its label."
-   ],
-   "tooling": [],
-   "signals": {
-    "present": [
-     "--line-height",
-     "--letter-spacing"
-    ],
-    "absent": [
-     "--leading"
-    ]
-   }
-  },
-  {
-   "version": "0.3.0",
-   "date": "2026-08-23",
-   "summary": "Two more slots, themes that no longer outrank you, and tools that answer why a rule lost.",
-   "breaking": [
-    {
-     "change": "`--leading` is now `--line-height-base`.",
-     "why": "The slot-shaped name was taken by a token. `--line-height` is now a real per-component slot, and having a token beside it called `--leading` invited setting the wrong one.",
-     "migration": "Rename any `--leading` you set to `--line-height-base`. To set leading on one component, use the new `--line-height` slot instead."
-    }
-   ],
-   "added": [
-    "`--line-height` and `--letter-spacing` slots. Twelve paint slots become fourteen, so a component that changes its font size can say what leading it wants.",
-    "largen declares its own layer order in one `@layer` statement, rather than leaving it to the order the blocks happen to appear in.",
-    "`<progress>` and `<meter>` are themed.",
-    "Every built file carries a banner with a build id, and `build.json` records sha256 and SRI for each — the version string alone never identified a build."
-   ],
-   "fixed": [
-    {
-     "change": "Themes are layered.",
-     "why": "`themes/light.css` and `themes/dark.css` were unlayered while `src/tokens.css` was not. An unlayered theme outranks every layer, so a consumer's own overrides written inside `@layer largen.tokens` lost to it silently. Invisible in light mode, where the layered defaults were the only competition, and total in dark."
-    },
-    {
-     "change": "Tone derivations apply wherever `--tone` is set, not only on `[data-tone]`.",
-     "why": "Setting `--tone` directly in a component's own rule left the derived `--tone-soft`, `--tone-ink` and `--tone-line` at their previous values."
-    },
-    "The last row of a table no longer draws a bottom border against the table's own edge."
-   ],
-   "tooling": [
-    "`resolve_cascade` — which declaration wins for a property on an element, and which cascade step decided it. No browser.",
-    "`explain_slot` — whether the paint rule applies a slot or it reverts, and to what. Catches `--fg: inherit`, which reads as inheriting and does the opposite.",
-    "`emit_probe` — a self-contained browser harness for the questions static analysis cannot reach.",
-    "`check_layer_order` can derive load order from an entry file's `@import` graph instead of taking it on trust.",
-    "`check_component_css` classifies each file in a batch, so pointing it at a directory containing a theme no longer reports every token as a colour literal.",
-    "`largen cascade`, `largen slot` and `largen probe` expose the first three on the command line."
-   ],
-   "signals": {
-    "present": [
-     "--line-height",
-     "--letter-spacing",
-     "--line-height-base"
-    ],
-    "absent": [
-     "--leading"
-    ]
-   }
-  },
-  {
-   "version": "0.2.0",
-   "date": "2026-08-22",
-   "summary": "The reference component set and the documentation site.",
-   "breaking": [],
-   "added": [
-    "An optional reference component set, shipped separately as `largen.components.css` so the algebra stays usable without it.",
-    "A neutral example site build in place of the author's own."
-   ],
-   "fixed": [],
-   "tooling": [
-    "The MCP server and the generated contract surfaces — `SKILL.md`, `llms.txt`, `llms-compact.txt`."
-   ],
-   "signals": {
-    "present": [
-     "largen.components"
-    ],
-    "absent": [
-     "--line-height"
-    ]
-   }
-  },
-  {
-   "version": "0.1.0",
-   "date": "2026-08-21",
-   "summary": "First published build: the algebra, twelve slots, one paint rule.",
-   "breaking": [],
-   "added": [
-    "Twelve registered slots, the universal paint rule, and the four axes — tone, variant, size, state."
-   ],
-   "fixed": [],
-   "tooling": [],
-   "signals": {
-    "present": [
-     "--bg",
-     "--fg",
-     "revert-layer"
-    ],
-    "absent": [
-     "--line-height",
-     "--letter-spacing"
-    ]
-   }
-  }
- ]
+  ]
 }

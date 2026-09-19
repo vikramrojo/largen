@@ -1,4 +1,4 @@
-# largen — a property algebra for CSS
+# largen: a CSS scaffold for agents
 #
 # Everything here is meant to be read, by people and by models alike. The
 # contract is published inline at /llms-compact.txt for exactly that reason, and

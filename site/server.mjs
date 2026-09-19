@@ -19,6 +19,7 @@ import { dirname } from 'node:path'
 
 import { handleMcpRequest } from './mcp/server.mjs'
 import { Previews } from './mcp/previews.mjs'
+import { MOVED } from './mcp/page.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
@@ -250,12 +251,27 @@ const server = createServer(async (req, res) => {
     }
 
     /* --- Repository mounts --------------------------------------------------- */
+
+    /* The demo pages get the same clean URLs as the site pages: /demo/tests
+       serves demo/tests.html, and the .html spelling 301s to it. Only /demo/,
+       deliberately: it is the one mount linked as pages, and the other mounts
+       serve source files whose extensions are the point. The files themselves
+       stay hand-written HTML because they are executable fixtures, and the
+       markup is the material under test. */
+    if (path.startsWith('/demo/') && path.endsWith('.html')) {
+      const file = safeJoin(root, path)
+      if (file && existsSync(file)) {
+        return send(res, 301, '', { location: path.slice(0, -'.html'.length) + url.search })
+      }
+    }
+
     const mount = REPO_MOUNTS.find((d) => path === `/${d}` || path.startsWith(`/${d}/`))
     if (mount) {
       const file = safeJoin(root, path)
       if (file) {
         if (await serveFile(res, file)) return
         if (await serveFile(res, join(file, 'index.html'))) return
+        if (mount === 'demo' && !extname(path) && await serveFile(res, file + '.html')) return
       }
     }
 
@@ -267,7 +283,7 @@ const server = createServer(async (req, res) => {
        largen.dev without the server knowing which one answered. */
     const LINKS = [
       '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
-      '</docs/mcp.html>; rel="service-doc"; type="text/html"',
+      '</docs/authoring>; rel="service-doc"; type="text/html"',
       '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
       '</llms-compact.txt>; rel="describedby"; type="text/plain"',
       '</sitemap.xml>; rel="sitemap"; type="application/xml"',
@@ -288,6 +304,29 @@ const server = createServer(async (req, res) => {
     }
 
     /* --- Static site --------------------------------------------------------- */
+
+    /* Pages that merged into other pages 301 to their new home, in both
+       spellings. This has to come before the generic .html redirect: the old
+       files no longer exist, so nothing below would answer for them. */
+    const moved = MOVED[path] ?? MOVED[path.replace(/\.html$/, '')]
+    if (moved) return send(res, 301, '', { location: moved })
+
+    /* Clean URLs. A request for /docs/contract.html answers 301 to
+       /docs/contract, which the extensionless fallback below serves from the
+       same file — one URL per page instead of two, so external links and
+       search indexes converge on the form the nav uses. Only the static site
+       redirects: repo mounts (/demo/*.html) and frozen /v/ paths are reached
+       above this point, and their filenames are the interface. 404.html is
+       excluded because it is a body the server uses, not a page with a
+       canonical address. */
+    if (path.endsWith('.html') && path !== '/404.html') {
+      const file = safeJoin(PUBLIC, path)
+      if (file && existsSync(file)) {
+        const target = path === '/index.html' ? '/' : path.slice(0, -'.html'.length)
+        return send(res, 301, '', { location: target + url.search })
+      }
+    }
+
     const rel = path === '/' ? '/index.html' : path
     const candidate = safeJoin(PUBLIC, rel)
     const linkHeader = path === '/' ? { link: LINKS } : {}

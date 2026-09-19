@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>largen — conformance</title>
+<title>largen · conformance</title>
 <link rel="stylesheet" href="../src/largen.css">
 <style>
   /* Two components authored the normal way — the same shapes demo/tests.html
@@ -152,7 +152,7 @@ check('5 · setting a slot opts the element in', () => {
   return `padding ${p.paddingTop}, border ${p.borderTopWidth}`
 })
 
-check('6 · inherits:false — a slot does not leak to children', () => {
+check('6 · inherits:false: a slot does not leak to children', () => {
   const c = cs('f-panel-child')
   assert(px(c.paddingTop) === 0,
     `child of .panel has padding-top ${c.paddingTop}, expected 0 — --pad leaked`)
@@ -184,7 +184,7 @@ check('8 · tone inherits and color-mix resolves', () => {
   return `--tone ${tone} → ${bg}`
 })
 
-check('9 · layer order — modifiers beat components', () => {
+check('9 · layer order: modifiers beat components', () => {
   const v = cs('f-variant'), tone = v.getPropertyValue('--tone').trim()
   assert(tone !== '', '--tone missing on the variant fixture')
   assert(v.getPropertyValue('--bg').trim() === tone,
@@ -271,10 +271,10 @@ check('13 · the fallback mirrors the paint slots', () => {
 const passed = results.filter(r => r.ok).length
 const banner = document.getElementById('banner')
 banner.textContent = passed === results.length
-  ? `PASS — ${passed}/${results.length}`
-  : `FAIL — ${passed}/${results.length}`
+  ? `PASS: ${passed}/${results.length}`
+  : `FAIL: ${passed}/${results.length}`
 banner.className = passed === results.length ? 'pass' : 'fail'
-document.title = `largen conformance — ${passed}/${results.length}`
+document.title = `largen conformance: ${passed}/${results.length}`
 document.getElementById('ua').textContent = navigator.userAgent
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')

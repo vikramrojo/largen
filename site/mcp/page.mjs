@@ -36,14 +36,20 @@ export function inline(text) {
 }
 
 const NAV = [
-  ['/docs/contract.html', 'contract'],
-  ['/docs/axes.html', 'axes'],
-  ['/docs/authoring.html', 'authoring'],
-  ['/docs/components.html', 'components'],
-  ['/docs/mcp.html', 'mcp'],
-  ['/docs/migrating.html', 'migrating'],
+  ['/docs/contract', 'contract'],
+  ['/docs/authoring', 'authoring'],
+  ['/docs/migrating', 'migrating'],
   ['/play', 'play'],
 ]
+
+/* Routes that merged into other pages. The server 301s these, in both the
+   clean and .html spellings; `largen pages` asserts each target anchor exists
+   in the built page, so a heading rename cannot silently strand old links. */
+export const MOVED = {
+  '/docs/axes': '/docs/contract#the-axes',
+  '/docs/components': '/docs/contract#reference-components',
+  '/docs/mcp': '/docs/authoring#the-mcp-server',
+}
 
 export function page({ title, description, current, body, version }) {
   const nav = NAV.map(([href, label]) =>
@@ -82,7 +88,7 @@ ${body}
 </main>
 
 <footer class="site-footer">
-  <span>largen ${esc(version)} — a property algebra for CSS. MIT.</span>
+  <span>largen ${esc(version)} · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

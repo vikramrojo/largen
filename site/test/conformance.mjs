@@ -72,6 +72,8 @@ const unescape = (s) => s
 async function readResults() {
   const { stdout } = await run(CHROME, [
     '--headless', '--disable-gpu', '--virtual-time-budget=6000', '--dump-dom',
+    /* This harness serves raw repository files, not the site's routes, so it
+       names the file. The clean /demo/conformance URL is the site server's. */
     `http://127.0.0.1:${port}/demo/conformance.html`,
   ], { timeout: 60_000, maxBuffer: 32 * 1024 * 1024 })
   const m = stdout.match(/<pre id="json"[^>]*>([\s\S]*?)<\/pre>/)

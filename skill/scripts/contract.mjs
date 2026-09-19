@@ -55,8 +55,6 @@ function skillMarkdown(c) {
   L.push('## The rules', '')
   c.rules.forEach((r, i) => L.push(wrap(`**${i + 1}. ${r.title}**`), wrap(r.why), ''))
 
-  L.push('## The paint rule', '', '```css', c.paint.rule, '```', '', wrap(c.paint.why), '')
-
   L.push('## The slots', '', wrap('`' + c.slots.fixed.join(' ') + '`'), '', wrap(c.slots.why), '',
     'Registered exactly as follows:', '', '```css', c.slots.registrations.join('\n'), '```', '',
     wrap('**Inheriting, registered:** ' +
@@ -64,6 +62,8 @@ function skillMarkdown(c) {
     wrap('**Inheriting, unregistered:** ' +
       c.slots.inheriting.ambient.map((s) => '`' + s + '`').join(', ') + '.'), '',
     wrap(c.slots.inheriting.why), '')
+
+  L.push('## The paint rule', '', '```css', c.paint.rule, '```', '', wrap(c.paint.why), '')
 
   L.push('## The axes', '', '| axis | attribute | values | inherits |', '|---|---|---|---|')
   for (const [name, a] of Object.entries(c.axes)) {
@@ -73,7 +73,7 @@ function skillMarkdown(c) {
     L.push(`| ${name} | ${attr} | ${vals} | ${inh} |`)
   }
   L.push('')
-  for (const [name, a] of Object.entries(c.axes)) L.push(wrap(`**${name}** — ${a.why}`), '')
+  for (const [name, a] of Object.entries(c.axes)) L.push(wrap(`**${name}.** ${a.why}`), '')
 
   L.push('## When it goes wrong', '')
   for (const f of c.failureModes) {
@@ -93,7 +93,7 @@ function skillMarkdown(c) {
 
   L.push('## Composing a page', '')
   L.push(wrap('The rules above say what largen guarantees and how it fails. This is ' +
-    'the other half — a page built to the rules alone comes out correct and plain.'), '')
+    'the other half. A page built to the rules alone comes out correct and plain.'), '')
   for (const part of Object.values(c.composition)) {
     L.push(wrap(`**${part.title}**`), '')
     for (const para of part.body.split('\n\n')) {
@@ -126,15 +126,15 @@ function llmsTxt(c) {
     'authors its own components on top of them. There is no build step.', '')
   L.push('## Start here', '')
   L.push('- [The whole contract, inline](https://largen.dev/llms-compact.txt): everything below in one file, sized for a prompt.')
-  L.push('- [MCP server](https://largen.dev/docs/mcp.html): `claude mcp add largen --transport http https://largen.dev/api/mcp`')
+  L.push('- [MCP server](https://largen.dev/docs/authoring): `claude mcp add largen --transport http https://largen.dev/api/mcp`')
   L.push('')
   L.push('## Documentation', '')
-  L.push('- [The contract](https://largen.dev/docs/contract.html): slots, layers, and the rules for authoring a component.')
-  L.push('- [The axes](https://largen.dev/docs/axes.html): tone, variant, size and state.')
-  L.push('- [Authoring](https://largen.dev/docs/authoring.html): writing a component, and how it fails.')
+  L.push('- [The contract](https://largen.dev/docs/contract): slots, layers, and the rules for authoring a component.')
+  L.push('- [The axes](https://largen.dev/docs/contract#the-axes): tone, variant, size and state.')
+  L.push('- [Authoring](https://largen.dev/docs/authoring): writing a component, and how it fails.')
   L.push('- [Composing](https://largen.dev/llms-compact.txt): space, elevation, and what a slot cannot ' +
-    'express — `get_contract` section "composition".')
-  L.push('- [Components](https://largen.dev/docs/components.html): the optional reference set, to copy or ignore.')
+    'express. `get_contract` section "composition".')
+  L.push('- [Components](https://largen.dev/docs/contract#reference-components): the optional reference set, to copy or ignore.')
   L.push('')
   L.push('## The one rule to know', '')
   L.push(wrap(c.rules[0].why), '')
@@ -152,14 +152,12 @@ function llmsTxt(c) {
    should need nothing else to author a correct component. */
 function llmsCompact(c) {
   const L = []
-  L.push(`# largen ${c.version} — the complete authoring contract`, '')
+  L.push(`# largen ${c.version}: the complete authoring contract`, '')
   L.push(c.overview.tagline, '')
   L.push(c.overview.model, '', wrap(c.overview.why), '')
 
   L.push('## Writing a component', '', c.overview.example.css, '',
     c.overview.example.html, '', wrap(c.overview.example.why), '')
-
-  L.push('## The paint rule', '', c.paint.rule, '', wrap(c.paint.why), '')
 
   L.push('## Slots', '', wrap(c.slots.fixed.join(' ')), '', wrap(c.slots.why), '',
     c.slots.registrations.join('\n'), '',
@@ -167,11 +165,13 @@ function llmsCompact(c) {
     wrap('Inheriting, unregistered: ' + c.slots.inheriting.ambient.join(' ')), '',
     wrap(c.slots.inheriting.why), '')
 
+  L.push('## The paint rule', '', c.paint.rule, '', wrap(c.paint.why), '')
+
   L.push('## Axes', '')
   for (const [name, a] of Object.entries(c.axes)) {
     const attr = a.attribute ?? '(DOM state)'
     const inh = a.inherits === null ? 'from the DOM' : a.inherits ? 'inherits' : 'does not inherit'
-    L.push(`${name} — ${attr} — ${inh}`, wrap(`values: ${a.values.join(' ')}`, 80, '  '),
+    L.push(`${name}: ${attr}, ${inh}`, wrap(`values: ${a.values.join(' ')}`, 80, '  '),
       wrap(a.why, 80, '  '), '')
   }
 
@@ -194,7 +194,7 @@ function llmsCompact(c) {
    * page, all generated from the same source, and the pointer below says so. */
   L.push('## How it fails', '')
   L.push(wrap('Symptom and fix. For why, fetch `get_contract` with section ' +
-    '"failureModes", or read https://largen.dev/docs/authoring.html'), '')
+    '"failureModes", or read https://largen.dev/docs/authoring'), '')
   for (const f of c.failureModes) {
     L.push(wrap(`SYMPTOM  ${f.symptom}`), wrap(`FIX      ${f.fix}`), '')
   }
@@ -230,7 +230,7 @@ function llmsCompact(c) {
   for (const n of c.notes) L.push(wrap(`- ${n}`), '')
   L.push('')
   L.push('## Commands', '')
-  for (const x of c.commands.list) L.push(`${x.command} — ${x.does}`)
+  for (const x of c.commands.list) L.push(`${x.command}   # ${x.does}`)
   L.push('', wrap(c.commands.caveat))
   return L.join('\n').replace(/\n{3,}/g, '\n\n') + '\n'
 }
@@ -239,156 +239,6 @@ const write = (rel, body) => {
   mkdirSync(dirname(at(rel)), { recursive: true })
   writeFileSync(at(rel), body)
   return body.length
-}
-
-/* --- The contract-derived documentation pages ----------------------------
- *
- * contract.html, axes.html and authoring.html present the contract, so the
- * authoring-contract spec requires them to be generated from it rather than
- * hand-maintained alongside it. The other pages are hand-written: they are
- * about the project, not the contract, and nothing generates them.
- *
- * This is still a build-free site. The output is static HTML committed to the
- * repository and served straight off disk — regenerating it is the same kind of
- * optional dev-time command as `largen build`, not a step between a request and
- * a response.
- */
-
-/* Exported so the sitemap can list these without a second hand-maintained list of
-   the same paths. Two lists of the same thing is how the site came to advertise a
-   version it had not shipped for three releases. */
-export function contractPages(c, page, inline, esc) {
-  const specRow = (name, note) =>
-    `  <div class="spec-row"><span class="spec-name">${esc(name)}</span>` +
-    `<span class="spec-note">${note ? inline(note) : ''}</span></div>`
-
-  const contractBody = [
-    '<div class="stack" style="--gap:.4rem">',
-    '  <h1 class="page-title">The contract</h1>',
-    `  <p class="page-desc">${c.slots.fixed.length} slots, one universal paint rule, and one rule about`,
-    '  layers that explains most of what goes wrong.</p>',
-    '</div>',
-    '',
-    '<section class="stack" style="--gap:.75rem">',
-    '  <h2 class="section-title">The model</h2>',
-    `  <pre class="code">${esc(c.overview.model)}</pre>`,
-    `  <p class="spec-note">${inline(c.overview.why)}</p>`,
-    '</section>',
-    '',
-    '<section class="stack" style="--gap:.75rem">',
-    '  <h2 class="section-title">The paint rule</h2>',
-    `  <pre class="code">${esc(c.paint.rule)}</pre>`,
-    `  <p class="spec-note">${inline(c.paint.why)}</p>`,
-    '</section>',
-    '',
-    '<section class="stack" style="--gap:.5rem">',
-    '  <h2 class="section-title">The slots</h2>',
-    `  <p class="spec-note">${inline(c.slots.why)}</p>`,
-    '  <div class="stack" style="--gap:0">',
-    ...c.slots.fixed.map((s) => specRow(s, 'registered `inherits: false`, no `initial-value`')),
-    '  </div>',
-    `  <pre class="code">${esc(c.slots.registrations.join('\n'))}</pre>`,
-    '</section>',
-    '',
-    '<section class="stack" style="--gap:.5rem">',
-    '  <h2 class="section-title">What inherits, and how</h2>',
-    `  <p class="spec-note">${inline(c.slots.inheriting.why)}</p>`,
-    '  <div class="stack" style="--gap:0">',
-    ...c.slots.inheriting.registered.map((s) => specRow(s, 'registered `inherits: true` — type-checked, animatable')),
-    ...c.slots.inheriting.ambient.map((s) => specRow(s, 'not registered — inherits because that is the default')),
-    '  </div>',
-    '</section>',
-    '',
-    '<section class="stack" style="--gap:.5rem">',
-    '  <h2 class="section-title">Layer order</h2>',
-    `  <pre class="code">${esc(c.layers.order.join('\n  < '))}</pre>`,
-    `  <p class="spec-note">${inline(c.layers.why)}</p>`,
-    '</section>',
-  ].join('\n')
-
-  const axesBody = [
-    '<div class="stack" style="--gap:.4rem">',
-    '  <h1 class="page-title">The axes</h1>',
-    '  <p class="page-desc">Four axes. A component mentions none of them and gets all',
-    '  of them.</p>',
-    '</div>',
-    ...Object.entries(c.axes).flatMap(([name, a]) => [
-      '',
-      '<section class="stack" style="--gap:.6rem">',
-      `  <h2 class="section-title">${esc(name)}</h2>`,
-      '  <div class="stack" style="--gap:0">',
-      specRow('attribute', a.attribute ? '`' + a.attribute + '`' : 'none — it comes from the DOM'),
-      specRow('inherits', a.inherits === null ? 'from the DOM' : a.inherits ? 'yes' : 'no'),
-      specRow('values', a.values.map((v) => '`' + v + '`').join(' · ')),
-      '  </div>',
-      `  <p class="spec-note">${inline(a.why)}</p>`,
-      '</section>',
-    ]),
-  ].join('\n')
-
-  const authoringBody = [
-    '<div class="stack" style="--gap:.4rem">',
-    '  <h1 class="page-title">Authoring a component</h1>',
-    '  <p class="page-desc">Six rules, and the four ways it goes wrong when you break',
-    '  them.</p>',
-    '</div>',
-    '',
-    '<section class="stack" style="--gap:.75rem">',
-    '  <h2 class="section-title">A complete component</h2>',
-    `  <pre class="code">${esc(c.overview.example.css)}</pre>`,
-    `  <pre class="code">${esc(c.overview.example.html)}</pre>`,
-    `  <p class="spec-note">${inline(c.overview.example.why)}</p>`,
-    '</section>',
-    '',
-    '<section class="stack" style="--gap:.75rem">',
-    '  <h2 class="section-title">The rules</h2>',
-    ...c.rules.map((r, i) => [
-      '  <div class="rule">',
-      `    <span class="rule-title">${i + 1}. ${inline(r.title)}</span>`,
-      `    <p class="rule-why">${inline(r.why)}</p>`,
-      '  </div>',
-    ].join('\n')),
-    '</section>',
-    '',
-    '<section class="stack" style="--gap:.75rem">',
-    '  <h2 class="section-title">When it goes wrong</h2>',
-    '  <p class="spec-note">The first one is the one to memorise. It is the only failure',
-    '  in largen that looks like success.</p>',
-    ...c.failureModes.map((f, i) => [
-      `  <div class="failure" data-tone="${i === 0 ? 'danger' : 'warning'}">`,
-      `    <span class="failure-symptom">${inline(f.symptom)}</span>`,
-      `    <span class="failure-line"><strong>Cause</strong> — ${inline(f.cause)}</span>`,
-      `    <span class="failure-line"><strong>Fix</strong> — ${inline(f.fix)}</span>`,
-      `    <p class="failure-line">${inline(f.why)}</p>`,
-      '  </div>',
-    ].join('\n')),
-    '</section>',
-    '',
-    '<section class="stack" style="--gap:.5rem">',
-    '  <h2 class="section-title">Check what you wrote</h2>',
-    '  <p class="spec-note">Locally, <span class="tok">npx largen verify</span>. Over MCP,',
-    '  <span class="tok">check_component_css</span>. Both run the same rules from the same',
-    '  module, so they cannot disagree.</p>',
-    '  <p class="spec-note">Both are static. They have passed clean on visibly broken',
-    '  components before — render the result in a browser, in both themes.</p>',
-    '</section>',
-  ].join('\n')
-
-  const v = c.version
-  return {
-    'site/public/docs/contract.html': page({
-      title: 'The contract — largen', current: 'contract', version: v,
-      description: `largen's ${c.slots.fixed.length} slots, the layer rule, and the universal paint rule.`,
-      body: contractBody }),
-    'site/public/docs/axes.html': page({
-      title: 'The axes — largen', current: 'axes', version: v,
-      description: 'tone, variant, size and state — the four axes a largen component gets for free.',
-      body: axesBody }),
-    'site/public/docs/authoring.html': page({
-      title: 'Authoring — largen', current: 'authoring', version: v,
-      description: 'How to write a largen component, and the four ways it goes wrong.',
-      body: authoringBody }),
-  }
 }
 
 export async function contract(args = []) {
@@ -407,9 +257,6 @@ export async function contract(args = []) {
   const compact = llmsCompact(c)
   const { renderReleases } = await import('./releases.mjs')
   const releaseLog = renderReleases()
-
-  const { page, inline, esc } = await import('../../site/mcp/page.mjs')
-  const pages = contractPages(c, page, inline, esc)
 
   /* ONE list, used by both the check and the write.
    *
@@ -430,7 +277,6 @@ export async function contract(args = []) {
     ['site/public/llms.txt', index],
     ['site/public/llms-compact.txt', compact],
     ['RELEASES.md', releaseLog],
-    ...Object.entries(pages),
   ]
 
   if (check) {
@@ -459,7 +305,6 @@ export async function contract(args = []) {
   console.log(`  skill/SKILL.md              ${kb(a).padStart(9)}`)
   console.log(`  site/public/llms.txt        ${kb(b).padStart(9)}`)
   console.log(`  site/public/llms-compact.txt${kb(d).padStart(9)}   ~${Math.ceil(d / 4)} tokens`)
-  for (const path of Object.keys(pages)) console.log(`  ${path}`)
 
   /* The compact file is meant to fit comfortably in a prompt. If it stops
      fitting, that is evidence the contract has outgrown what the design claims,

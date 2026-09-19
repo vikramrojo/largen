@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Playground — largen</title>
+<title>Playground · largen</title>
 <meta name="description" content="Render a largen spec in the browser. Shareable through the URL fragment, with nothing stored server-side.">
 <link rel="stylesheet" href="/largen.css">
 <link rel="stylesheet" href="/largen.components.css">
@@ -15,12 +15,9 @@
 <header class="site-header">
   <a class="wordmark" href="/">largen</a>
   <nav class="cluster" style="--gap:1rem">
-        <a class="nav-link" href="/docs/contract.html">contract</a>
-        <a class="nav-link" href="/docs/axes.html">axes</a>
-        <a class="nav-link" href="/docs/authoring.html">authoring</a>
-        <a class="nav-link" href="/docs/components.html">components</a>
-        <a class="nav-link" href="/docs/mcp.html">mcp</a>
-        <a class="nav-link" href="/docs/migrating.html">migrating</a>
+        <a class="nav-link" href="/docs/contract">contract</a>
+        <a class="nav-link" href="/docs/authoring">authoring</a>
+        <a class="nav-link" href="/docs/migrating">migrating</a>
         <a class="nav-link" href="/play" aria-current="page">play</a>
     <label class="theme-toggle">
       <input type="checkbox" hidden onchange="
@@ -32,14 +29,15 @@
 </header>
 
 <main class="page">
-<div class="stack" style="--gap:.4rem">
-    <h1 class="page-title">Playground</h1>
-    <p class="page-desc">Edit a spec and watch it validate and render. The validator and
-    the renderer here are the same modules the MCP server imports — not a reimplementation
-    of them — so this page cannot disagree with <span class="tok">validate_spec</span>.</p>
-  </div>
-  
-  <div class="play-grid">
+<div class="doc">
+<h1 class="page-title" id="playground">Playground</h1>
+
+<p class="doc-p">Edit a spec and watch it validate and render. The validator and the renderer here are the same modules the MCP server imports, not a reimplementation of them, so this page cannot disagree with <span class="tok">validate_spec</span>.</p>
+
+<p class="doc-p">Specs validate against largen's <strong>reference components</strong>, the same set the MCP tools fall back to when you pass no manifest of your own. A spec may only name components from that list; anything else is rejected before it renders.</p>
+</div>
+
+<div class="play-grid">
     <div class="stack" style="--gap:.5rem">
       <label class="spec-note" for="spec">Spec</label>
       <textarea class="play-editor" id="spec" spellcheck="false">{
@@ -79,47 +77,47 @@
       <p class="spec-note">The share link carries the spec in the URL fragment, so it
       never reaches the server and needs nothing stored to work.</p>
     </div>
-  
+
     <div class="stack" style="--gap:.5rem">
       <span class="spec-note">Result</span>
       <div class="play-verdict" id="verdict" data-tone="neutral">…</div>
       <div class="play-stage" id="stage"></div>
     </div>
   </div>
-  
+
   <script type="module">
   import { createValidator, manifest } from '/genai/validate.js'
   import { renderNode } from '/site-render.mjs'
-  
+
   const $ = (id) => document.getElementById(id)
   const editor = $('spec'), verdict = $('verdict'), stage = $('stage')
   const { safeValidateNode } = createValidator(manifest)
-  
+
   function run() {
     let spec
     try { spec = JSON.parse(editor.value) }
     catch (e) {
       verdict.dataset.tone = 'danger'
-      verdict.textContent = 'Not JSON — ' + e.message
+      verdict.textContent = 'Not JSON: ' + e.message
       stage.innerHTML = ''
       return
     }
-  
+
     const result = safeValidateNode(spec)
     if (!result.ok) {
       /* An invalid spec shows its errors and renders nothing. Partial output would
          be a picture of something the validator just refused to allow. */
       verdict.dataset.tone = 'danger'
-      verdict.textContent = 'Rejected — ' + result.error
+      verdict.textContent = 'Rejected: ' + result.error
       stage.innerHTML = ''
       return
     }
-  
+
     verdict.dataset.tone = 'success'
     verdict.textContent = 'Valid.'
     stage.innerHTML = renderNode(result.value)
   }
-  
+
   /* A spec in the fragment renders with no server round-trip, which is what makes a
      preview shareable without anything being stored anywhere. */
   function fromFragment() {
@@ -130,7 +128,7 @@
       return true
     } catch (e) { return false }
   }
-  
+
   $('share').addEventListener('click', () => {
     try {
       const packed = btoa(unescape(encodeURIComponent(JSON.stringify(JSON.parse(editor.value)))))
@@ -141,16 +139,84 @@
       setTimeout(() => { $('shared').textContent = '' }, 2000)
     } catch (e) { $('shared').textContent = 'fix the JSON first' }
   })
-  
+
   editor.addEventListener('input', run)
   window.addEventListener('hashchange', () => { fromFragment(); run() })
   fromFragment()
   run()
   </script>
+
+<div class="doc">
+<h2 class="section-title" id="generate-a-spec-with-claude">Generate a spec with Claude</h2>
+
+<p class="doc-p">Copy the prompt below into Claude, replace the <span class="tok">[instruction]:</span> line with what you want built, and paste the JSON it returns into the editor above.</p>
+</div>
+
+<pre class="code">[instruction]: &lt;what you want built — e.g. "a revenue card with a stat and a warning"&gt;
+
+# Approved UI components
+
+Render UI by naming a component from this list. Never emit HTML, CSS, class
+names or colours — choose a `component`, and optionally a `tone`, `variant`
+and `size`. Anything outside these lists is rejected before it reaches the page.
+
+**tone** — Semantic colour. Inherits — set it on a container to re-tone everything inside.
+
+`primary` · `secondary` · `success` · `info` · `warning` · `danger` · `neutral`
+
+**variant** — How the tone is applied as a fill. Derived from the tone, never a separate colour. Applies to the element it is on.
+
+`solid` · `soft` · `outline` · `ghost`
+
+**size** — One multiplier scaling type, padding and gap. Inherits.
+
+`xs` · `sm` · `md` · `lg` · `xl`
+
+## Components
+
+- `alert` — A message reporting a state. Use with a tone.
+- `badge` — A short inline label or count.
+- `dot` — A bare status dot. No content.
+- `spinner` — An indeterminate activity indicator.
+- `skeleton` — A loading placeholder occupying a future element's box.
+- `card` — A container grouping related content on a surface.
+- `panel` — A surface with no border.
+- `divider` — A labelled or bare horizontal rule.
+- `stat` — A figure with a label. Wraps stat-label and stat-value.
+- `stat-label` — The label above a figure.
+- `stat-value` — The figure itself. Renders tabular-nums.
+- `menu` — A vertical list of navigation or action items.
+- `crumbs` — An ancestry trail.
+- `steps` — A numbered sequence. Mark position with aria-current.
+- `bubble` — A conversation bubble. data-side="end" for the user's own turn.
+- `avatar` — A person's image or initials.
+- `tip` — Wraps a child; hint text goes in data-tip.
+- `prose` — Long-form rendered text. Wrap markdown output in this.
+- `stack` — Vertical layout. Set --gap.
+- `row` — Horizontal layout, no wrap.
+- `cluster` — Horizontal layout that wraps. Tag lists, icon groups.
+- `grid` — As many columns as fit at --min-item.
+- `center` — Constrained measure, centred.
+- `field` — Groups a label, a control and its hint or error.
+- `field-label` — The label above a form control.
+- `field-hint` — Guidance under a form control.
+- `field-error` — A validation message under a form control. Carries the danger tone itself.
+- `table-wrap` — A scroll container for a wide table. The table itself is already themed.
+- `toolbar` — A wrapping row of controls.
+- `empty` — An empty state. Wraps empty-title and empty-note.
+- `empty-title` — The headline of an empty state.
+- `empty-note` — The explanation under an empty state's headline.
+
+## Notes
+
+- State (disabled, invalid, checked, read-only) is NOT settable here. It comes from the DOM and from real HTML attributes.
+- There is no field for a colour, a class, or inline CSS. The safety property is structural, not defensive: the worst a compromised model can do is pick the wrong approved component.
+
+Return only the JSON spec, nothing else.</pre>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.2 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.2 · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>
