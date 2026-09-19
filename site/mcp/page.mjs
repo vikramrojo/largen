@@ -37,13 +37,19 @@ export function inline(text) {
 
 const NAV = [
   ['/docs/contract', 'contract'],
-  ['/docs/axes', 'axes'],
   ['/docs/authoring', 'authoring'],
-  ['/docs/components', 'components'],
-  ['/docs/mcp', 'mcp'],
   ['/docs/migrating', 'migrating'],
   ['/play', 'play'],
 ]
+
+/* Routes that merged into other pages. The server 301s these, in both the
+   clean and .html spellings; `largen pages` asserts each target anchor exists
+   in the built page, so a heading rename cannot silently strand old links. */
+export const MOVED = {
+  '/docs/axes': '/docs/contract#the-axes',
+  '/docs/components': '/docs/contract#reference-components',
+  '/docs/mcp': '/docs/authoring#the-mcp-server',
+}
 
 export function page({ title, description, current, body, version }) {
   const nav = NAV.map(([href, label]) =>

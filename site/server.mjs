@@ -19,6 +19,7 @@ import { dirname } from 'node:path'
 
 import { handleMcpRequest } from './mcp/server.mjs'
 import { Previews } from './mcp/previews.mjs'
+import { MOVED } from './mcp/page.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
@@ -267,7 +268,7 @@ const server = createServer(async (req, res) => {
        largen.dev without the server knowing which one answered. */
     const LINKS = [
       '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
-      '</docs/mcp>; rel="service-doc"; type="text/html"',
+      '</docs/authoring>; rel="service-doc"; type="text/html"',
       '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
       '</llms-compact.txt>; rel="describedby"; type="text/plain"',
       '</sitemap.xml>; rel="sitemap"; type="application/xml"',
@@ -288,6 +289,12 @@ const server = createServer(async (req, res) => {
     }
 
     /* --- Static site --------------------------------------------------------- */
+
+    /* Pages that merged into other pages 301 to their new home, in both
+       spellings. This has to come before the generic .html redirect: the old
+       files no longer exist, so nothing below would answer for them. */
+    const moved = MOVED[path] ?? MOVED[path.replace(/\.html$/, '')]
+    if (moved) return send(res, 301, '', { location: moved })
 
     /* Clean URLs. A request for /docs/contract.html answers 301 to
        /docs/contract, which the extensionless fallback below serves from the

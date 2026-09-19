@@ -11,10 +11,7 @@ const OUT = process.env.SHOTS ?? '/tmp/largen-shots'
 const PAGES = [
   ['index', '/'],
   ['contract', '/docs/contract'],
-  ['axes', '/docs/axes'],
   ['authoring', '/docs/authoring'],
-  ['components', '/docs/components'],
-  ['mcp', '/docs/mcp'],
   ['play', '/play'],
   ['migrating', '/docs/migrating'],
   ['404', '/nope'],
