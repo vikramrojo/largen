@@ -1,6 +1,6 @@
 # largen
 
-> A property algebra for CSS. Plain CSS — no build step, no preprocessor, no plugin.
+> A property algebra for CSS. Plain CSS, with no build step, no preprocessor and no plugin.
 
 largen is a property algebra rather than a component catalog. The library
 supplies 14 slots, four axes and one universal paint rule; each project
@@ -16,13 +16,13 @@ authors its own components on top of them. There is no build step.
 - [The contract](https://largen.dev/docs/contract.html): slots, layers, and the rules for authoring a component.
 - [The axes](https://largen.dev/docs/axes.html): tone, variant, size and state.
 - [Authoring](https://largen.dev/docs/authoring.html): writing a component, and how it fails.
-- [Composing](https://largen.dev/llms-compact.txt): space, elevation, and what a slot cannot express — `get_contract` section "composition".
+- [Composing](https://largen.dev/llms-compact.txt): space, elevation, and what a slot cannot express. `get_contract` section "composition".
 - [Components](https://largen.dev/docs/components.html): the optional reference set, to copy or ignore.
 
 ## The one rule to know
 
 Unlayered CSS beats every layer. That is what makes overriding largen work
-without `!important` — and it is exactly what breaks an unlayered *component*:
+without `!important`. It is also exactly what breaks an unlayered *component*:
 it outranks `largen.modifiers`, so `data-variant` silently stops applying while
 tone and size keep working. If a variant "isn't applying", check this before
 anything else.

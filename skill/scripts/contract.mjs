@@ -55,8 +55,6 @@ function skillMarkdown(c) {
   L.push('## The rules', '')
   c.rules.forEach((r, i) => L.push(wrap(`**${i + 1}. ${r.title}**`), wrap(r.why), ''))
 
-  L.push('## The paint rule', '', '```css', c.paint.rule, '```', '', wrap(c.paint.why), '')
-
   L.push('## The slots', '', wrap('`' + c.slots.fixed.join(' ') + '`'), '', wrap(c.slots.why), '',
     'Registered exactly as follows:', '', '```css', c.slots.registrations.join('\n'), '```', '',
     wrap('**Inheriting, registered:** ' +
@@ -64,6 +62,8 @@ function skillMarkdown(c) {
     wrap('**Inheriting, unregistered:** ' +
       c.slots.inheriting.ambient.map((s) => '`' + s + '`').join(', ') + '.'), '',
     wrap(c.slots.inheriting.why), '')
+
+  L.push('## The paint rule', '', '```css', c.paint.rule, '```', '', wrap(c.paint.why), '')
 
   L.push('## The axes', '', '| axis | attribute | values | inherits |', '|---|---|---|---|')
   for (const [name, a] of Object.entries(c.axes)) {
@@ -73,7 +73,7 @@ function skillMarkdown(c) {
     L.push(`| ${name} | ${attr} | ${vals} | ${inh} |`)
   }
   L.push('')
-  for (const [name, a] of Object.entries(c.axes)) L.push(wrap(`**${name}** — ${a.why}`), '')
+  for (const [name, a] of Object.entries(c.axes)) L.push(wrap(`**${name}.** ${a.why}`), '')
 
   L.push('## When it goes wrong', '')
   for (const f of c.failureModes) {
@@ -93,7 +93,7 @@ function skillMarkdown(c) {
 
   L.push('## Composing a page', '')
   L.push(wrap('The rules above say what largen guarantees and how it fails. This is ' +
-    'the other half — a page built to the rules alone comes out correct and plain.'), '')
+    'the other half. A page built to the rules alone comes out correct and plain.'), '')
   for (const part of Object.values(c.composition)) {
     L.push(wrap(`**${part.title}**`), '')
     for (const para of part.body.split('\n\n')) {
@@ -133,7 +133,7 @@ function llmsTxt(c) {
   L.push('- [The axes](https://largen.dev/docs/axes.html): tone, variant, size and state.')
   L.push('- [Authoring](https://largen.dev/docs/authoring.html): writing a component, and how it fails.')
   L.push('- [Composing](https://largen.dev/llms-compact.txt): space, elevation, and what a slot cannot ' +
-    'express — `get_contract` section "composition".')
+    'express. `get_contract` section "composition".')
   L.push('- [Components](https://largen.dev/docs/components.html): the optional reference set, to copy or ignore.')
   L.push('')
   L.push('## The one rule to know', '')
@@ -152,14 +152,12 @@ function llmsTxt(c) {
    should need nothing else to author a correct component. */
 function llmsCompact(c) {
   const L = []
-  L.push(`# largen ${c.version} — the complete authoring contract`, '')
+  L.push(`# largen ${c.version}: the complete authoring contract`, '')
   L.push(c.overview.tagline, '')
   L.push(c.overview.model, '', wrap(c.overview.why), '')
 
   L.push('## Writing a component', '', c.overview.example.css, '',
     c.overview.example.html, '', wrap(c.overview.example.why), '')
-
-  L.push('## The paint rule', '', c.paint.rule, '', wrap(c.paint.why), '')
 
   L.push('## Slots', '', wrap(c.slots.fixed.join(' ')), '', wrap(c.slots.why), '',
     c.slots.registrations.join('\n'), '',
@@ -167,11 +165,13 @@ function llmsCompact(c) {
     wrap('Inheriting, unregistered: ' + c.slots.inheriting.ambient.join(' ')), '',
     wrap(c.slots.inheriting.why), '')
 
+  L.push('## The paint rule', '', c.paint.rule, '', wrap(c.paint.why), '')
+
   L.push('## Axes', '')
   for (const [name, a] of Object.entries(c.axes)) {
     const attr = a.attribute ?? '(DOM state)'
     const inh = a.inherits === null ? 'from the DOM' : a.inherits ? 'inherits' : 'does not inherit'
-    L.push(`${name} — ${attr} — ${inh}`, wrap(`values: ${a.values.join(' ')}`, 80, '  '),
+    L.push(`${name}: ${attr}, ${inh}`, wrap(`values: ${a.values.join(' ')}`, 80, '  '),
       wrap(a.why, 80, '  '), '')
   }
 
@@ -230,7 +230,7 @@ function llmsCompact(c) {
   for (const n of c.notes) L.push(wrap(`- ${n}`), '')
   L.push('')
   L.push('## Commands', '')
-  for (const x of c.commands.list) L.push(`${x.command} — ${x.does}`)
+  for (const x of c.commands.list) L.push(`${x.command}   # ${x.does}`)
   L.push('', wrap(c.commands.caveat))
   return L.join('\n').replace(/\n{3,}/g, '\n\n') + '\n'
 }
@@ -275,12 +275,6 @@ export function contractPages(c, page, inline, esc) {
     `  <p class="spec-note">${inline(c.overview.why)}</p>`,
     '</section>',
     '',
-    '<section class="stack" style="--gap:.75rem">',
-    '  <h2 class="section-title">The paint rule</h2>',
-    `  <pre class="code">${esc(c.paint.rule)}</pre>`,
-    `  <p class="spec-note">${inline(c.paint.why)}</p>`,
-    '</section>',
-    '',
     '<section class="stack" style="--gap:.5rem">',
     '  <h2 class="section-title">The slots</h2>',
     `  <p class="spec-note">${inline(c.slots.why)}</p>`,
@@ -290,12 +284,18 @@ export function contractPages(c, page, inline, esc) {
     `  <pre class="code">${esc(c.slots.registrations.join('\n'))}</pre>`,
     '</section>',
     '',
+    '<section class="stack" style="--gap:.75rem">',
+    '  <h2 class="section-title">The paint rule</h2>',
+    `  <pre class="code">${esc(c.paint.rule)}</pre>`,
+    `  <p class="spec-note">${inline(c.paint.why)}</p>`,
+    '</section>',
+    '',
     '<section class="stack" style="--gap:.5rem">',
     '  <h2 class="section-title">What inherits, and how</h2>',
     `  <p class="spec-note">${inline(c.slots.inheriting.why)}</p>`,
     '  <div class="stack" style="--gap:0">',
-    ...c.slots.inheriting.registered.map((s) => specRow(s, 'registered `inherits: true` — type-checked, animatable')),
-    ...c.slots.inheriting.ambient.map((s) => specRow(s, 'not registered — inherits because that is the default')),
+    ...c.slots.inheriting.registered.map((s) => specRow(s, 'registered `inherits: true`, type-checked and animatable')),
+    ...c.slots.inheriting.ambient.map((s) => specRow(s, 'not registered, inherits because that is the default')),
     '  </div>',
     '</section>',
     '',
@@ -317,7 +317,7 @@ export function contractPages(c, page, inline, esc) {
       '<section class="stack" style="--gap:.6rem">',
       `  <h2 class="section-title">${esc(name)}</h2>`,
       '  <div class="stack" style="--gap:0">',
-      specRow('attribute', a.attribute ? '`' + a.attribute + '`' : 'none — it comes from the DOM'),
+      specRow('attribute', a.attribute ? '`' + a.attribute + '`' : 'none, it comes from the DOM'),
       specRow('inherits', a.inherits === null ? 'from the DOM' : a.inherits ? 'yes' : 'no'),
       specRow('values', a.values.map((v) => '`' + v + '`').join(' · ')),
       '  </div>',
@@ -357,8 +357,8 @@ export function contractPages(c, page, inline, esc) {
     ...c.failureModes.map((f, i) => [
       `  <div class="failure" data-tone="${i === 0 ? 'danger' : 'warning'}">`,
       `    <span class="failure-symptom">${inline(f.symptom)}</span>`,
-      `    <span class="failure-line"><strong>Cause</strong> — ${inline(f.cause)}</span>`,
-      `    <span class="failure-line"><strong>Fix</strong> — ${inline(f.fix)}</span>`,
+      `    <span class="failure-line"><strong>Cause</strong>: ${inline(f.cause)}</span>`,
+      `    <span class="failure-line"><strong>Fix</strong>: ${inline(f.fix)}</span>`,
       `    <p class="failure-line">${inline(f.why)}</p>`,
       '  </div>',
     ].join('\n')),
@@ -370,22 +370,22 @@ export function contractPages(c, page, inline, esc) {
     '  <span class="tok">check_component_css</span>. Both run the same rules from the same',
     '  module, so they cannot disagree.</p>',
     '  <p class="spec-note">Both are static. They have passed clean on visibly broken',
-    '  components before — render the result in a browser, in both themes.</p>',
+    '  components before. Render the result in a browser, in both themes.</p>',
     '</section>',
   ].join('\n')
 
   const v = c.version
   return {
     'site/public/docs/contract.html': page({
-      title: 'The contract — largen', current: 'contract', version: v,
+      title: 'The contract · largen', current: 'contract', version: v,
       description: `largen's ${c.slots.fixed.length} slots, the layer rule, and the universal paint rule.`,
       body: contractBody }),
     'site/public/docs/axes.html': page({
-      title: 'The axes — largen', current: 'axes', version: v,
-      description: 'tone, variant, size and state — the four axes a largen component gets for free.',
+      title: 'The axes · largen', current: 'axes', version: v,
+      description: 'tone, variant, size and state: the four axes a largen component gets for free.',
       body: axesBody }),
     'site/public/docs/authoring.html': page({
-      title: 'Authoring — largen', current: 'authoring', version: v,
+      title: 'Authoring · largen', current: 'authoring', version: v,
       description: 'How to write a largen component, and the four ways it goes wrong.',
       body: authoringBody }),
   }

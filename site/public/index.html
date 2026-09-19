@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>largen — a property algebra for CSS</title>
+<title>largen: a property algebra for CSS</title>
 <meta name="description" content="A property algebra for CSS. 14 slots, four axes, one paint rule, and components you write yourself. No build step.">
 <link rel="stylesheet" href="/largen.css">
 <link rel="stylesheet" href="/largen.components.css">
@@ -34,9 +34,9 @@
 <main class="page">
 <section class="hero">
     <h1 class="hero-title">A property algebra for CSS.</h1>
-    <p class="hero-lede">14 custom-property slots, four axes, one universal paint
-    rule — and the components are yours. Plain CSS: no build step, no preprocessor,
-    no plugin.</p>
+    <p class="hero-lede">14 custom-property slots, four axes, and one universal
+    paint rule. The components are yours to write. Plain CSS, with no build step,
+    no preprocessor and no plugin.</p>
     <div class="cluster" style="--gap:.6rem">
       <a class="pill" data-tone="primary" href="/docs/contract.html">Read the contract</a>
       <a class="pill" data-tone="neutral" href="/docs/mcp.html">MCP server</a>
@@ -61,17 +61,54 @@
       align-items: center;
     }
   }</pre>
-    <p class="spec-note">Seven tones, four variants, five sizes, every state and both
-    themes — none of which it mentions. Everything above the component row is already
-    solved, so the component is the only thing left to write.</p>
+    <p class="spec-note">It gets seven tones, four variants,
+    five sizes, every state and both themes, and it mentions none of them.
+    Everything above the component row is already solved, so the component is the only
+    thing left to write.</p>
   </section>
-  
+
+  <section class="stack" style="--gap:.75rem">
+    <h2 class="section-title">Slots, the mechanism</h2>
+    <p class="spec-note">Plain CSS decides a colour and applies it in the same rule, so
+    every change after that needs another rule that knows the component. With
+    seven tones, four variants and five sizes, that
+    is 140 combinations per component before hover and dark mode. A slot splits
+    deciding from applying.</p>
+    <pre class="code">.chip { --bg: var(--tone); }                     /* the component fills a blank */
+* { background-color: var(--bg, revert-layer); } /* one shared rule applies it  */
+[data-variant="outline"] { --bg: transparent; }  /* an axis changes the answer  */</pre>
+    <p class="spec-note">The outline rule knows nothing about chips, so it works on
+    every component, including ones not written yet. The cost of the system drops from
+    axes times components to axes plus components.</p>
+  </section>
+
+  <section class="stack" style="--gap:.75rem">
+    <h2 class="section-title">Four features make it hold</h2>
+    <p class="spec-note"><span class="tok">@property</span> registers each slot as
+    non-inheriting, so a slot stops at its element. A card's background stays on the
+    card.</p>
+    <p class="spec-note"><span class="tok">revert-layer</span> is the fallback when a
+    slot is unset, so an empty blank leaves the element as the browser drew it.</p>
+    <p class="spec-note"><span class="tok">@layer</span> keeps every largen rule in a
+    named layer, so your page CSS always beats largen without
+    <span class="tok">!important</span>.</p>
+    <p class="spec-note"><span class="tok">color-mix()</span> derives the soft, ink and
+    line shades from the one tone in scope, so dark mode needs no per-component
+    rules.</p>
+  </section>
+
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">It is not a catalog</h2>
     <p class="spec-note">Most CSS libraries ship components and ask you to configure
     them. largen ships the algebra underneath components and expects you to write your
-    own, named in your application's own language — <span class="tok">.entry-card</span>,
+    own, named in your application's own language: <span class="tok">.entry-card</span>,
     not <span class="tok">.card-lg-bordered</span>.</p>
+    <p class="spec-note">Each tier is paired with a check. A component that sets a
+    colour literal, reaches past the tone axis, sets an unregistered slot or forgets
+    its layer fails <span class="tok">largen verify</span> and
+    <span class="tok">check_component_css</span>, and a spec that names an unapproved
+    component fails <span class="tok">validate_spec</span>. With one legal way to
+    colour a thing, anything hand-set is easy for a machine to spot.</p>
     <p class="spec-note">That premise shapes the <a href="/docs/mcp.html">MCP server</a>
     too. It cannot know your components, so every tool takes an optional manifest of
     them and answers in your vocabulary rather than largen's.</p>
@@ -86,7 +123,7 @@
     </a>
     <a class="doc-card" href="/docs/axes.html">
       <span class="doc-card-title">The axes</span>
-      <span class="doc-card-desc">tone, variant, size, state — and why only two of them inherit.</span>
+      <span class="doc-card-desc">tone, variant, size, state, and why only two of them inherit.</span>
     </a>
     <a class="doc-card" href="/docs/authoring.html">
       <span class="doc-card-title">Authoring</span>
@@ -111,24 +148,24 @@
     <h2 class="section-title">Use it</h2>
     <pre class="code">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css"&gt;
   
-  # or pinned — a published version is immutable:
+  # or pinned. A published version is immutable:
   &lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.5.2/dist/largen.css"&gt;
   
   # or install it:
   npm install largen</pre>
     <p class="spec-note">For agents: <a href="/llms-compact.txt">/llms-compact.txt</a>
-    carries the whole contract inline, about 5,800 tokens.</p>
+    carries the whole contract inline, about 5,900 tokens.</p>
   </section>
   
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">Evidence, not a showcase</h2>
     <p class="spec-note">Two pages that run in your browser and report what they find.
-    Neither is a gallery — they exist because the claims below them are the ones no
+    Neither is a gallery. They exist because the claims below them are the ones no
     static check can settle.</p>
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
     <a class="doc-card" href="/demo/conformance.html">
       <span class="doc-card-title">Conformance</span>
-      <span class="doc-card-desc">The mechanism everything hangs on — <span class="tok">revert-layer</span> against a guaranteed-invalid slot — and the @property fallback that preserves it in Firefox 113–127 and Safari 16.2–16.3. 13 checks. Open it in Safari, Firefox and Chrome — nothing static can answer this.</span>
+      <span class="doc-card-desc">The mechanism everything hangs on, <span class="tok">revert-layer</span> against a guaranteed-invalid slot, and the @property fallback that preserves it in Firefox 113–127 and Safari 16.2–16.3. 13 checks. Open it in Safari, Firefox and Chrome; nothing static can answer this.</span>
     </a>
     <a class="doc-card" href="/demo/tests.html">
       <span class="doc-card-title">The load-bearing tests</span>
@@ -139,16 +176,16 @@
   
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Releases</h2>
-    <p class="spec-note"><strong>0.5.2</strong> — The @property fallback. A new lowest-sorting layer, <code>largen.fallback</code>, preserves the guaranteed-invalid mechanism in the two engine ranges that have everything largen needs except <code>@property</code> — Firefox 113–127 (including ESR 115) and Safari 16.2–16.3. First CSS change since 0.4.0; the build id moves off <code>5445bbba</code>.</p>
+    <p class="spec-note"><strong>0.5.2</strong>: The @property fallback. A new lowest-sorting layer, <code>largen.fallback</code>, preserves the guaranteed-invalid mechanism in the two engine ranges that have everything largen needs except <code>@property</code>: Firefox 113–127 (including ESR 115) and Safari 16.2–16.3. First CSS change since 0.4.0; the build id moves off <code>5445bbba</code>.</p>
     <p class="spec-note">Every entry in the log is checked against the bytes that
-    version actually shipped, so it is a claim with a witness rather than a note
-    written from memory. <a href="https://github.com/vikramrojo/largen/blob/main/RELEASES.md">The
+    version actually shipped.
+    <a href="https://github.com/vikramrojo/largen/blob/main/RELEASES.md">The
     full log</a> · <a href="https://www.npmjs.com/package/largen">npm</a></p>
   </section>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.2 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.2 · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

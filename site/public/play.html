@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Playground — largen</title>
+<title>Playground · largen</title>
 <meta name="description" content="Render a largen spec in the browser. Shareable through the URL fragment, with nothing stored server-side.">
 <link rel="stylesheet" href="/largen.css">
 <link rel="stylesheet" href="/largen.components.css">
@@ -35,8 +35,8 @@
 <div class="stack" style="--gap:.4rem">
     <h1 class="page-title">Playground</h1>
     <p class="page-desc">Edit a spec and watch it validate and render. The validator and
-    the renderer here are the same modules the MCP server imports — not a reimplementation
-    of them — so this page cannot disagree with <span class="tok">validate_spec</span>.</p>
+    the renderer here are the same modules the MCP server imports, not a reimplementation
+    of them, so this page cannot disagree with <span class="tok">validate_spec</span>.</p>
   </div>
   
   <div class="play-grid">
@@ -100,7 +100,7 @@
     try { spec = JSON.parse(editor.value) }
     catch (e) {
       verdict.dataset.tone = 'danger'
-      verdict.textContent = 'Not JSON — ' + e.message
+      verdict.textContent = 'Not JSON: ' + e.message
       stage.innerHTML = ''
       return
     }
@@ -110,7 +110,7 @@
       /* An invalid spec shows its errors and renders nothing. Partial output would
          be a picture of something the validator just refused to allow. */
       verdict.dataset.tone = 'danger'
-      verdict.textContent = 'Rejected — ' + result.error
+      verdict.textContent = 'Rejected: ' + result.error
       stage.innerHTML = ''
       return
     }
@@ -150,7 +150,7 @@
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.2 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.2 · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

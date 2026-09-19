@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>The contract — largen</title>
+<title>The contract · largen</title>
 <meta name="description" content="largen's 14 slots, the layer rule, and the universal paint rule.">
 <link rel="stylesheet" href="/largen.css">
 <link rel="stylesheet" href="/largen.components.css">
@@ -48,35 +48,14 @@ PAINT       one universal rule                                          library,
 UTILITIES   stack row cluster center grid switcher sidebar              library, fixed
 ─────────────────────────────────────────────────────────────────────────────────────
 COMPONENTS  whatever this project needs                                 ← YOU WRITE THESE</pre>
-  <p class="spec-note">Only the last row grows. A component is about six lines because everything above it is already solved — the tones, the variants, the sizes, the states and both themes are supplied by the rows it never mentions.</p>
-</section>
-
-<section class="stack" style="--gap:.75rem">
-  <h2 class="section-title">The paint rule</h2>
-  <pre class="code">* {
-  color: var(--fg, revert-layer);
-  background-color: var(--bg, revert-layer);
-  border-width: var(--border-width, revert-layer);
-  border-style: var(--border-style, revert-layer);
-  border-color: var(--border-color, revert-layer);
-  border-radius: var(--radius, revert-layer);
-  padding: var(--pad, revert-layer);
-  gap: var(--gap, revert-layer);
-  font-size: var(--font-size, revert-layer);
-  font-weight: var(--weight, revert-layer);
-  line-height: var(--line-height, revert-layer);
-  letter-spacing: var(--letter-spacing, revert-layer);
-  box-shadow: var(--shadow, revert-layer);
-  transition: var(--transition, revert-layer);
-}</pre>
-  <p class="spec-note">One rule, applied to every element. It is safe universally only because an unset slot is guaranteed-invalid, so <span class="tok">var(…, revert-layer)</span> fires and hands the property straight back to the UA stylesheet — a <span class="tok">&lt;ul&gt;</span> keeps its indent, an <span class="tok">&lt;h1&gt;</span> its size. The selector is a bare <span class="tok">*</span>, not <span class="tok">:where(*)</span>: the universal selector already contributes no specificity, so there is nothing to wrap. Note <span class="tok">background-color</span>, not the <span class="tok">background</span> shorthand, which would also reset <span class="tok">background-image</span> and the rest of the family.
-
-Universal is also what keeps generated CSS uniform. Because every element is paintable the same way, "is this element paintable?" is never a question you have to answer — and a question you do not answer is one you cannot answer differently twice. Narrow the rule and it becomes a real decision, slots here and plain CSS there, made fresh for every component; that choice point is where drift enters. The closed vocabulary depends on it too: CSS has hundreds of properties and this algebra has fourteen slots, and an element outside the rule is an element where the only option left is arbitrary CSS. Uniformity then follows by construction rather than by discipline — every painted surface goes through the same slots, so tone, variant, size and theme reach all of it. A narrowed rule would sort elements into two tiers and produce pages where some parts follow the theme and some quietly do not. It is also nothing to remember: an allowlist would have to be carried in this contract and consulted correctly every time, while <span class="tok">*</span> costs no tokens and cannot be misremembered.</p>
+  <p class="spec-note">Only the last row grows. A component is about six lines because everything above it is already solved. The tones, the variants, the sizes, the states and both themes are supplied by the rows it never mentions.</p>
 </section>
 
 <section class="stack" style="--gap:.5rem">
   <h2 class="section-title">The slots</h2>
-  <p class="spec-note">Every component is painted from these and only these. All are registered <span class="tok">inherits: false</span> with no <span class="tok">initial-value</span>, so a component's background cannot cascade onto its children and an unset slot stays guaranteed-invalid — which is what makes <span class="tok">var(--pad, revert-layer)</span> hand the property back to the UA stylesheet.</p>
+  <p class="spec-note">A slot splits deciding a value from applying it. Plain CSS does both in one rule, so every change after that needs another rule that knows the component. Here a component only fills blanks, <span class="tok">--bg: var(--tone-soft)</span>, and one shared rule applies them. A rule like <span class="tok">[data-variant="outline"] { --bg: transparent }</span> knows nothing about any component, so it works on all of them, including ones not written yet. The cost of the system drops from axes times components to axes plus components.
+
+Every component is painted from these slots and only these. All are registered <span class="tok">inherits: false</span> with no <span class="tok">initial-value</span>, so a component's background cannot cascade onto its children, and an unset slot stays guaranteed-invalid. That is what makes <span class="tok">var(--pad, revert-layer)</span> hand the property back to the UA stylesheet.</p>
   <div class="stack" style="--gap:0">
   <div class="spec-row"><span class="spec-name">--bg</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
   <div class="spec-row"><span class="spec-name">--fg</span><span class="spec-note">registered <span class="tok">inherits: false</span>, no <span class="tok">initial-value</span></span></div>
@@ -110,16 +89,39 @@ Universal is also what keeps generated CSS uniform. Because every element is pai
 @property --scale { syntax: "&lt;number&gt;"; inherits: true; initial-value: 1; }</pre>
 </section>
 
+<section class="stack" style="--gap:.75rem">
+  <h2 class="section-title">The paint rule</h2>
+  <pre class="code">* {
+  color: var(--fg, revert-layer);
+  background-color: var(--bg, revert-layer);
+  border-width: var(--border-width, revert-layer);
+  border-style: var(--border-style, revert-layer);
+  border-color: var(--border-color, revert-layer);
+  border-radius: var(--radius, revert-layer);
+  padding: var(--pad, revert-layer);
+  gap: var(--gap, revert-layer);
+  font-size: var(--font-size, revert-layer);
+  font-weight: var(--weight, revert-layer);
+  line-height: var(--line-height, revert-layer);
+  letter-spacing: var(--letter-spacing, revert-layer);
+  box-shadow: var(--shadow, revert-layer);
+  transition: var(--transition, revert-layer);
+}</pre>
+  <p class="spec-note">One rule reads the slots and applies them to every element. It is safe universally only because an unset slot is guaranteed-invalid, so <span class="tok">var(…, revert-layer)</span> fires and hands the property straight back to the UA stylesheet. A <span class="tok">&lt;ul&gt;</span> keeps its indent and an <span class="tok">&lt;h1&gt;</span> its size. The selector is a bare <span class="tok">*</span>, not <span class="tok">:where(*)</span>: the universal selector already contributes no specificity, so there is nothing to wrap. Note <span class="tok">background-color</span>, not the <span class="tok">background</span> shorthand, which would also reset <span class="tok">background-image</span> and the rest of the family.
+
+Universal is also what keeps generated CSS uniform. Because every element is paintable the same way, "is this element paintable?" is never a question you have to answer, and a question you do not answer is one you cannot answer differently twice. Narrow the rule and it becomes a real decision, slots here and plain CSS there, made fresh for every component; that choice point is where drift enters. The closed vocabulary depends on it too: CSS has hundreds of properties and this algebra has fourteen slots, and an element outside the rule is an element where the only option left is arbitrary CSS. Uniformity then follows by construction rather than by discipline. Every painted surface goes through the same slots, so tone, variant, size and theme reach all of it. A narrowed rule would sort elements into two tiers and produce pages where some parts follow the theme and some quietly do not. It is also nothing to remember. An allowlist would have to be carried in this contract and consulted correctly every time, while <span class="tok">*</span> costs no tokens and cannot be misremembered.</p>
+</section>
+
 <section class="stack" style="--gap:.5rem">
   <h2 class="section-title">What inherits, and how</h2>
-  <p class="spec-note"><span class="tok">--scale</span> is the only <em>registered</em> inheriting property: it is declared <span class="tok">@property --scale { syntax: "&lt;number&gt;"; inherits: true; initial-value: 1 }</span>, so it is type-checked and animatable. <span class="tok">--tone</span> and its derivations are not registered at all — they inherit because inheritance is the default for a custom property. The distinction matters: only a registered property is checked against a syntax, only a registered property can be transitioned, and only a registered universal property with no initial value becomes guaranteed-invalid when unset.</p>
+  <p class="spec-note"><span class="tok">--scale</span> is the only <em>registered</em> inheriting property: it is declared <span class="tok">@property --scale { syntax: "&lt;number&gt;"; inherits: true; initial-value: 1 }</span>, so it is type-checked and animatable. <span class="tok">--tone</span> and its derivations are not registered at all. They inherit because inheritance is the default for a custom property. The distinction matters: only a registered property is checked against a syntax, only a registered property can be transitioned, and only a registered universal property with no initial value becomes guaranteed-invalid when unset.</p>
   <div class="stack" style="--gap:0">
-  <div class="spec-row"><span class="spec-name">--scale</span><span class="spec-note">registered <span class="tok">inherits: true</span> — type-checked, animatable</span></div>
-  <div class="spec-row"><span class="spec-name">--tone</span><span class="spec-note">not registered — inherits because that is the default</span></div>
-  <div class="spec-row"><span class="spec-name">--tone-contrast</span><span class="spec-note">not registered — inherits because that is the default</span></div>
-  <div class="spec-row"><span class="spec-name">--tone-ink</span><span class="spec-note">not registered — inherits because that is the default</span></div>
-  <div class="spec-row"><span class="spec-name">--tone-line</span><span class="spec-note">not registered — inherits because that is the default</span></div>
-  <div class="spec-row"><span class="spec-name">--tone-soft</span><span class="spec-note">not registered — inherits because that is the default</span></div>
+  <div class="spec-row"><span class="spec-name">--scale</span><span class="spec-note">registered <span class="tok">inherits: true</span>, type-checked and animatable</span></div>
+  <div class="spec-row"><span class="spec-name">--tone</span><span class="spec-note">not registered, inherits because that is the default</span></div>
+  <div class="spec-row"><span class="spec-name">--tone-contrast</span><span class="spec-note">not registered, inherits because that is the default</span></div>
+  <div class="spec-row"><span class="spec-name">--tone-ink</span><span class="spec-note">not registered, inherits because that is the default</span></div>
+  <div class="spec-row"><span class="spec-name">--tone-line</span><span class="spec-note">not registered, inherits because that is the default</span></div>
+  <div class="spec-row"><span class="spec-name">--tone-soft</span><span class="spec-note">not registered, inherits because that is the default</span></div>
   </div>
 </section>
 
@@ -133,12 +135,12 @@ Universal is also what keeps generated CSS uniform. Because every element is pai
   &lt; largen.elements
   &lt; largen.components
   &lt; largen.modifiers</pre>
-  <p class="spec-note"><span class="tok">elements</span> sits before <span class="tok">components</span> so a component class beats a bare-element default; <span class="tok">modifiers</span> sits last so an explicit variant beats a component's own default fill. Consumer CSS always wins without <span class="tok">!important</span> because unlayered author CSS outranks every layer, and because the element and component selectors are <span class="tok">:where()</span>-wrapped to contribute no specificity. The paint rule is the one that is not wrapped — a bare <span class="tok">*</span> is already specificity-free. <span class="tok">fallback</span> sorts below everything and exists only for engines that predate <span class="tok">@property</span> (Firefox 113–127, Safari 16.2–16.3): behind an engine-sniff <span class="tok">@supports</span>, it re-declares every slot to <span class="tok">initial</span> per element so a slot cannot inherit; in a conforming engine it matches nothing and the registrations are authoritative.</p>
+  <p class="spec-note"><span class="tok">elements</span> sits before <span class="tok">components</span> so a component class beats a bare-element default; <span class="tok">modifiers</span> sits last so an explicit variant beats a component's own default fill. Consumer CSS always wins without <span class="tok">!important</span> because unlayered author CSS outranks every layer, and because the element and component selectors are <span class="tok">:where()</span>-wrapped to contribute no specificity. The paint rule is the one that is not wrapped, because a bare <span class="tok">*</span> is already specificity-free. <span class="tok">fallback</span> sorts below everything and exists only for engines that predate <span class="tok">@property</span> (Firefox 113–127, Safari 16.2–16.3): behind an engine-sniff <span class="tok">@supports</span>, it re-declares every slot to <span class="tok">initial</span> per element so a slot cannot inherit; in a conforming engine it matches nothing and the registrations are authoritative.</p>
 </section>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.2 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.2 · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

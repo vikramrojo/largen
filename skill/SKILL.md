@@ -1,6 +1,6 @@
 ---
 name: largen
-description: Author, review, or debug CSS components with largen — a property algebra where components are custom-property bundles rather than modifier classes. Use when writing largen components, adding a theme, migrating a site off Tailwind/daisyUI/CVA, or diagnosing why a tone, variant or size is not applying.
+description: Author, review, or debug CSS components with largen, a property algebra where components are custom-property bundles rather than modifier classes. Use when writing largen components, adding a theme, migrating a site off Tailwind/daisyUI/CVA, or diagnosing why a tone, variant or size is not applying.
 allowed-tools: Bash(node:*), Bash(npx largen:*), Read, Edit, Write, Glob, Grep
 license: MIT
 ---
@@ -9,8 +9,8 @@ license: MIT
 
 # largen
 
-A property algebra for CSS. Plain CSS — no build step, no preprocessor, no
-plugin.
+A property algebra for CSS. Plain CSS, with no build step, no preprocessor and
+no plugin.
 
 ## The model
 
@@ -26,7 +26,7 @@ COMPONENTS  whatever this project needs                                 ← YOU 
 ```
 
 Only the last row grows. A component is about six lines because everything above
-it is already solved — the tones, the variants, the sizes, the states and both
+it is already solved. The tones, the variants, the sizes, the states and both
 themes are supplied by the rows it never mentions.
 
 ## Writing a component
@@ -55,13 +55,13 @@ themes are supplied by the rows it never mentions.
 ```
 
 That is a complete component: seven tones, four variants, five sizes, every
-state, both themes — none of which it mentions.
+state and both themes, none of which it mentions.
 
 ## The rules
 
 **1. Author inside `@layer largen.components`. Override from outside it.**
 Unlayered CSS beats every layer. That is what makes overriding largen work
-without `!important` — and it is exactly what breaks an unlayered *component*:
+without `!important`. It is also exactly what breaks an unlayered *component*:
 it outranks `largen.modifiers`, so `data-variant` silently stops applying while
 tone and size keep working. If a variant "isn't applying", check this before
 anything else.
@@ -69,15 +69,15 @@ anything else.
 **2. A component sets slots. It does not set colours.**
 Write `--bg: var(--tone-soft)`, never `--bg: #fee`, and never `--bg:
 var(--danger)`. A colour literal cannot follow a theme swap, and reaching past
-`--tone*` to a raw semantic token breaks tone inheritance — the component pins
+`--tone*` to a raw semantic token breaks tone inheritance. The component pins
 itself to one colour and stops responding to the `data-tone` on its container.
 `largen verify` enforces both.
 
 **3. Never write a dark-mode rule.**
 `--tone-soft` and `--tone-ink` resolve against `--canvas` and `--ink`, so a
 theme swap carries every component with it. If a component seems to need a
-dark-mode rule, the algebra has failed to cover something and *that* is the bug
-worth fixing — the dark rule would only hide it.
+dark-mode rule, the algebra has failed to cover something, and that failure is
+the bug worth fixing. A dark rule would only hide it.
 
 **4. Never write a size variant.**
 Multiply by `var(--scale)` where you set a size, express the rest in `em`, and
@@ -102,68 +102,32 @@ With universal syntax, omitting `initial-value` makes an unset slot the
 *guaranteed-invalid* value, so `var(--pad, revert-layer)` falls back and hands
 the property back to the UA stylesheet untouched. Add an initial value and the
 slot is never unset, the fallback never fires, and the universal paint rule
-resets every element's UA defaults — every `<ul>` loses its indent and every
+resets every element's UA defaults. Every `<ul>` loses its indent and every
 `<h1>` its size. This descriptor is the reason largen needs no build step.
 
 One registered property does carry an initial value, deliberately: `--scale` is
-declared `initial-value: 1`. It is not a paint slot — nothing reads it through
-`var(--scale, revert-layer)` — but a multiplier that every size calculation
-depends on, so it must always resolve to a number. `largen verify` exempts it by
-name for exactly this reason. The rule holds for the paint slots without
-exception.
-
-## The paint rule
-
-```css
-* {
-  color: var(--fg, revert-layer);
-  background-color: var(--bg, revert-layer);
-  border-width: var(--border-width, revert-layer);
-  border-style: var(--border-style, revert-layer);
-  border-color: var(--border-color, revert-layer);
-  border-radius: var(--radius, revert-layer);
-  padding: var(--pad, revert-layer);
-  gap: var(--gap, revert-layer);
-  font-size: var(--font-size, revert-layer);
-  font-weight: var(--weight, revert-layer);
-  line-height: var(--line-height, revert-layer);
-  letter-spacing: var(--letter-spacing, revert-layer);
-  box-shadow: var(--shadow, revert-layer);
-  transition: var(--transition, revert-layer);
-}
-```
-
-One rule, applied to every element. It is safe universally only because an unset
-slot is guaranteed-invalid, so `var(…, revert-layer)` fires and hands the
-property straight back to the UA stylesheet — a `<ul>` keeps its indent, an
-`<h1>` its size. The selector is a bare `*`, not `:where(*)`: the universal
-selector already contributes no specificity, so there is nothing to wrap. Note
-`background-color`, not the `background` shorthand, which would also reset
-`background-image` and the rest of the family.
-
-Universal is also what keeps generated CSS uniform. Because every element is
-paintable the same way, "is this element paintable?" is never a question you
-have to answer — and a question you do not answer is one you cannot answer
-differently twice. Narrow the rule and it becomes a real decision, slots here
-and plain CSS there, made fresh for every component; that choice point is where
-drift enters. The closed vocabulary depends on it too: CSS has hundreds of
-properties and this algebra has fourteen slots, and an element outside the rule
-is an element where the only option left is arbitrary CSS. Uniformity then
-follows by construction rather than by discipline — every painted surface goes
-through the same slots, so tone, variant, size and theme reach all of it. A
-narrowed rule would sort elements into two tiers and produce pages where some
-parts follow the theme and some quietly do not. It is also nothing to remember:
-an allowlist would have to be carried in this contract and consulted correctly
-every time, while `*` costs no tokens and cannot be misremembered.
+declared `initial-value: 1`. It is not a paint slot, since nothing reads it
+through `var(--scale, revert-layer)`. It is a multiplier that every size
+calculation depends on, so it must always resolve to a number. `largen verify`
+exempts it by name for exactly this reason. The rule holds for the paint slots
+without exception.
 
 ## The slots
 
 `--bg --fg --border-color --border-width --border-style --radius --pad --gap
 --font-size --weight --line-height --letter-spacing --shadow --transition`
 
-Every component is painted from these and only these. All are registered
+A slot splits deciding a value from applying it. Plain CSS does both in one
+rule, so every change after that needs another rule that knows the component.
+Here a component only fills blanks, `--bg: var(--tone-soft)`, and one shared
+rule applies them. A rule like `[data-variant="outline"] { --bg: transparent }`
+knows nothing about any component, so it works on all of them, including ones
+not written yet. The cost of the system drops from axes times components to axes
+plus components.
+
+Every component is painted from these slots and only these. All are registered
 `inherits: false` with no `initial-value`, so a component's background cannot
-cascade onto its children and an unset slot stays guaranteed-invalid — which is
+cascade onto its children, and an unset slot stays guaranteed-invalid. That is
 what makes `var(--pad, revert-layer)` hand the property back to the UA
 stylesheet.
 
@@ -195,10 +159,54 @@ Registered exactly as follows:
 `--scale` is the only *registered* inheriting property: it is declared
 `@property --scale { syntax: "<number>"; inherits: true; initial-value: 1 }`, so
 it is type-checked and animatable. `--tone` and its derivations are not
-registered at all — they inherit because inheritance is the default for a custom
+registered at all. They inherit because inheritance is the default for a custom
 property. The distinction matters: only a registered property is checked against
 a syntax, only a registered property can be transitioned, and only a registered
 universal property with no initial value becomes guaranteed-invalid when unset.
+
+## The paint rule
+
+```css
+* {
+  color: var(--fg, revert-layer);
+  background-color: var(--bg, revert-layer);
+  border-width: var(--border-width, revert-layer);
+  border-style: var(--border-style, revert-layer);
+  border-color: var(--border-color, revert-layer);
+  border-radius: var(--radius, revert-layer);
+  padding: var(--pad, revert-layer);
+  gap: var(--gap, revert-layer);
+  font-size: var(--font-size, revert-layer);
+  font-weight: var(--weight, revert-layer);
+  line-height: var(--line-height, revert-layer);
+  letter-spacing: var(--letter-spacing, revert-layer);
+  box-shadow: var(--shadow, revert-layer);
+  transition: var(--transition, revert-layer);
+}
+```
+
+One rule reads the slots and applies them to every element. It is safe
+universally only because an unset slot is guaranteed-invalid, so `var(…,
+revert-layer)` fires and hands the property straight back to the UA stylesheet.
+A `<ul>` keeps its indent and an `<h1>` its size. The selector is a bare `*`,
+not `:where(*)`: the universal selector already contributes no specificity, so
+there is nothing to wrap. Note `background-color`, not the `background`
+shorthand, which would also reset `background-image` and the rest of the family.
+
+Universal is also what keeps generated CSS uniform. Because every element is
+paintable the same way, "is this element paintable?" is never a question you
+have to answer, and a question you do not answer is one you cannot answer
+differently twice. Narrow the rule and it becomes a real decision, slots here
+and plain CSS there, made fresh for every component; that choice point is where
+drift enters. The closed vocabulary depends on it too: CSS has hundreds of
+properties and this algebra has fourteen slots, and an element outside the rule
+is an element where the only option left is arbitrary CSS. Uniformity then
+follows by construction rather than by discipline. Every painted surface goes
+through the same slots, so tone, variant, size and theme reach all of it. A
+narrowed rule would sort elements into two tiers and produce pages where some
+parts follow the theme and some quietly do not. It is also nothing to remember.
+An allowlist would have to be carried in this contract and consulted correctly
+every time, while `*` costs no tokens and cannot be misremembered.
 
 ## The axes
 
@@ -209,30 +217,29 @@ universal property with no initial value becomes guaranteed-invalid when unset.
 | size | `data-size` | xs sm md lg xl | **yes** |
 | state | — | `:disabled` `:user-invalid` `:read-only` `:focus-visible` | from the DOM |
 
-**tone** — Tone inherits, and that is the point rather than a convenience:
+**tone.** Tone inherits, and that is the point rather than a convenience:
 `<section data-tone="danger">` re-tones every component inside it with no
 per-child markup. A component never names a colour; it names `var(--tone)` and
 its derivations, and the theme decides what that resolves to.
 
-**variant** — Derived from the tone, never a separate colour. It deliberately
+**variant.** Derived from the tone, never a separate colour. It deliberately
 does NOT inherit: with a universal paint rule there is no marker separating a
 component from a bare `<span>`, so a subtree variant would paint every wrapper
 element it passed through.
 
 This axis is optional, and that is worth saying because the other three are not.
 The four variants are *ways of applying a tone*. If a component's variations are
-a surface treatment rather than a tone — a hairline in `--line` over `--canvas`,
-say — routing them through `data-variant` will tint the border and the label,
-and you will spend the afternoon fighting it. Write classes instead. Tone, size
-and state still apply; only this one has a premise your component can fail to
-meet.
+a surface treatment rather than a tone, say a hairline in `--line` over
+`--canvas`, routing them through `data-variant` will tint the border and the
+label. Write classes instead. Tone, size and state still apply; only this one
+has a premise your component can fail to meet.
 
-**size** — A single `--scale` multiplier, not a set of per-size rules. Multiply
+**size.** A single `--scale` multiplier, not a set of per-size rules. Multiply
 by `var(--scale)` where you set a size and express everything else in `em`, and
 padding follows type for free. This is why a component never needs a size
 variant of its own.
 
-**state** — State comes from the DOM and from real HTML attributes. It is not
+**state.** State comes from the DOM and from real HTML attributes. It is not
 settable through the generative-UI manifest and should never be simulated with a
 class, because the browser already knows the answer.
 
@@ -245,7 +252,7 @@ Fix: Keep the slot and write the gradient beside it: `--bg: var(--tone);
 background-image: linear-gradient(…)`.
 
 The declaration is dropped and the element paints transparent, with no warning
-anywhere. Nothing about `--bg` says "colour only" — it is named for background,
+anywhere. Nothing about `--bg` says "colour only". It is named for background,
 and every other slot takes whatever its property takes. This is the general
 shape for anything the algebra does not model: write the slot, then the plain
 property. The slot keeps the element inside the algebra; the plain declaration
@@ -253,7 +260,7 @@ adds what has no slot.
 
 **Type resizes with `data-size` and the padding around it does not.**
 
-Cause: The component's `--pad` is written in `rem` — often `var(--space-*)` —
+Cause: The component's `--pad` is written in `rem`, often as `var(--space-*)`,
 instead of `em`.  
 Fix: Use `em` for a component's own padding. Keep `--space-*` for the rhythm
 between things.
@@ -271,8 +278,8 @@ Cause: The component is declared outside `@layer largen.components`.
 Fix: Wrap the component rule in `@layer largen.components { … }`.
 
 This is the worst failure mode in the system because it looks like it works. An
-unlayered component outranks `largen.modifiers`, so the variant rules lose — but
-tone and size act through inheriting custom properties rather than by overriding
+unlayered component outranks `largen.modifiers`, so the variant rules lose. Tone
+and size act through inheriting custom properties rather than by overriding
 slots, so they are unaffected. One dead axis and two live ones reads as "variant
 is buggy" rather than "my component is in the wrong layer".
 
@@ -287,7 +294,7 @@ Raw semantic tokens are absolute; the `--tone*` family is relative to whatever
 tone is in scope. Naming the absolute one opts the component out of the axis
 entirely, which is invisible until someone sets a tone on an ancestor.
 
-**Every element on the page loses its browser defaults — lists unindent,
+**Every element on the page loses its browser defaults. Lists unindent and
 headings shrink.**
 
 Cause: A slot was given an `initial-value`, or `paint.css` was moved out of its
@@ -299,7 +306,7 @@ largen.paint`.
 slot is guaranteed-invalid. Break either condition and the one universal rule
 stops being inert and starts being destructive.
 
-**Your own CSS is inside a cascade layer, and largen still wins — or your "base"
+**Your own CSS is inside a cascade layer, and largen still wins. Or your "base"
 layer beats largen when you meant it to lose.**
 
 Cause: A layer's position is fixed the first time it is mentioned, and a
@@ -316,30 +323,29 @@ app-overrides;
 Writing `@layer app.base, largen.components, app.overrides;` reads as "app.base
 lowest, app.overrides highest" and does not do that. `largen.components` already
 exists and keeps its position, while the new `app` parent is appended after
-everything — so `app.base` outranks largen and `app.overrides` can never reach
+everything. So `app.base` outranks largen, and `app.overrides` can never reach
 past it, because both are children of one parent that has one position. Flat
-names avoid it: `app-base` and `app-overrides` are independent, so they can sit
-on either side.
+names avoid this because `app-base` and `app-overrides` are independent, so they
+can sit on either side.
 
-This is also where a preflight goes when largen runs alongside another framework
-— put its base layer in the statement ahead of largen, or it sorts last and
-flattens everything largen styled. Layer order beats specificity, so no amount
-of selector weight recovers it.
+This is also where a preflight goes when largen runs alongside another
+framework. Put its base layer in the statement ahead of largen, or it sorts last
+and flattens everything largen styled. Layer order beats specificity, so no
+amount of selector weight recovers it.
 
 List ALL EIGHT largen sublayers, `largen.fallback` first. A sublayer the
-statement omits is created when largen loads and appended after the ones listed
-— and for `largen.fallback` that puts its per-element resets above
-`largen.components` in exactly the engines the fallback exists for (Firefox
-113–127, Safari 16.2–16.3), while looking correct in every engine you are likely
-to test in.
+statement omits is created when largen loads and appended after the ones listed.
+For `largen.fallback` that puts its per-element resets above `largen.components`
+in exactly the engines the fallback exists for (Firefox 113–127, Safari
+16.2–16.3), while looking correct in every engine you are likely to test in.
 
 `largen verify` cannot catch this. Layer position is a property of the whole
-document at load time — which files were seen, in what order — and a linter
+document at load time, of which files were seen and in what order, and a linter
 reading one stylesheet has no way to know. The browser is the only place the
 answer exists.
 
-**A fill is the right colour and the text on it is unreadable — the old tone's
-contrast colour on the new tone's background.**
+**A fill is the right colour and the text on it is unreadable. It shows the old
+tone's contrast colour on the new tone's background.**
 
 Cause: The component set `--tone` and read `var(--tone-contrast)` without
 setting `--tone-contrast` alongside it.  
@@ -348,21 +354,21 @@ var(--danger-on)`.
 
 `--tone-soft`, `--tone-ink` and `--tone-line` are formulas, and largen
 recomputes them on every element, so setting `--tone` anywhere is enough for
-those. `--tone-contrast` is not a formula — it is the paired token (`--danger`
-pairs with `--danger-on`) and nothing can derive one from the other, so it keeps
-whatever value was already in scope. The three that follow `--tone`
+those. `--tone-contrast` is not a formula. It is the paired token (`--danger`
+pairs with `--danger-on`), and nothing can derive one from the other, so it
+keeps whatever value was already in scope. The three that follow `--tone`
 automatically are exactly the three that can be computed from it. `largen
 verify` and `check_component_css` both flag this.
 
-**largen is painting something you want it to leave alone — a third-party
-widget, a chart, markup another framework owns.**
+**largen is painting something you want it to leave alone: a third-party widget,
+a chart, markup another framework owns.**
 
 Cause: The universal paint rule claims a property as soon as any rule sets its
 slot, and nothing "unsets" a custom property by writing an empty value.  
 Fix: Set the slot to `initial`: `--bg: initial; --pad: initial`.
 
 A slot is registered with universal syntax and no `initial-value`, so `initial`
-returns it to the *guaranteed-invalid* value — the state it has when nothing has
+returns it to the *guaranteed-invalid* value, the state it has when nothing has
 set it. `var(--bg, revert-layer)` then fires and hands the property back to the
 user-agent stylesheet untouched. Measured: a claimed element computes
 `rgb(244,245,247)` and `16px` of padding; the same element with the slots set to
@@ -383,14 +389,14 @@ equivalent.
 
 The spelling that looks right is `--fg: inherit`, and it does something else.
 `inherit` takes the parent's computed `--fg`, and because the slot does not
-inherit and the parent never set it, that value is guaranteed-invalid — so
-`var(--fg, revert-layer)` fires and reverts to the **user-agent** stylesheet,
-which colours links blue. Measured against a parent at `rgb(3,4,5)`: `inherit`
-gives `rgb(0,0,238)`, `currentColor` gives `rgb(3,4,5)`.
+inherit and the parent never set it, that value is guaranteed-invalid. So
+`var(--fg, revert-layer)` fires and reverts to the user-agent stylesheet, which
+colours links blue. Measured against a parent at `rgb(3,4,5)`: `inherit` gives
+`rgb(0,0,238)`, `currentColor` gives `rgb(3,4,5)`.
 
-The general lesson is worth more than the recipe: returning a slot to
+The general lesson is worth more than the recipe. Returning a slot to
 guaranteed-invalid gets you the user-agent value, never the ambient one. If you
-want what the surroundings have, name it — `currentColor` — rather than trying
+want what the surroundings have, name it with `currentColor` rather than trying
 to get there by removal.
 
 **A component looks right in one theme and wrong in the other.**
@@ -404,7 +410,7 @@ bypasses the tokens is simply not part of that mechanism.
 
 ## Layout utilities
 
-Seven utilities, configured by custom properties the same way components are —
+Seven utilities, configured by custom properties the same way components are.
 `--gap` is a slot, so the paint rule applies it. Responsiveness is intrinsic:
 `switcher` and `sidebar` reflow on the CONTAINER, so there are no breakpoints
 and no `sm:` / `xl:` variants to learn.
@@ -412,7 +418,7 @@ and no `sm:` / `xl:` variants to learn.
 ```
 stack     vertical flow
 row       horizontal, does not wrap
-cluster   horizontal, wraps — tags, icon groups, metadata
+cluster   horizontal, wraps: tags, icon groups, metadata
 center    constrained measure, centred
 grid      as many columns as fit, no breakpoints
 switcher  a row that becomes a stack below a container width
@@ -432,17 +438,17 @@ sidebar   side column plus fluid main, collapses when main gets too narrow
 Alignment is attributes, not classes:
 `data-align="start|center|end|baseline|stretch"` and
 `data-justify="start|center|end|between"`. They are orthogonal, so the utilities
-stay knob-driven instead of sprouting a class per combination. Reach for these
-before writing `align-items` by hand.
+take two attributes instead of a class per combination. Reach for these before
+writing `align-items` by hand.
 
 Do not hand-write `display: flex` with `align-items` and `gap`. That is `row` or
-`cluster` plus `data-align`, and the hand-written version leaves the algebra —
-`--gap` set as `gap` is no longer a slot, so nothing can reach it.
+`cluster` plus `data-align`, and the hand-written version leaves the algebra.
+`--gap` set as plain `gap` is no longer a slot, so nothing can reach it.
 
 ## Composing a page
 
 The rules above say what largen guarantees and how it fails. This is the other
-half — a page built to the rules alone comes out correct and plain.
+half. A page built to the rules alone comes out correct and plain.
 
 **Space is a scale, and the unit carries meaning**
 
@@ -454,8 +460,8 @@ carries `data-size="lg"`.
 Use `em` for a component's OWN padding. `--scale` inherits and a component
 multiplies its `--font-size` by it, so `em` padding follows: `0.5em 1em` is 7px
 14px at `sm` and 10px 20px at `xl`. The same padding as `var(--space-2)
-var(--space-4)` is 8px 16px at every size — the type grows, the box does not,
-and nothing looks wrong. `largen verify` reports it.
+var(--space-4)` is 8px 16px at every size. The type grows, the box does not, and
+nothing looks wrong. `largen verify` reports it.
 
 Sections need space between them, not only inside them. Padding a hero does
 nothing for the gap after it: `<body class="stack" style="--gap:
@@ -468,8 +474,8 @@ however good each section is.
 var(--shade)`) for resting surfaces, `--lift-2` (`0 8px 28px
 var(--shade-strong)`) for the one thing you want picked out.
 
-Restraint is the whole of it. If everything is raised, nothing is. A recommended
-pricing tier earns `--lift-2`; the tiers either side earn `--lift-1` or nothing.
+Use it sparingly. If everything is raised, nothing is. A recommended pricing
+tier gets `--lift-2`; the tiers either side get `--lift-1` or nothing.
 
 **Depth: write the slot, then the plain property**
 
@@ -484,16 +490,16 @@ it:
         radial-gradient(50rem 40rem at 90% 30%, var(--shade), transparent 70%);
     }
 
-The slot keeps the element inside the algebra — tone, variant and theme still
-reach it — and the plain declaration adds the rest. A soft wash behind a large
+The slot keeps the element inside the algebra, so tone, variant and theme still
+reach it. The plain declaration adds the rest. A soft wash behind a large
 headline is most of the difference between a page that looks composed and one
 that looks unstyled, and it costs two lines.
 
 Two things to get right. Every colour stop is a token: `--shade` and
 `--shade-strong` are there for this, and a literal in a gradient is still a
 literal that cannot follow a theme. And `--bg: linear-gradient(…)` paints
-NOTHING — no warning, no fallback, an element that silently does not appear.
-`verify` reports it.
+NOTHING. There is no warning and no fallback; the element silently does not
+appear. `verify` reports it.
 
 The same shape covers anything the fourteen slots miss: set the slot for what is
 in the algebra, write the plain property for what is not.
@@ -509,19 +515,19 @@ hue in sight.
 The test for tone is not "is this colourful" but "does a group of elements vary
 together". If a section, a card and its button should all shift when one
 attribute changes, that is `data-tone` on the ancestor and nothing on the
-children — tone inherits, which is the whole reason it is an axis and not a
+children. Tone inherits, which is the whole reason it is an axis and not a
 class.
 
 Size is narrower and it is honest to say so: `--scale` is consumed by
 components, not by page layout. A hero or a section has nothing to scale against
 and should not pretend otherwise. Reach for `data-size` on the things that come
-in sizes — buttons, inputs, badges, a compact table — and let the page around
-them stay on the rem scale.
+in sizes, such as buttons, inputs, badges and a compact table, and let the page
+around them stay on the rem scale.
 
 **Text on a toned surface takes its colour from the tone**
 
 A muted grey that reads well on `--canvas` can be almost invisible on
-`--tone-soft`, and it lands on exactly the element you most want read — a price
+`--tone-soft`, and it lands on exactly the element you most want read: a price
 suffix, a caption, a label. On a toned surface use `--fg: var(--tone-ink)` or
 `var(--tone-contrast)`. Keep `--ink-muted` for the untoned page.
 
@@ -531,38 +537,38 @@ If the hero is to be the loudest thing, the rest of the page has to be quiet:
 one accent used sparingly, one step between resting and raised, one type scale,
 generous and CONSISTENT space.
 
-Detail earns its place. A nav, an eyebrow above the headline, an icon tile, a
-ribbon on the recommended tier — each is fine and all of them together is noise.
-Choose two or three.
+Detail earns its place. A nav, an eyebrow above the headline, an icon tile or a
+ribbon on the recommended tier is fine on its own; all of them together is
+noise. Choose two or three.
 
 ## Commands
 
 ```
 npx largen verify [css...] [--entry main.css]              # check your components against the contract, and resolve the cascade across your files
-npx largen eval <dir> [dir2] [--entry main.css] [--json]   # score a directory of authored components against the contract — offline, deterministic, no model
-npx largen build                                           # bundle + minify to dist/ — optional, for CDN, no dependencies
+npx largen eval <dir> [dir2] [--entry main.css] [--json]   # score a directory of authored components against the contract, offline and deterministic, with no model
+npx largen build                                           # bundle and minify to dist/ for the CDN. Optional, with no dependencies
 npx largen gen                                             # regenerate genai artifacts from genai/manifest.json
 npx largen manifest <css...>                               # derive a component manifest from a project's CSS
-npx largen cascade --property P --at CHAIN <css...>        # which declaration wins for a property on an element, and why — no browser
+npx largen cascade --property P --at CHAIN <css...>        # which declaration wins for a property on an element, and why, with no browser
 npx largen slot --slot S --at CHAIN <css...>               # whether the paint rule applies a slot, or it reverts, and to what
 npx largen probe --page URL --select SEL --prop P          # emit a browser harness for what static checks cannot see
 ```
 
 `verify` lints the files you point it at, or the component stylesheets it finds
-under the working directory — a stylesheet is a component file when it declares
+under the working directory. A stylesheet is a component file when it declares
 inside `@layer largen.components`, or sets paint slots without using a largen
 layer at all, which is a component that forgot the layer. Run inside a clone of
-largen it additionally checks the library's own invariants.
+largen it also checks the library's own invariants.
 
 `cascade` and `slot` take the element as an ancestor chain written like a
-selector — `--at "html body p.prose kbd"`. A chain carries no siblings and no
+selector: `--at "html body p.prose kbd"`. A chain carries no siblings and no
 interaction state, so rules turning on `:hover`, `:last-child`, `:nth-*` or a
 sibling combinator cannot be decided from it. Those are reported as undecidable
 rather than dropped, because an omission reads as "no rule here" and any one of
 them could be the rule that actually wins. `probe` settles those.
 
 `verify` also resolves the cascade across your files when it can work out the
-order they load in — inferred from an entry stylesheet, or given with `--entry`.
+order they load in, inferred from an entry stylesheet or given with `--entry`.
 That is the check that catches a component whose declaration is correct, whose
 file is correct, and which still never applies because another layer wins.
 Without an order it says so rather than guessing.
@@ -570,7 +576,7 @@ Without an order it says so rather than guessing.
 What it still cannot see is rendering. It has passed clean on visibly broken
 components before; render the result in a browser, in both themes.
 
-`build` needs nothing installed — it inlines imports, strips comments and
+`build` needs nothing installed. It inlines imports, strips comments and
 squeezes whitespace, which is all this stylesheet requires. If your own CSS
 wants a real minifier, bring one and point it at your build; largen does not
 need one and does not ship one.
@@ -586,11 +592,11 @@ default; `modifiers` sits last so an explicit variant beats a component's own
 default fill. Consumer CSS always wins without `!important` because unlayered
 author CSS outranks every layer, and because the element and component selectors
 are `:where()`-wrapped to contribute no specificity. The paint rule is the one
-that is not wrapped — a bare `*` is already specificity-free. `fallback` sorts
-below everything and exists only for engines that predate `@property` (Firefox
-113–127, Safari 16.2–16.3): behind an engine-sniff `@supports`, it re-declares
-every slot to `initial` per element so a slot cannot inherit; in a conforming
-engine it matches nothing and the registrations are authoritative.
+that is not wrapped, because a bare `*` is already specificity-free. `fallback`
+sorts below everything and exists only for engines that predate `@property`
+(Firefox 113–127, Safari 16.2–16.3): behind an engine-sniff `@supports`, it
+re-declares every slot to `initial` per element so a slot cannot inherit; in a
+conforming engine it matches nothing and the registrations are authoritative.
 
 ## Generative UI
 
@@ -598,7 +604,7 @@ engine it matches nothing and the registrations are authoritative.
 `prompt.md` are generated from it by `largen gen`. `genai/validate.js` turns a
 model-emitted node into an attribute bag and rejects anything else. There is no
 field for a colour, class or handler, so the safety property is structural
-rather than defensive — the worst a compromised model can do is pick the wrong
+rather than defensive. The worst a compromised model can do is pick the wrong
 approved component. Replace the `components` array with the project's own
 components.
 

@@ -43,6 +43,10 @@ export async function pages(args = []) {
   const RULES = CONTRACT.rules.length
   const MODES = CONTRACT.failureModes.length
   const COMPONENTS = manifest.components.length
+  const TONES = manifest.axes.tone.values.length
+  const VARIANTS = manifest.axes.variant.values.length
+  const SIZES = manifest.axes.size.values.length
+  const COMBOS = TONES * VARIANTS * SIZES
   /* Four characters per token is the usual rough conversion; rounded so the page
      does not imply a precision it does not have. */
   const COMPACT_TOKENS = Math.round(readFileSync(at('site/public/llms-compact.txt'), 'utf8').length / 400) * 100
@@ -68,13 +72,13 @@ export async function pages(args = []) {
   /* ── Landing ─────────────────────────────────────────────────────────── */
   
   record('site/public/index.html', page({
-    title: 'largen — a property algebra for CSS', current: null, version: v,
+    title: 'largen: a property algebra for CSS', current: null, version: v,
     description: `A property algebra for CSS. ${SLOTS} slots, four axes, one paint rule, and components you write yourself. No build step.`,
     body: `<section class="hero">
     <h1 class="hero-title">A property algebra for CSS.</h1>
-    <p class="hero-lede">${SLOTS} custom-property slots, four axes, one universal paint
-    rule — and the components are yours. Plain CSS: no build step, no preprocessor,
-    no plugin.</p>
+    <p class="hero-lede">${SLOTS} custom-property slots, four axes, and one universal
+    paint rule. The components are yours to write. Plain CSS, with no build step,
+    no preprocessor and no plugin.</p>
     <div class="cluster" style="--gap:.6rem">
       <a class="pill" data-tone="primary" href="/docs/contract.html">Read the contract</a>
       <a class="pill" data-tone="neutral" href="/docs/mcp.html">MCP server</a>
@@ -99,17 +103,54 @@ export async function pages(args = []) {
       align-items: center;
     }
   }`)}</pre>
-    <p class="spec-note">Seven tones, four variants, five sizes, every state and both
-    themes — none of which it mentions. Everything above the component row is already
-    solved, so the component is the only thing left to write.</p>
+    <p class="spec-note">It gets ${words(TONES)} tones, ${words(VARIANTS)} variants,
+    ${words(SIZES)} sizes, every state and both themes, and it mentions none of them.
+    Everything above the component row is already solved, so the component is the only
+    thing left to write.</p>
   </section>
-  
+
+  <section class="stack" style="--gap:.75rem">
+    <h2 class="section-title">Slots, the mechanism</h2>
+    <p class="spec-note">Plain CSS decides a colour and applies it in the same rule, so
+    every change after that needs another rule that knows the component. With
+    ${words(TONES)} tones, ${words(VARIANTS)} variants and ${words(SIZES)} sizes, that
+    is ${COMBOS} combinations per component before hover and dark mode. A slot splits
+    deciding from applying.</p>
+    <pre class="code">${esc(`.chip { --bg: var(--tone); }                     /* the component fills a blank */
+* { background-color: var(--bg, revert-layer); } /* one shared rule applies it  */
+[data-variant="outline"] { --bg: transparent; }  /* an axis changes the answer  */`)}</pre>
+    <p class="spec-note">The outline rule knows nothing about chips, so it works on
+    every component, including ones not written yet. The cost of the system drops from
+    axes times components to axes plus components.</p>
+  </section>
+
+  <section class="stack" style="--gap:.75rem">
+    <h2 class="section-title">Four features make it hold</h2>
+    <p class="spec-note"><span class="tok">@property</span> registers each slot as
+    non-inheriting, so a slot stops at its element. A card's background stays on the
+    card.</p>
+    <p class="spec-note"><span class="tok">revert-layer</span> is the fallback when a
+    slot is unset, so an empty blank leaves the element as the browser drew it.</p>
+    <p class="spec-note"><span class="tok">@layer</span> keeps every largen rule in a
+    named layer, so your page CSS always beats largen without
+    <span class="tok">!important</span>.</p>
+    <p class="spec-note"><span class="tok">color-mix()</span> derives the soft, ink and
+    line shades from the one tone in scope, so dark mode needs no per-component
+    rules.</p>
+  </section>
+
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">It is not a catalog</h2>
     <p class="spec-note">Most CSS libraries ship components and ask you to configure
     them. largen ships the algebra underneath components and expects you to write your
-    own, named in your application's own language — <span class="tok">.entry-card</span>,
+    own, named in your application's own language: <span class="tok">.entry-card</span>,
     not <span class="tok">.card-lg-bordered</span>.</p>
+    <p class="spec-note">Each tier is paired with a check. A component that sets a
+    colour literal, reaches past the tone axis, sets an unregistered slot or forgets
+    its layer fails <span class="tok">largen verify</span> and
+    <span class="tok">check_component_css</span>, and a spec that names an unapproved
+    component fails <span class="tok">validate_spec</span>. With one legal way to
+    colour a thing, anything hand-set is easy for a machine to spot.</p>
     <p class="spec-note">That premise shapes the <a href="/docs/mcp.html">MCP server</a>
     too. It cannot know your components, so every tool takes an optional manifest of
     them and answers in your vocabulary rather than largen's.</p>
@@ -119,7 +160,7 @@ export async function pages(args = []) {
     <h2 class="section-title">Start here</h2>
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
   ${card('/docs/contract.html', 'The contract', `${SLOTS} slots, the layer rule, the paint rule. What the library guarantees.`)}
-  ${card('/docs/axes.html', 'The axes', 'tone, variant, size, state — and why only two of them inherit.')}
+  ${card('/docs/axes.html', 'The axes', 'tone, variant, size, state, and why only two of them inherit.')}
   ${card('/docs/authoring.html', 'Authoring', `${words(RULES)} rules for writing a component, and the ${words(MODES)} ways it goes wrong.`)}
   ${card('/docs/components.html', 'Reference components', `${COMPONENTS} optional components. Copy them or ignore them.`)}
   ${card('/docs/mcp.html', 'MCP server', `${TOOLS} tools for agents. No API key, no generate_ui.`)}
@@ -131,7 +172,7 @@ export async function pages(args = []) {
     <h2 class="section-title">Use it</h2>
     <pre class="code">${esc(`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css">
   
-  # or pinned — a published version is immutable:
+  # or pinned. A published version is immutable:
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@${v}/dist/largen.css">
   
   # or install it:
@@ -143,20 +184,20 @@ export async function pages(args = []) {
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">Evidence, not a showcase</h2>
     <p class="spec-note">Two pages that run in your browser and report what they find.
-    Neither is a gallery — they exist because the claims below them are the ones no
+    Neither is a gallery. They exist because the claims below them are the ones no
     static check can settle.</p>
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
-  ${card('/demo/conformance.html', 'Conformance', `The mechanism everything hangs on — <span class="tok">revert-layer</span> against a guaranteed-invalid slot — and the @property fallback that preserves it in Firefox 113–127 and Safari 16.2–16.3. ${words(CONFORMANCE)} checks. Open it in Safari, Firefox and Chrome — nothing static can answer this.`)}
+  ${card('/demo/conformance.html', 'Conformance', `The mechanism everything hangs on, <span class="tok">revert-layer</span> against a guaranteed-invalid slot, and the @property fallback that preserves it in Firefox 113–127 and Safari 16.2–16.3. ${words(CONFORMANCE)} checks. Open it in Safari, Firefox and Chrome; nothing static can answer this.`)}
   ${card('/demo/tests.html', 'The load-bearing tests', 'UA defaults survive the universal paint rule, tone inherits, slots do not leak to children, and modifiers outrank components.')}
     </div>
   </section>
   
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Releases</h2>
-    <p class="spec-note"><strong>${LATEST.version}</strong> — ${ticks(LATEST.summary)}</p>
+    <p class="spec-note"><strong>${LATEST.version}</strong>: ${ticks(LATEST.summary)}</p>
     <p class="spec-note">Every entry in the log is checked against the bytes that
-    version actually shipped, so it is a claim with a witness rather than a note
-    written from memory. <a href="https://github.com/vikramrojo/largen/blob/main/RELEASES.md">The
+    version actually shipped.
+    <a href="https://github.com/vikramrojo/largen/blob/main/RELEASES.md">The
     full log</a> · <a href="https://www.npmjs.com/package/largen">npm</a></p>
   </section>`,
   }))
@@ -226,13 +267,13 @@ ${renderNode(result.value, 3)}
   const componentsBody = `<div class="stack" style="--gap:.4rem">
   <h1 class="page-title">Reference components</h1>
   <p class="page-desc">${manifest.components.length} components, each about six lines.
-  Optional, and copy-in rather than imported — largen ships an algebra, not a
+  Optional, and copy-in rather than imported. largen ships an algebra, not a
   dependency, so take the source and it is yours to edit.</p>
 </div>
 
 <section class="stack" style="--gap:.5rem">
   <p class="spec-note">There is no button here, and no input, select or table. Those are
-  elements, and <span class="tok">src/elements.css</span> already themes them — they
+  elements, and <span class="tok">src/elements.css</span> already themes them. They
   answer to <span class="tok">data-tone</span>, <span class="tok">data-variant</span> and
   <span class="tok">data-size</span> exactly like everything below. A component class
   duplicating them would be a worse copy of something the platform provides.</p>
@@ -241,9 +282,9 @@ ${renderNode(result.value, 3)}
   this page is something <span class="tok">validate_spec</span> would reject. Fetch any
   source with <span class="tok">get_component_source</span>, or read
   <a href="/components/reference.css">reference.css</a> whole.</p>
-  <p class="spec-note"><strong>Every component below answers to all four axes</strong> —
+  <p class="spec-note">Every component below answers to all four axes,
   <span class="tok">data-tone</span>, <span class="tok">data-variant</span>,
-  <span class="tok">data-size</span> and real DOM state — without naming any of them.
+  <span class="tok">data-size</span> and real DOM state, without naming any of them.
   That is not stated per component because it does not vary: it is the whole point of the
   algebra. Set <span class="tok">data-tone</span> on any ancestor and everything below
   re-tones.</p>
@@ -261,11 +302,11 @@ ${names.map(componentBlock).join('\n')}
   <pre class="code">${esc(`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.components.css">`)}</pre>
   <p class="spec-note">Or copy one component's source and skip the file entirely. That is
-  the intended path — the set exists to be read and taken from, not depended on.</p>
+  the intended path. The set exists to be read and taken from, not depended on.</p>
 </section>`
 
   record('site/public/docs/components.html', page({
-    title: 'Reference components — largen', current: 'components', version: v,
+    title: 'Reference components · largen', current: 'components', version: v,
     description: "largen's reference components, each shown rendered with its source. Copy them into your project or ignore them.",
     body: componentsBody,
   }))
@@ -273,8 +314,8 @@ ${names.map(componentBlock).join('\n')}
   /* ── MCP ──────────────────────────────────────────────────────────────── */
   
   record('site/public/docs/mcp.html', page({
-    title: 'MCP server — largen', current: 'mcp', version: v,
-    description: 'Six MCP tools for agents building with largen. Streamable HTTP, no authentication, and deliberately no generate_ui.',
+    title: 'MCP server · largen', current: 'mcp', version: v,
+    description: `${TOOLS} MCP tools for agents building with largen. Streamable HTTP, no authentication, and deliberately no generate_ui.`,
     body: `<div class="stack" style="--gap:.4rem">
     <h1 class="page-title">MCP server</h1>
     <p class="page-desc">${TOOLS} tools, over Streamable HTTP, with no authentication.
@@ -315,8 +356,8 @@ ${names.map(componentBlock).join('\n')}
       Rejects unknown components and axis values, and rejects
       <span class="tok">style</span>, <span class="tok">onclick</span>,
       <span class="tok">className</span> or
-      <span class="tok">dangerouslySetInnerHTML</span> rather than dropping them —
-      a model emitting one of those is a signal worth surfacing.</p>
+      <span class="tok">dangerouslySetInnerHTML</span> rather than dropping them.
+      A model emitting one of those is a signal worth surfacing.</p>
     </div>
   
     <div class="tool">
@@ -333,18 +374,61 @@ ${names.map(componentBlock).join('\n')}
       URL. Takes <span class="tok">theme</span> and <span class="tok">css</span>, so your
       own components appear as they do in your project.</p>
     </div>
+
+    <div class="tool">
+      <span class="tool-name">lookup_property</span>
+      <p class="tool-desc">Answers whether a CSS property is driven by a slot, and which.
+      Derived from the paint rule, so it follows the library rather than a list kept
+      beside it.</p>
+    </div>
+
+    <div class="tool">
+      <span class="tool-name">check_layer_order</span>
+      <p class="tool-desc">Resolves where each <span class="tok">@layer</span> actually
+      sorts across your stylesheets and reports where that differs from the order
+      declared. Catches the cross-file failures a single-file linter cannot see.</p>
+    </div>
+
+    <div class="tool">
+      <span class="tool-name">resolve_cascade</span>
+      <p class="tool-desc">Given stylesheets and an element's ancestor chain, returns
+      every matching declaration of a property in cascade order, the winner, and which
+      cascade step decided it. No browser involved. Rules it cannot decide from a chain
+      are reported, never dropped.</p>
+    </div>
+
+    <div class="tool">
+      <span class="tool-name">explain_slot</span>
+      <p class="tool-desc">For one slot on one element: is it set, and does the paint
+      rule paint it, or does it revert to the user-agent stylesheet? Catches
+      <span class="tok">--fg: inherit</span>, which reads as "use the surrounding
+      colour" and does the opposite.</p>
+    </div>
+
+    <div class="tool">
+      <span class="tool-name">emit_probe</span>
+      <p class="tool-desc">Returns a self-contained HTML harness you run against your
+      own build, for the questions static analysis cannot reach. The server generates
+      the file and never executes anything.</p>
+    </div>
+
+    <div class="tool">
+      <span class="tool-name">get_build</span>
+      <p class="tool-desc">Version, build id, and per-file sha256 and integrity strings
+      for the served stylesheets. Use it to check a vendored copy for drift.</p>
+    </div>
   </section>
   
   <section class="stack" style="--gap:.5rem">
     <h2 class="section-title">Your components, not ours</h2>
     <p class="spec-note">largen's premise is that you write your own components, so a
-    server holding a catalog could only ever describe largen's reference set — useless in
-    the project you are actually working in. Instead every tool takes an optional
-    <span class="tok">components</span> manifest.</p>
+    server holding a catalog could only ever describe largen's reference set, which is
+    useless in the project you are actually working in. Instead every tool takes an
+    optional <span class="tok">components</span> manifest.</p>
     <pre class="code">${esc('npx largen manifest src/components.css --out largen.manifest.json')}</pre>
     <p class="spec-note">Pass that object as <span class="tok">components</span> and the
     tools answer in your vocabulary. Omit it and they fall back to the reference set. A
-    malformed manifest is an error, never a silent fallback — answering confidently in
+    malformed manifest is an error, never a silent fallback. Answering confidently in
     the wrong vocabulary is worse than refusing.</p>
   </section>
   
@@ -356,11 +440,11 @@ ${names.map(componentBlock).join('\n')}
     a capable model, and you know the application being built, its data and its
     conventions. A model here would know none of that, and would add an API key, a cost
     and a latency budget to every call in exchange for a worse answer.</p>
-    <p class="spec-note">So this server equips you —
-    <span class="tok">get_contract</span>, <span class="tok">list_components</span>,
-    <span class="tok">get_component_source</span> — and then checks your work:
-    <span class="tok">validate_spec</span>, <span class="tok">check_component_css</span>,
-    <span class="tok">render_spec</span>. You do the generating.</p>
+    <p class="spec-note">So this server equips you with
+    <span class="tok">get_contract</span>, <span class="tok">list_components</span> and
+    <span class="tok">get_component_source</span>, and then checks your work with
+    <span class="tok">validate_spec</span>, <span class="tok">check_component_css</span>
+    and <span class="tok">render_spec</span>. You do the generating.</p>
   </section>
   
   <section class="stack" style="--gap:.5rem">
@@ -374,7 +458,7 @@ ${names.map(componentBlock).join('\n')}
   /* ── 404 ──────────────────────────────────────────────────────────────── */
   
   record('site/public/404.html', page({
-    title: 'Not found — largen', current: null, version: v,
+    title: 'Not found · largen', current: null, version: v,
     description: 'Not found.',
     body: `<div class="stack" style="--gap:.5rem">
     <h1 class="page-title">Not found</h1>
@@ -400,8 +484,8 @@ ${names.map(componentBlock).join('\n')}
   const body = `<div class="stack" style="--gap:.4rem">
     <h1 class="page-title">Playground</h1>
     <p class="page-desc">Edit a spec and watch it validate and render. The validator and
-    the renderer here are the same modules the MCP server imports — not a reimplementation
-    of them — so this page cannot disagree with <span class="tok">validate_spec</span>.</p>
+    the renderer here are the same modules the MCP server imports, not a reimplementation
+    of them, so this page cannot disagree with <span class="tok">validate_spec</span>.</p>
   </div>
   
   <div class="play-grid">
@@ -436,7 +520,7 @@ ${names.map(componentBlock).join('\n')}
     try { spec = JSON.parse(editor.value) }
     catch (e) {
       verdict.dataset.tone = 'danger'
-      verdict.textContent = 'Not JSON — ' + e.message
+      verdict.textContent = 'Not JSON: ' + e.message
       stage.innerHTML = ''
       return
     }
@@ -446,7 +530,7 @@ ${names.map(componentBlock).join('\n')}
       /* An invalid spec shows its errors and renders nothing. Partial output would
          be a picture of something the validator just refused to allow. */
       verdict.dataset.tone = 'danger'
-      verdict.textContent = 'Rejected — ' + result.error
+      verdict.textContent = 'Rejected: ' + result.error
       stage.innerHTML = ''
       return
     }
@@ -485,7 +569,7 @@ ${names.map(componentBlock).join('\n')}
   </script>`
   
     record('site/public/play.html', page({
-    title: 'Playground — largen', current: 'play', version: v,
+    title: 'Playground · largen', current: 'play', version: v,
     description: 'Render a largen spec in the browser. Shareable through the URL fragment, with nothing stored server-side.',
     body,
   }))
@@ -564,7 +648,7 @@ ${urls.map((u) => `  <url>
   const AI_AGENTS = ['GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'ClaudeBot', 'Claude-Web',
     'Claude-SearchBot', 'Google-Extended', 'PerplexityBot', 'Applebot-Extended', 'CCBot']
 
-  record('site/public/robots.txt', `# largen — a property algebra for CSS
+  record('site/public/robots.txt', `# largen: a property algebra for CSS
 #
 # Everything here is meant to be read, by people and by models alike. The
 # contract is published inline at /llms-compact.txt for exactly that reason, and
@@ -585,11 +669,11 @@ Sitemap: ${canonical('/sitemap.xml')}
      left for a reader to discover by diffing it against a schema. */
   record('site/public/.well-known/mcp/server-card.json', JSON.stringify({
     $comment:
-      'MCP Server Card per SEP-1649, which is not yet merged — see ' +
+      'MCP Server Card per SEP-1649, which is not yet merged. See ' +
       'modelcontextprotocol/modelcontextprotocol#2127. Generated by `largen pages` ' +
       'from the running server definition, so the tool list cannot drift from the ' +
       'tools the endpoint actually exposes.',
-    serverInfo: { name: 'largen', version: v, title: 'largen — a property algebra for CSS' },
+    serverInfo: { name: 'largen', version: v, title: 'largen: a property algebra for CSS' },
     description:
       'Tools for authoring and debugging largen components: the contract, the reference ' +
       'component sources, a linter, a cascade resolver, and a browser probe. Every tool ' +
@@ -609,13 +693,13 @@ Sitemap: ${canonical('/sitemap.xml')}
   record('site/public/.well-known/agent-skills/index.json', JSON.stringify({
     $schema: 'https://agentskills.io/schemas/index-v0.2.0.json',
     $comment:
-      'Agent Skills Discovery RFC v0.2.0 — pre-standard. Generated by `largen pages`; ' +
+      'Agent Skills Discovery RFC v0.2.0, pre-standard. Generated by `largen pages`; ' +
       'the sha256 is of the bytes served at the url below and is checked against them.',
     skills: [{
       name: 'largen',
       type: 'skill',
       description:
-        'Author, review, or debug CSS components with largen — a property algebra where ' +
+        'Author, review, or debug CSS components with largen, a property algebra where ' +
         'components are custom-property bundles rather than modifier classes. Covers the ' +
         `${SLOTS} slots, the four axes, the layer rule, and the ${words(MODES)} ways a ` +
         'component silently fails.',

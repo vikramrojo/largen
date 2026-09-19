@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Authoring — largen</title>
+<title>Authoring · largen</title>
 <meta name="description" content="How to write a largen component, and the four ways it goes wrong.">
 <link rel="stylesheet" href="/largen.css">
 <link rel="stylesheet" href="/largen.components.css">
@@ -57,22 +57,22 @@
 }</pre>
   <pre class="code">&lt;notification data-tone="warning"&gt;Two accounts need review.&lt;/notification&gt;
 &lt;div class="notification" data-tone="warning"&gt;…same thing…&lt;/div&gt;</pre>
-  <p class="spec-note">That is a complete component: seven tones, four variants, five sizes, every state, both themes — none of which it mentions.</p>
+  <p class="spec-note">That is a complete component: seven tones, four variants, five sizes, every state and both themes, none of which it mentions.</p>
 </section>
 
 <section class="stack" style="--gap:.75rem">
   <h2 class="section-title">The rules</h2>
   <div class="rule">
     <span class="rule-title">1. Author inside <span class="tok">@layer largen.components</span>. Override from outside it.</span>
-    <p class="rule-why">Unlayered CSS beats every layer. That is what makes overriding largen work without <span class="tok">!important</span> — and it is exactly what breaks an unlayered <em>component</em>: it outranks <span class="tok">largen.modifiers</span>, so <span class="tok">data-variant</span> silently stops applying while tone and size keep working. If a variant "isn't applying", check this before anything else.</p>
+    <p class="rule-why">Unlayered CSS beats every layer. That is what makes overriding largen work without <span class="tok">!important</span>. It is also exactly what breaks an unlayered <em>component</em>: it outranks <span class="tok">largen.modifiers</span>, so <span class="tok">data-variant</span> silently stops applying while tone and size keep working. If a variant "isn't applying", check this before anything else.</p>
   </div>
   <div class="rule">
     <span class="rule-title">2. A component sets slots. It does not set colours.</span>
-    <p class="rule-why">Write <span class="tok">--bg: var(--tone-soft)</span>, never <span class="tok">--bg: #fee</span>, and never <span class="tok">--bg: var(--danger)</span>. A colour literal cannot follow a theme swap, and reaching past <span class="tok">--tone*</span> to a raw semantic token breaks tone inheritance — the component pins itself to one colour and stops responding to the <span class="tok">data-tone</span> on its container. <span class="tok">largen verify</span> enforces both.</p>
+    <p class="rule-why">Write <span class="tok">--bg: var(--tone-soft)</span>, never <span class="tok">--bg: #fee</span>, and never <span class="tok">--bg: var(--danger)</span>. A colour literal cannot follow a theme swap, and reaching past <span class="tok">--tone*</span> to a raw semantic token breaks tone inheritance. The component pins itself to one colour and stops responding to the <span class="tok">data-tone</span> on its container. <span class="tok">largen verify</span> enforces both.</p>
   </div>
   <div class="rule">
     <span class="rule-title">3. Never write a dark-mode rule.</span>
-    <p class="rule-why"><span class="tok">--tone-soft</span> and <span class="tok">--tone-ink</span> resolve against <span class="tok">--canvas</span> and <span class="tok">--ink</span>, so a theme swap carries every component with it. If a component seems to need a dark-mode rule, the algebra has failed to cover something and <em>that</em> is the bug worth fixing — the dark rule would only hide it.</p>
+    <p class="rule-why"><span class="tok">--tone-soft</span> and <span class="tok">--tone-ink</span> resolve against <span class="tok">--canvas</span> and <span class="tok">--ink</span>, so a theme swap carries every component with it. If a component seems to need a dark-mode rule, the algebra has failed to cover something, and that failure is the bug worth fixing. A dark rule would only hide it.</p>
   </div>
   <div class="rule">
     <span class="rule-title">4. Never write a size variant.</span>
@@ -86,9 +86,9 @@ The rule is about not writing the same component five times. It is not a rule ab
   </div>
   <div class="rule">
     <span class="rule-title">6. Never add an <span class="tok">initial-value</span> to a slot.</span>
-    <p class="rule-why">With universal syntax, omitting <span class="tok">initial-value</span> makes an unset slot the <em>guaranteed-invalid</em> value, so <span class="tok">var(--pad, revert-layer)</span> falls back and hands the property back to the UA stylesheet untouched. Add an initial value and the slot is never unset, the fallback never fires, and the universal paint rule resets every element's UA defaults — every <span class="tok">&lt;ul&gt;</span> loses its indent and every <span class="tok">&lt;h1&gt;</span> its size. This descriptor is the reason largen needs no build step.
+    <p class="rule-why">With universal syntax, omitting <span class="tok">initial-value</span> makes an unset slot the <em>guaranteed-invalid</em> value, so <span class="tok">var(--pad, revert-layer)</span> falls back and hands the property back to the UA stylesheet untouched. Add an initial value and the slot is never unset, the fallback never fires, and the universal paint rule resets every element's UA defaults. Every <span class="tok">&lt;ul&gt;</span> loses its indent and every <span class="tok">&lt;h1&gt;</span> its size. This descriptor is the reason largen needs no build step.
 
-One registered property does carry an initial value, deliberately: <span class="tok">--scale</span> is declared <span class="tok">initial-value: 1</span>. It is not a paint slot — nothing reads it through <span class="tok">var(--scale, revert-layer)</span> — but a multiplier that every size calculation depends on, so it must always resolve to a number. <span class="tok">largen verify</span> exempts it by name for exactly this reason. The rule holds for the paint slots without exception.</p>
+One registered property does carry an initial value, deliberately: <span class="tok">--scale</span> is declared <span class="tok">initial-value: 1</span>. It is not a paint slot, since nothing reads it through <span class="tok">var(--scale, revert-layer)</span>. It is a multiplier that every size calculation depends on, so it must always resolve to a number. <span class="tok">largen verify</span> exempts it by name for exactly this reason. The rule holds for the paint slots without exception.</p>
   </div>
 </section>
 
@@ -98,77 +98,77 @@ One registered property does carry an initial value, deliberately: <span class="
   in largen that looks like success.</p>
   <div class="failure" data-tone="danger">
     <span class="failure-symptom">A gradient set through <span class="tok">--bg</span> produces no background at all.</span>
-    <span class="failure-line"><strong>Cause</strong> — <span class="tok">--bg</span> drives <span class="tok">background-color</span>, which cannot take a gradient.</span>
-    <span class="failure-line"><strong>Fix</strong> — Keep the slot and write the gradient beside it: <span class="tok">--bg: var(--tone); background-image: linear-gradient(…)</span>.</span>
-    <p class="failure-line">The declaration is dropped and the element paints transparent, with no warning anywhere. Nothing about <span class="tok">--bg</span> says "colour only" — it is named for background, and every other slot takes whatever its property takes. This is the general shape for anything the algebra does not model: write the slot, then the plain property. The slot keeps the element inside the algebra; the plain declaration adds what has no slot.</p>
+    <span class="failure-line"><strong>Cause</strong>: <span class="tok">--bg</span> drives <span class="tok">background-color</span>, which cannot take a gradient.</span>
+    <span class="failure-line"><strong>Fix</strong>: Keep the slot and write the gradient beside it: <span class="tok">--bg: var(--tone); background-image: linear-gradient(…)</span>.</span>
+    <p class="failure-line">The declaration is dropped and the element paints transparent, with no warning anywhere. Nothing about <span class="tok">--bg</span> says "colour only". It is named for background, and every other slot takes whatever its property takes. This is the general shape for anything the algebra does not model: write the slot, then the plain property. The slot keeps the element inside the algebra; the plain declaration adds what has no slot.</p>
   </div>
   <div class="failure" data-tone="warning">
     <span class="failure-symptom">Type resizes with <span class="tok">data-size</span> and the padding around it does not.</span>
-    <span class="failure-line"><strong>Cause</strong> — The component's <span class="tok">--pad</span> is written in <span class="tok">rem</span> — often <span class="tok">var(--space-*)</span> — instead of <span class="tok">em</span>.</span>
-    <span class="failure-line"><strong>Fix</strong> — Use <span class="tok">em</span> for a component's own padding. Keep <span class="tok">--space-*</span> for the rhythm between things.</span>
+    <span class="failure-line"><strong>Cause</strong>: The component's <span class="tok">--pad</span> is written in <span class="tok">rem</span>, often as <span class="tok">var(--space-*)</span>, instead of <span class="tok">em</span>.</span>
+    <span class="failure-line"><strong>Fix</strong>: Use <span class="tok">em</span> for a component's own padding. Keep <span class="tok">--space-*</span> for the rhythm between things.</span>
     <p class="failure-line"><span class="tok">--scale</span> inherits and a component multiplies its <span class="tok">--font-size</span> by it. Padding in <span class="tok">em</span> is relative to that font-size and follows it: <span class="tok">0.5em 1em</span> goes from 7px 14px at <span class="tok">sm</span> to 10px 20px at <span class="tok">xl</span>. In rem it is 8px 16px at every size. The page looks deliberate and has lost an axis. Reaching for the spacing scale is the obvious move, which is why <span class="tok">largen verify</span> reports this rather than leaving it to the eye.</p>
   </div>
   <div class="failure" data-tone="warning">
     <span class="failure-symptom"><span class="tok">data-variant</span> has no effect, but <span class="tok">data-tone</span> and <span class="tok">data-size</span> still work.</span>
-    <span class="failure-line"><strong>Cause</strong> — The component is declared outside <span class="tok">@layer largen.components</span>.</span>
-    <span class="failure-line"><strong>Fix</strong> — Wrap the component rule in <span class="tok">@layer largen.components { … }</span>.</span>
-    <p class="failure-line">This is the worst failure mode in the system because it looks like it works. An unlayered component outranks <span class="tok">largen.modifiers</span>, so the variant rules lose — but tone and size act through inheriting custom properties rather than by overriding slots, so they are unaffected. One dead axis and two live ones reads as "variant is buggy" rather than "my component is in the wrong layer".</p>
+    <span class="failure-line"><strong>Cause</strong>: The component is declared outside <span class="tok">@layer largen.components</span>.</span>
+    <span class="failure-line"><strong>Fix</strong>: Wrap the component rule in <span class="tok">@layer largen.components { … }</span>.</span>
+    <p class="failure-line">This is the worst failure mode in the system because it looks like it works. An unlayered component outranks <span class="tok">largen.modifiers</span>, so the variant rules lose. Tone and size act through inheriting custom properties rather than by overriding slots, so they are unaffected. One dead axis and two live ones reads as "variant is buggy" rather than "my component is in the wrong layer".</p>
   </div>
   <div class="failure" data-tone="warning">
     <span class="failure-symptom">A component ignores the <span class="tok">data-tone</span> on its container.</span>
-    <span class="failure-line"><strong>Cause</strong> — It reaches past <span class="tok">--tone*</span> to a raw semantic token, e.g. <span class="tok">--bg: var(--danger)</span>.</span>
-    <span class="failure-line"><strong>Fix</strong> — Use <span class="tok">var(--tone)</span>, <span class="tok">var(--tone-soft)</span>, <span class="tok">var(--tone-ink)</span> or <span class="tok">var(--tone-line)</span>.</span>
+    <span class="failure-line"><strong>Cause</strong>: It reaches past <span class="tok">--tone*</span> to a raw semantic token, e.g. <span class="tok">--bg: var(--danger)</span>.</span>
+    <span class="failure-line"><strong>Fix</strong>: Use <span class="tok">var(--tone)</span>, <span class="tok">var(--tone-soft)</span>, <span class="tok">var(--tone-ink)</span> or <span class="tok">var(--tone-line)</span>.</span>
     <p class="failure-line">Raw semantic tokens are absolute; the <span class="tok">--tone*</span> family is relative to whatever tone is in scope. Naming the absolute one opts the component out of the axis entirely, which is invisible until someone sets a tone on an ancestor.</p>
   </div>
   <div class="failure" data-tone="warning">
-    <span class="failure-symptom">Every element on the page loses its browser defaults — lists unindent, headings shrink.</span>
-    <span class="failure-line"><strong>Cause</strong> — A slot was given an <span class="tok">initial-value</span>, or <span class="tok">paint.css</span> was moved out of its layer.</span>
-    <span class="failure-line"><strong>Fix</strong> — Remove the <span class="tok">initial-value</span>; keep the universal rule inside <span class="tok">@layer largen.paint</span>.</span>
+    <span class="failure-symptom">Every element on the page loses its browser defaults. Lists unindent and headings shrink.</span>
+    <span class="failure-line"><strong>Cause</strong>: A slot was given an <span class="tok">initial-value</span>, or <span class="tok">paint.css</span> was moved out of its layer.</span>
+    <span class="failure-line"><strong>Fix</strong>: Remove the <span class="tok">initial-value</span>; keep the universal rule inside <span class="tok">@layer largen.paint</span>.</span>
     <p class="failure-line"><span class="tok">revert-layer</span> is only meaningful from inside a layer, and only reached when the slot is guaranteed-invalid. Break either condition and the one universal rule stops being inert and starts being destructive.</p>
   </div>
   <div class="failure" data-tone="warning">
-    <span class="failure-symptom">Your own CSS is inside a cascade layer, and largen still wins — or your "base" layer beats largen when you meant it to lose.</span>
-    <span class="failure-line"><strong>Cause</strong> — A layer's position is fixed the first time it is mentioned, and a sublayer inherits its parent's position. Layers largen named first keep theirs; yours are appended after them, whatever order your <span class="tok">@layer</span> statement lists.</span>
-    <span class="failure-line"><strong>Fix</strong> — Declare every layer in one statement, before largen loads, with flat names on both sides of it:
+    <span class="failure-symptom">Your own CSS is inside a cascade layer, and largen still wins. Or your "base" layer beats largen when you meant it to lose.</span>
+    <span class="failure-line"><strong>Cause</strong>: A layer's position is fixed the first time it is mentioned, and a sublayer inherits its parent's position. Layers largen named first keep theirs; yours are appended after them, whatever order your <span class="tok">@layer</span> statement lists.</span>
+    <span class="failure-line"><strong>Fix</strong>: Declare every layer in one statement, before largen loads, with flat names on both sides of it:
 
     @layer app-base,
            largen.fallback, largen.reset, largen.tokens, largen.paint,
            largen.tone, largen.elements, largen.components, largen.modifiers,
            app-overrides;</span>
-    <p class="failure-line">Writing <span class="tok">@layer app.base, largen.components, app.overrides;</span> reads as "app.base lowest, app.overrides highest" and does not do that. <span class="tok">largen.components</span> already exists and keeps its position, while the new <span class="tok">app</span> parent is appended after everything — so <span class="tok">app.base</span> outranks largen and <span class="tok">app.overrides</span> can never reach past it, because both are children of one parent that has one position. Flat names avoid it: <span class="tok">app-base</span> and <span class="tok">app-overrides</span> are independent, so they can sit on either side.
+    <p class="failure-line">Writing <span class="tok">@layer app.base, largen.components, app.overrides;</span> reads as "app.base lowest, app.overrides highest" and does not do that. <span class="tok">largen.components</span> already exists and keeps its position, while the new <span class="tok">app</span> parent is appended after everything. So <span class="tok">app.base</span> outranks largen, and <span class="tok">app.overrides</span> can never reach past it, because both are children of one parent that has one position. Flat names avoid this because <span class="tok">app-base</span> and <span class="tok">app-overrides</span> are independent, so they can sit on either side.
 
-This is also where a preflight goes when largen runs alongside another framework — put its base layer in the statement ahead of largen, or it sorts last and flattens everything largen styled. Layer order beats specificity, so no amount of selector weight recovers it.
+This is also where a preflight goes when largen runs alongside another framework. Put its base layer in the statement ahead of largen, or it sorts last and flattens everything largen styled. Layer order beats specificity, so no amount of selector weight recovers it.
 
-List ALL EIGHT largen sublayers, <span class="tok">largen.fallback</span> first. A sublayer the statement omits is created when largen loads and appended after the ones listed — and for <span class="tok">largen.fallback</span> that puts its per-element resets above <span class="tok">largen.components</span> in exactly the engines the fallback exists for (Firefox 113–127, Safari 16.2–16.3), while looking correct in every engine you are likely to test in.
+List ALL EIGHT largen sublayers, <span class="tok">largen.fallback</span> first. A sublayer the statement omits is created when largen loads and appended after the ones listed. For <span class="tok">largen.fallback</span> that puts its per-element resets above <span class="tok">largen.components</span> in exactly the engines the fallback exists for (Firefox 113–127, Safari 16.2–16.3), while looking correct in every engine you are likely to test in.
 
-<span class="tok">largen verify</span> cannot catch this. Layer position is a property of the whole document at load time — which files were seen, in what order — and a linter reading one stylesheet has no way to know. The browser is the only place the answer exists.</p>
+<span class="tok">largen verify</span> cannot catch this. Layer position is a property of the whole document at load time, of which files were seen and in what order, and a linter reading one stylesheet has no way to know. The browser is the only place the answer exists.</p>
   </div>
   <div class="failure" data-tone="warning">
-    <span class="failure-symptom">A fill is the right colour and the text on it is unreadable — the old tone's contrast colour on the new tone's background.</span>
-    <span class="failure-line"><strong>Cause</strong> — The component set <span class="tok">--tone</span> and read <span class="tok">var(--tone-contrast)</span> without setting <span class="tok">--tone-contrast</span> alongside it.</span>
-    <span class="failure-line"><strong>Fix</strong> — Set the pair together: <span class="tok">--tone: var(--danger); --tone-contrast: var(--danger-on)</span>.</span>
-    <p class="failure-line"><span class="tok">--tone-soft</span>, <span class="tok">--tone-ink</span> and <span class="tok">--tone-line</span> are formulas, and largen recomputes them on every element, so setting <span class="tok">--tone</span> anywhere is enough for those. <span class="tok">--tone-contrast</span> is not a formula — it is the paired token (<span class="tok">--danger</span> pairs with <span class="tok">--danger-on</span>) and nothing can derive one from the other, so it keeps whatever value was already in scope. The three that follow <span class="tok">--tone</span> automatically are exactly the three that can be computed from it. <span class="tok">largen verify</span> and <span class="tok">check_component_css</span> both flag this.</p>
+    <span class="failure-symptom">A fill is the right colour and the text on it is unreadable. It shows the old tone's contrast colour on the new tone's background.</span>
+    <span class="failure-line"><strong>Cause</strong>: The component set <span class="tok">--tone</span> and read <span class="tok">var(--tone-contrast)</span> without setting <span class="tok">--tone-contrast</span> alongside it.</span>
+    <span class="failure-line"><strong>Fix</strong>: Set the pair together: <span class="tok">--tone: var(--danger); --tone-contrast: var(--danger-on)</span>.</span>
+    <p class="failure-line"><span class="tok">--tone-soft</span>, <span class="tok">--tone-ink</span> and <span class="tok">--tone-line</span> are formulas, and largen recomputes them on every element, so setting <span class="tok">--tone</span> anywhere is enough for those. <span class="tok">--tone-contrast</span> is not a formula. It is the paired token (<span class="tok">--danger</span> pairs with <span class="tok">--danger-on</span>), and nothing can derive one from the other, so it keeps whatever value was already in scope. The three that follow <span class="tok">--tone</span> automatically are exactly the three that can be computed from it. <span class="tok">largen verify</span> and <span class="tok">check_component_css</span> both flag this.</p>
   </div>
   <div class="failure" data-tone="warning">
-    <span class="failure-symptom">largen is painting something you want it to leave alone — a third-party widget, a chart, markup another framework owns.</span>
-    <span class="failure-line"><strong>Cause</strong> — The universal paint rule claims a property as soon as any rule sets its slot, and nothing "unsets" a custom property by writing an empty value.</span>
-    <span class="failure-line"><strong>Fix</strong> — Set the slot to <span class="tok">initial</span>: <span class="tok">--bg: initial; --pad: initial</span>.</span>
-    <p class="failure-line">A slot is registered with universal syntax and no <span class="tok">initial-value</span>, so <span class="tok">initial</span> returns it to the <em>guaranteed-invalid</em> value — the state it has when nothing has set it. <span class="tok">var(--bg, revert-layer)</span> then fires and hands the property back to the user-agent stylesheet untouched. Measured: a claimed element computes <span class="tok">rgb(244,245,247)</span> and <span class="tok">16px</span> of padding; the same element with the slots set to <span class="tok">initial</span> computes <span class="tok">rgba(0,0,0,0)</span> and <span class="tok">0px</span>.
+    <span class="failure-symptom">largen is painting something you want it to leave alone: a third-party widget, a chart, markup another framework owns.</span>
+    <span class="failure-line"><strong>Cause</strong>: The universal paint rule claims a property as soon as any rule sets its slot, and nothing "unsets" a custom property by writing an empty value.</span>
+    <span class="failure-line"><strong>Fix</strong>: Set the slot to <span class="tok">initial</span>: <span class="tok">--bg: initial; --pad: initial</span>.</span>
+    <p class="failure-line">A slot is registered with universal syntax and no <span class="tok">initial-value</span>, so <span class="tok">initial</span> returns it to the <em>guaranteed-invalid</em> value, the state it has when nothing has set it. <span class="tok">var(--bg, revert-layer)</span> then fires and hands the property back to the user-agent stylesheet untouched. Measured: a claimed element computes <span class="tok">rgb(244,245,247)</span> and <span class="tok">16px</span> of padding; the same element with the slots set to <span class="tok">initial</span> computes <span class="tok">rgba(0,0,0,0)</span> and <span class="tok">0px</span>.
 
 This is the mechanism that makes incremental adoption possible. It is how largen can run beside another framework for as long as a migration takes, releasing whatever the other one still owns, rather than requiring a cutover. Treat it as a first-class part of the contract, not a trick.</p>
   </div>
   <div class="failure" data-tone="warning">
     <span class="failure-symptom">A link is tinted with the tone when it should take the colour of the text around it.</span>
-    <span class="failure-line"><strong>Cause</strong> — <span class="tok">largen.elements</span> sets <span class="tok">--fg: var(--tone-ink)</span> on every <span class="tok">a</span>, which is right for prose links and wrong for links that are navigation or UI.</span>
-    <span class="failure-line"><strong>Fix</strong> — Set <span class="tok">--fg: currentColor</span> on the link component. <span class="tok">color: inherit</span> is equivalent.</span>
-    <p class="failure-line">The spelling that looks right is <span class="tok">--fg: inherit</span>, and it does something else. <span class="tok">inherit</span> takes the parent's computed <span class="tok">--fg</span>, and because the slot does not inherit and the parent never set it, that value is guaranteed-invalid — so <span class="tok">var(--fg, revert-layer)</span> fires and reverts to the *<em>user-agent</em>* stylesheet, which colours links blue. Measured against a parent at <span class="tok">rgb(3,4,5)</span>: <span class="tok">inherit</span> gives <span class="tok">rgb(0,0,238)</span>, <span class="tok">currentColor</span> gives <span class="tok">rgb(3,4,5)</span>.
+    <span class="failure-line"><strong>Cause</strong>: <span class="tok">largen.elements</span> sets <span class="tok">--fg: var(--tone-ink)</span> on every <span class="tok">a</span>, which is right for prose links and wrong for links that are navigation or UI.</span>
+    <span class="failure-line"><strong>Fix</strong>: Set <span class="tok">--fg: currentColor</span> on the link component. <span class="tok">color: inherit</span> is equivalent.</span>
+    <p class="failure-line">The spelling that looks right is <span class="tok">--fg: inherit</span>, and it does something else. <span class="tok">inherit</span> takes the parent's computed <span class="tok">--fg</span>, and because the slot does not inherit and the parent never set it, that value is guaranteed-invalid. So <span class="tok">var(--fg, revert-layer)</span> fires and reverts to the user-agent stylesheet, which colours links blue. Measured against a parent at <span class="tok">rgb(3,4,5)</span>: <span class="tok">inherit</span> gives <span class="tok">rgb(0,0,238)</span>, <span class="tok">currentColor</span> gives <span class="tok">rgb(3,4,5)</span>.
 
-The general lesson is worth more than the recipe: returning a slot to guaranteed-invalid gets you the user-agent value, never the ambient one. If you want what the surroundings have, name it — <span class="tok">currentColor</span> — rather than trying to get there by removal.</p>
+The general lesson is worth more than the recipe. Returning a slot to guaranteed-invalid gets you the user-agent value, never the ambient one. If you want what the surroundings have, name it with <span class="tok">currentColor</span> rather than trying to get there by removal.</p>
   </div>
   <div class="failure" data-tone="warning">
     <span class="failure-symptom">A component looks right in one theme and wrong in the other.</span>
-    <span class="failure-line"><strong>Cause</strong> — A colour literal, or a value that does not resolve against <span class="tok">--canvas</span>/<span class="tok">--ink</span>.</span>
-    <span class="failure-line"><strong>Fix</strong> — Route the colour through a token or a <span class="tok">--tone*</span> derivation.</span>
+    <span class="failure-line"><strong>Cause</strong>: A colour literal, or a value that does not resolve against <span class="tok">--canvas</span>/<span class="tok">--ink</span>.</span>
+    <span class="failure-line"><strong>Fix</strong>: Route the colour through a token or a <span class="tok">--tone*</span> derivation.</span>
     <p class="failure-line">Theme swapping works by changing what the tokens resolve to. Anything that bypasses the tokens is simply not part of that mechanism.</p>
   </div>
 </section>
@@ -179,12 +179,12 @@ The general lesson is worth more than the recipe: returning a slot to guaranteed
   <span class="tok">check_component_css</span>. Both run the same rules from the same
   module, so they cannot disagree.</p>
   <p class="spec-note">Both are static. They have passed clean on visibly broken
-  components before — render the result in a browser, in both themes.</p>
+  components before. Render the result in a browser, in both themes.</p>
 </section>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.2 — a property algebra for CSS. MIT.</span>
+  <span>largen 0.5.2 · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

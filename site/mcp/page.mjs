@@ -82,7 +82,7 @@ ${body}
 </main>
 
 <footer class="site-footer">
-  <span>largen ${esc(version)} — a property algebra for CSS. MIT.</span>
+  <span>largen ${esc(version)} · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

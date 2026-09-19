@@ -11,7 +11,7 @@ newest build, so pin by version, by `sha256`, or by the `integrity` string in
 
 ## 0.5.2 — 2026-09-17
 
-The @property fallback. A new lowest-sorting layer, `largen.fallback`, preserves the guaranteed-invalid mechanism in the two engine ranges that have everything largen needs except `@property` — Firefox 113–127 (including ESR 115) and Safari 16.2–16.3. First CSS change since 0.4.0; the build id moves off `5445bbba`.
+The @property fallback. A new lowest-sorting layer, `largen.fallback`, preserves the guaranteed-invalid mechanism in the two engine ranges that have everything largen needs except `@property`: Firefox 113–127 (including ESR 115) and Safari 16.2–16.3. First CSS change since 0.4.0; the build id moves off `5445bbba`.
 
 ### Added
 
