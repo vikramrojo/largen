@@ -239,7 +239,7 @@ conforming engine it matches nothing and the registrations are authoritative.
 ## How it fails
 
 Symptom and fix. For why, fetch `get_contract` with section "failureModes", or
-read https://largen.dev/docs/authoring.html
+read https://largen.dev/docs/authoring
 
 SYMPTOM A gradient set through `--bg` produces no background at all.
 FIX Keep the slot and write the gradient beside it: `--bg: var(--tone);

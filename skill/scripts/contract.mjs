@@ -126,15 +126,15 @@ function llmsTxt(c) {
     'authors its own components on top of them. There is no build step.', '')
   L.push('## Start here', '')
   L.push('- [The whole contract, inline](https://largen.dev/llms-compact.txt): everything below in one file, sized for a prompt.')
-  L.push('- [MCP server](https://largen.dev/docs/mcp.html): `claude mcp add largen --transport http https://largen.dev/api/mcp`')
+  L.push('- [MCP server](https://largen.dev/docs/mcp): `claude mcp add largen --transport http https://largen.dev/api/mcp`')
   L.push('')
   L.push('## Documentation', '')
-  L.push('- [The contract](https://largen.dev/docs/contract.html): slots, layers, and the rules for authoring a component.')
-  L.push('- [The axes](https://largen.dev/docs/axes.html): tone, variant, size and state.')
-  L.push('- [Authoring](https://largen.dev/docs/authoring.html): writing a component, and how it fails.')
+  L.push('- [The contract](https://largen.dev/docs/contract): slots, layers, and the rules for authoring a component.')
+  L.push('- [The axes](https://largen.dev/docs/axes): tone, variant, size and state.')
+  L.push('- [Authoring](https://largen.dev/docs/authoring): writing a component, and how it fails.')
   L.push('- [Composing](https://largen.dev/llms-compact.txt): space, elevation, and what a slot cannot ' +
     'express. `get_contract` section "composition".')
-  L.push('- [Components](https://largen.dev/docs/components.html): the optional reference set, to copy or ignore.')
+  L.push('- [Components](https://largen.dev/docs/components): the optional reference set, to copy or ignore.')
   L.push('')
   L.push('## The one rule to know', '')
   L.push(wrap(c.rules[0].why), '')
@@ -194,7 +194,7 @@ function llmsCompact(c) {
    * page, all generated from the same source, and the pointer below says so. */
   L.push('## How it fails', '')
   L.push(wrap('Symptom and fix. For why, fetch `get_contract` with section ' +
-    '"failureModes", or read https://largen.dev/docs/authoring.html'), '')
+    '"failureModes", or read https://largen.dev/docs/authoring'), '')
   for (const f of c.failureModes) {
     L.push(wrap(`SYMPTOM  ${f.symptom}`), wrap(`FIX      ${f.fix}`), '')
   }

@@ -99,8 +99,8 @@ export async function pages(args = []) {
     <h1 class="hero-title">A property algebra for CSS.</h1>
     ${home('hero-lede', 'hero-lede')}
     <div class="cluster" style="--gap:.6rem">
-      <a class="pill" data-tone="primary" href="/docs/contract.html">Read the contract</a>
-      <a class="pill" data-tone="neutral" href="/docs/mcp.html">MCP server</a>
+      <a class="pill" data-tone="primary" href="/docs/contract">Read the contract</a>
+      <a class="pill" data-tone="neutral" href="/docs/mcp">MCP server</a>
       <a class="pill" data-tone="neutral" href="/play">Playground</a>
     </div>
   </section>
@@ -147,11 +147,11 @@ export async function pages(args = []) {
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">Start here</h2>
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
-  ${card('/docs/contract.html', 'The contract', home.raw('card-contract'))}
-  ${card('/docs/axes.html', 'The axes', home.raw('card-axes'))}
-  ${card('/docs/authoring.html', 'Authoring', home.raw('card-authoring'))}
-  ${card('/docs/components.html', 'Reference components', home.raw('card-components'))}
-  ${card('/docs/mcp.html', 'MCP server', home.raw('card-mcp'))}
+  ${card('/docs/contract', 'The contract', home.raw('card-contract'))}
+  ${card('/docs/axes', 'The axes', home.raw('card-axes'))}
+  ${card('/docs/authoring', 'Authoring', home.raw('card-authoring'))}
+  ${card('/docs/components', 'Reference components', home.raw('card-components'))}
+  ${card('/docs/mcp', 'MCP server', home.raw('card-mcp'))}
   ${card('/play', 'Playground', home.raw('card-play'))}
     </div>
   </section>
@@ -502,10 +502,9 @@ ${TOOL_ORDER.map(toolBlock).join('\n  \n')}
     /* 404.html is not a page anyone should be sent to. */
     .filter((u) => u !== '/404.html')
     .map((u) => (u === '/index.html' ? '/' : u))
-    /* The extensionless form, because that is what the nav links and therefore
-       what anything following the site arrives at. Both resolve; a sitemap should
-       name one of them. */
-    .map((u) => (u === '/play.html' ? '/play' : u))
+    /* The extensionless form, because that is what the nav links to and what
+       the .html form now 301s to. A sitemap should name the canonical one. */
+    .map((u) => u.replace(/\.html$/, ''))
     .concat(['/demo/conformance.html', '/demo/tests.html'])
     .sort()
 
@@ -567,7 +566,7 @@ Sitemap: ${canonical('/sitemap.xml')}
     authentication: { type: 'none' },
     capabilities: { tools: { listChanged: false } },
     tools: TOOL_DEFINITIONS.map((t) => ({ name: t.name, title: t.title })),
-    documentation: canonical('/docs/mcp.html'),
+    documentation: canonical('/docs/mcp'),
   }, null, 2) + '\n')
 
   /* Agent Skills discovery index — Agent Skills Discovery RFC v0.2.0. The digest
@@ -596,7 +595,7 @@ Sitemap: ${canonical('/sitemap.xml')}
   record('site/public/.well-known/api-catalog', JSON.stringify({
     linkset: [{
       anchor: canonical('/api/mcp'),
-      'service-doc': [{ href: canonical('/docs/mcp.html'), type: 'text/html', title: 'MCP server documentation' }],
+      'service-doc': [{ href: canonical('/docs/mcp'), type: 'text/html', title: 'MCP server documentation' }],
       'service-desc': [{ href: canonical('/.well-known/mcp/server-card.json'), type: 'application/json', title: 'MCP server card' }],
       status: [{ href: canonical('/health'), type: 'application/json', title: 'Health' }],
     }, {

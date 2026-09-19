@@ -47,7 +47,7 @@ fails `largen verify` and `check_component_css`, and a spec that names an
 unapproved component fails `validate_spec`. With one legal way to colour a
 thing, anything hand-set is easy for a machine to spot.
 
-That premise shapes the [MCP server](/docs/mcp.html) too. It cannot know your
+That premise shapes the [MCP server](/docs/mcp) too. It cannot know your
 components, so every tool takes an optional manifest of them and answers in
 your vocabulary rather than largen's.
 

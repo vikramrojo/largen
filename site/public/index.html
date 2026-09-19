@@ -15,12 +15,12 @@
 <header class="site-header">
   <a class="wordmark" href="/">largen</a>
   <nav class="cluster" style="--gap:1rem">
-        <a class="nav-link" href="/docs/contract.html">contract</a>
-        <a class="nav-link" href="/docs/axes.html">axes</a>
-        <a class="nav-link" href="/docs/authoring.html">authoring</a>
-        <a class="nav-link" href="/docs/components.html">components</a>
-        <a class="nav-link" href="/docs/mcp.html">mcp</a>
-        <a class="nav-link" href="/docs/migrating.html">migrating</a>
+        <a class="nav-link" href="/docs/contract">contract</a>
+        <a class="nav-link" href="/docs/axes">axes</a>
+        <a class="nav-link" href="/docs/authoring">authoring</a>
+        <a class="nav-link" href="/docs/components">components</a>
+        <a class="nav-link" href="/docs/mcp">mcp</a>
+        <a class="nav-link" href="/docs/migrating">migrating</a>
         <a class="nav-link" href="/play">play</a>
     <label class="theme-toggle">
       <input type="checkbox" hidden onchange="
@@ -36,8 +36,8 @@
     <h1 class="hero-title">A property algebra for CSS.</h1>
     <p class="hero-lede">14 custom-property slots, four axes, and one universal paint rule. The components are yours to write. Plain CSS, with no build step, no preprocessor and no plugin.</p>
     <div class="cluster" style="--gap:.6rem">
-      <a class="pill" data-tone="primary" href="/docs/contract.html">Read the contract</a>
-      <a class="pill" data-tone="neutral" href="/docs/mcp.html">MCP server</a>
+      <a class="pill" data-tone="primary" href="/docs/contract">Read the contract</a>
+      <a class="pill" data-tone="neutral" href="/docs/mcp">MCP server</a>
       <a class="pill" data-tone="neutral" href="/play">Playground</a>
     </div>
   </section>
@@ -83,29 +83,29 @@
     <h2 class="section-title">It is not a catalog</h2>
     <p class="spec-note">Most CSS libraries ship components and ask you to configure them. largen ships the algebra underneath components and expects you to write your own, named in your application's own language: <span class="tok">.entry-card</span>, not <span class="tok">.card-lg-bordered</span>.</p>
     <p class="spec-note">Each tier is paired with a check. A component that sets a colour literal, reaches past the tone axis, sets an unregistered slot or forgets its layer fails <span class="tok">largen verify</span> and <span class="tok">check_component_css</span>, and a spec that names an unapproved component fails <span class="tok">validate_spec</span>. With one legal way to colour a thing, anything hand-set is easy for a machine to spot.</p>
-    <p class="spec-note">That premise shapes the <a href="/docs/mcp.html">MCP server</a> too. It cannot know your components, so every tool takes an optional manifest of them and answers in your vocabulary rather than largen's.</p>
+    <p class="spec-note">That premise shapes the <a href="/docs/mcp">MCP server</a> too. It cannot know your components, so every tool takes an optional manifest of them and answers in your vocabulary rather than largen's.</p>
   </section>
 
   <section class="stack" style="--gap:.75rem">
     <h2 class="section-title">Start here</h2>
     <div class="grid" style="--min-item:16rem;--gap:.75rem">
-    <a class="doc-card" href="/docs/contract.html">
+    <a class="doc-card" href="/docs/contract">
       <span class="doc-card-title">The contract</span>
       <span class="doc-card-desc">14 slots, the layer rule, the paint rule. What the library guarantees.</span>
     </a>
-    <a class="doc-card" href="/docs/axes.html">
+    <a class="doc-card" href="/docs/axes">
       <span class="doc-card-title">The axes</span>
       <span class="doc-card-desc">tone, variant, size, state, and why only two of them inherit.</span>
     </a>
-    <a class="doc-card" href="/docs/authoring.html">
+    <a class="doc-card" href="/docs/authoring">
       <span class="doc-card-title">Authoring</span>
       <span class="doc-card-desc">six rules for writing a component, and the ten ways it goes wrong.</span>
     </a>
-    <a class="doc-card" href="/docs/components.html">
+    <a class="doc-card" href="/docs/components">
       <span class="doc-card-title">Reference components</span>
       <span class="doc-card-desc">32 optional components. Copy them or ignore them.</span>
     </a>
-    <a class="doc-card" href="/docs/mcp.html">
+    <a class="doc-card" href="/docs/mcp">
       <span class="doc-card-title">MCP server</span>
       <span class="doc-card-desc">12 tools for agents. No API key, no generate_ui.</span>
     </a>

@@ -10,13 +10,13 @@ const OUT = process.env.SHOTS ?? '/tmp/largen-shots'
 
 const PAGES = [
   ['index', '/'],
-  ['contract', '/docs/contract.html'],
-  ['axes', '/docs/axes.html'],
-  ['authoring', '/docs/authoring.html'],
-  ['components', '/docs/components.html'],
-  ['mcp', '/docs/mcp.html'],
+  ['contract', '/docs/contract'],
+  ['axes', '/docs/axes'],
+  ['authoring', '/docs/authoring'],
+  ['components', '/docs/components'],
+  ['mcp', '/docs/mcp'],
   ['play', '/play'],
-  ['migrating', '/docs/migrating.html'],
+  ['migrating', '/docs/migrating'],
   ['404', '/nope'],
   /* The demo pages are served from demo/ rather than copied into public/, so
      these also verify that the mount resolves their relative stylesheet links. */

@@ -2,6 +2,7 @@ node_modules/
 site/.previews/
 *.tgz
 dist/
+.DS_Store
 
 # Bake-off run outputs — inputs are checked in, results are not.
 .claude/skills/largen-bakeoff/runs/

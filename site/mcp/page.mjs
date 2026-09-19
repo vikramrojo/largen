@@ -36,12 +36,12 @@ export function inline(text) {
 }
 
 const NAV = [
-  ['/docs/contract.html', 'contract'],
-  ['/docs/axes.html', 'axes'],
-  ['/docs/authoring.html', 'authoring'],
-  ['/docs/components.html', 'components'],
-  ['/docs/mcp.html', 'mcp'],
-  ['/docs/migrating.html', 'migrating'],
+  ['/docs/contract', 'contract'],
+  ['/docs/axes', 'axes'],
+  ['/docs/authoring', 'authoring'],
+  ['/docs/components', 'components'],
+  ['/docs/mcp', 'mcp'],
+  ['/docs/migrating', 'migrating'],
   ['/play', 'play'],
 ]
 

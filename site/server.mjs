@@ -267,7 +267,7 @@ const server = createServer(async (req, res) => {
        largen.dev without the server knowing which one answered. */
     const LINKS = [
       '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
-      '</docs/mcp.html>; rel="service-doc"; type="text/html"',
+      '</docs/mcp>; rel="service-doc"; type="text/html"',
       '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
       '</llms-compact.txt>; rel="describedby"; type="text/plain"',
       '</sitemap.xml>; rel="sitemap"; type="application/xml"',
@@ -288,6 +288,23 @@ const server = createServer(async (req, res) => {
     }
 
     /* --- Static site --------------------------------------------------------- */
+
+    /* Clean URLs. A request for /docs/contract.html answers 301 to
+       /docs/contract, which the extensionless fallback below serves from the
+       same file — one URL per page instead of two, so external links and
+       search indexes converge on the form the nav uses. Only the static site
+       redirects: repo mounts (/demo/*.html) and frozen /v/ paths are reached
+       above this point, and their filenames are the interface. 404.html is
+       excluded because it is a body the server uses, not a page with a
+       canonical address. */
+    if (path.endsWith('.html') && path !== '/404.html') {
+      const file = safeJoin(PUBLIC, path)
+      if (file && existsSync(file)) {
+        const target = path === '/index.html' ? '/' : path.slice(0, -'.html'.length)
+        return send(res, 301, '', { location: target + url.search })
+      }
+    }
+
     const rel = path === '/' ? '/index.html' : path
     const candidate = safeJoin(PUBLIC, rel)
     const linkHeader = path === '/' ? { link: LINKS } : {}

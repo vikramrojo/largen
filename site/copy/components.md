@@ -13,7 +13,7 @@ class duplicating them would be a worse copy of something the platform
 provides.
 
 Each example below is rendered from a validated spec by the same validator and
-renderer the [MCP server](/docs/mcp.html) uses, so nothing on this page is
+renderer the [MCP server](/docs/mcp) uses, so nothing on this page is
 something `validate_spec` would reject. Fetch any source with
 `get_component_source`, or read [reference.css](/components/reference.css)
 whole.
