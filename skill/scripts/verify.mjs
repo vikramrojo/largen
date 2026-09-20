@@ -48,6 +48,7 @@ import { at, root, discover } from './paths.mjs'
 import { lintComponentCss, registeredSlots, classifySheet, lintPageHtml } from '../../genai/lint.js'
 import { checkLayerOrder, orderFromImports, orderFromHtml, inferEntry } from '../../genai/layers.js'
 import { checkComponentsApply } from '../../genai/cascade.js'
+import { VOCABULARY, parseTokensCss, toDtcg, fromDtcg, toThemeCss } from '../../genai/tokens.js'
 
 const read = (p) => readFileSync(at(p), 'utf8')
 const strip = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '')
@@ -203,6 +204,121 @@ function libraryInvariants() {
     assert(/__largen/.test(html), 'conformance.html must expose its results on window.__largen')
     return 'open it in Safari, Firefox and Chrome — this check cannot run it'
   })
+
+  /* The DTCG layer's two guards. The token documents are derived from the CSS,
+     so the CSS can move and take the JSON with it — but only if the derivation
+     is total and lossless, and neither property is visible in a diff. */
+
+  /* The vocabulary is declared rather than inferred, which is what lets the
+     validator know that --line-height-base is a number, and is exactly what
+     makes this check necessary: a token added to src/tokens.css with no table
+     entry would export as an untyped extra and be validated against nothing.
+     Inference guaranteed no silent omission; a declared table pays for that
+     guarantee here, by name, in both directions. */
+  check('the token vocabulary covers src/tokens.css exactly', () => {
+    const inCss = [...parseTokensCss(read('src/tokens.css')).tokens.keys()]
+    const inTable = VOCABULARY.map((e) => e.prop)
+    const untabled = inCss.filter((p) => !inTable.includes(p))
+    const unset = inTable.filter((p) => !inCss.includes(p))
+    assert(untabled.length === 0,
+      `src/tokens.css sets ${untabled.join(', ')}, which the vocabulary in ` +
+      `genai/tokens.js does not name. An untabled token exports as an untyped ` +
+      `extra and is validated against nothing.`)
+    assert(unset.length === 0,
+      `the vocabulary names ${unset.join(', ')}, which src/tokens.css does not ` +
+      `set. A theme setting one would pass validation and then paint nothing, ` +
+      `because no default exists for it to override.`)
+    return `${inTable.length} tokens, both directions`
+  })
+
+  /* Name for name, value for value, in order. A codec that rounds a hex back to
+     the neighbouring colour, an emitter that writes 0rem where a person wrote 0,
+     a parser that loses var(--shade) inside a shadow: each is invisible in a
+     diff of the JSON and each breaks the promise that a theme can travel out to
+     a design tool and come home unchanged. */
+  check('a token stylesheet survives the DTCG round trip', () => {
+    const slots = registeredSlots(read('src/properties.css'))
+    const done = []
+    for (const [file, theme] of [['src/tokens.css', null], ['themes/dark.css', 'dark']]) {
+      const before = parseTokensCss(read(file))
+      const doc = toDtcg(before.tokens, { theme, colorScheme: before.colorScheme })
+      const back = fromDtcg(doc, { slots })
+      const say = (ds) => ds.map((d) => `${d.path} — ${d.message}`).join('; ')
+      assert(back.errors.length === 0,
+        `${file} exports to a document its own importer rejects: ${say(back.errors)}`)
+      assert(back.warnings.length === 0,
+        `${file} exports to a document its own importer warns about: ${say(back.warnings)}`)
+      const after = parseTokensCss(
+        toThemeCss(back.tokens, { theme: back.theme, colorScheme: back.colorScheme }))
+      const a = [...before.tokens], b = [...after.tokens]
+      for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        const [wantName, wantValue] = a[i] ?? ['(nothing)', '']
+        const [gotName, gotValue] = b[i] ?? ['(nothing)', '']
+        assert(wantName === gotName && wantValue === gotValue,
+          `${file} does not survive the round trip at declaration ${i + 1}: ` +
+          `expected \`${wantName}: ${wantValue}\`, got \`${gotName}: ${gotValue}\``)
+      }
+      done.push(`${file} (${a.length})`)
+    }
+    return done.join(', ')
+  })
+
+  /* And the third: the documents that actually ship. The first two invariants
+     prove the derivation is right; this one proves dist/ is the output of it and
+     not something a person edited, which is the same reason `largen gen` refuses
+     hand-edits to schema.json. Without it the guarantee stops at the code. */
+  const DOCS = [
+    ['dist/largen.tokens.json', 'src/tokens.css', null],
+    ['dist/theme-dark.tokens.json', 'themes/dark.css', 'dark'],
+  ]
+  const absent = DOCS.filter(([out]) => !existsSync(at(out))).map(([out]) => out)
+  if (absent.length) {
+    /* NOT RUN rather than ok, for the reason the cascade checks report it: a
+       check that cannot run and says nothing is honest, and one that says ok is
+       a claim about files that are not there. */
+    console.log(`  NOT RUN  the built token documents — ${absent.join(', ')} ${absent.length === 1 ? 'is' : 'are'} not built`)
+    console.log('           The documents are derived from the CSS at build time, so until')
+    console.log('           they exist there is nothing to compare the CSS against. Run')
+    console.log('           `npm run build`. Reporting ok here would claim the JSON matches')
+    console.log('           the CSS on the strength of no JSON at all.')
+  } else {
+    check('the built token documents match a fresh export', () => {
+      /* Every leaf, by path, so a difference names the token and not the file. */
+      const leaves = (node, prefix = '') => {
+        if (node === null || typeof node !== 'object' || Array.isArray(node)) return [[prefix, JSON.stringify(node)]]
+        return Object.keys(node).flatMap((k) => leaves(node[k], prefix ? `${prefix}.${k}` : k))
+      }
+      /* version and build come from package.json and the bundle's id, not from
+         the CSS, and the root $description embeds the version — all three move
+         at a release without any token moving. The per-token $descriptions come
+         from the vocabulary and are compared. */
+      const VOLATILE = ['$extensions.dev.largen.version', '$extensions.dev.largen.build', '$description']
+      const done = []
+      for (const [out, src, theme] of DOCS) {
+        const { tokens, colorScheme } = parseTokensCss(read(src))
+        const want = new Map(leaves(toDtcg(tokens, { theme, colorScheme })))
+        let got
+        try { got = new Map(leaves(JSON.parse(read(out)))) }
+        catch (e) { throw new Error(`${out} is not readable JSON: ${e.message}. Run \`npm run build\`.`) }
+        for (const m of [want, got]) for (const k of VOLATILE) m.delete(k)
+
+        for (const [path, value] of want) {
+          assert(got.has(path),
+            `${out} is missing ${path}, which a fresh export of ${src} sets to ${value}. ` +
+            `The CSS is the source of truth — run \`npm run build\`.`)
+          assert(got.get(path) === value,
+            `${out} has ${path} = ${got.get(path)}, but ${src} says ${value}. The documents ` +
+            `are generated and must never be hand-edited — run \`npm run build\`.`)
+        }
+        const extra = [...got.keys()].find((k) => !want.has(k))
+        assert(extra === undefined,
+          `${out} carries ${extra} = ${got.get(extra)}, which a fresh export of ${src} does ` +
+          `not produce. Run \`npm run build\`.`)
+        done.push(`${out} (${want.size} values)`)
+      }
+      return done.join(', ')
+    })
+  }
 }
 
 /* --- The contract, against whatever the caller pointed at ---------------- */

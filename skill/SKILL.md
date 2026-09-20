@@ -548,6 +548,7 @@ npx largen verify [css...] [--entry main.css]              # check your componen
 npx largen eval <dir> [dir2] [--entry main.css] [--json]   # score a directory of authored components against the contract, offline and deterministic, with no model
 npx largen build                                           # bundle and minify to dist/ for the CDN. Optional, with no dependencies
 npx largen gen                                             # regenerate genai artifacts from genai/manifest.json
+npx largen theme <file.tokens.json>                        # validate a DTCG token document against the token vocabulary and emit a theme stylesheet
 npx largen manifest <css...>                               # derive a component manifest from a project's CSS
 npx largen cascade --property P --at CHAIN <css...>        # which declaration wins for a property on an element, and why, with no browser
 npx largen slot --slot S --at CHAIN <css...>               # whether the paint rule applies a slot, or it reverts, and to what

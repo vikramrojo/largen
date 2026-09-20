@@ -1,6 +1,6 @@
 {
   "name": "largen",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "A property algebra for CSS. Primitives, a handful of layout utilities, and components you write yourself.",
   "author": "Vikram Babu",
   "license": "MIT",
@@ -24,10 +24,13 @@
     "skill/scripts/bundle.mjs",
     "skill/scripts/probe.mjs",
     "skill/scripts/cascade.mjs",
+    "skill/scripts/theme.mjs",
     "skill/scripts/paths.mjs",
     "dist/largen.css",
     "dist/largen.components.css",
     "dist/theme-dark.css",
+    "dist/largen.tokens.json",
+    "dist/theme-dark.tokens.json",
     "dist/build.json",
     "LICENSE",
     "README.md",
@@ -44,6 +47,7 @@
     "./manifest.json": "./genai/manifest.json",
     "./validate": "./genai/validate.js",
     "./lint": "./genai/lint.js",
+    "./tokens": "./genai/tokens.js",
     "./package.json": "./package.json"
   },
   "bin": {

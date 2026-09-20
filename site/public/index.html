@@ -125,7 +125,7 @@
 <pre class="code">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css"&gt;
 
 # or pinned. A published version is immutable:
-&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.5.2/dist/largen.css"&gt;
+&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.6.0/dist/largen.css"&gt;
 
 # or install it:
 npm install largen</pre>
@@ -152,7 +152,7 @@ npm install largen</pre>
 <h2 class="section-title" id="releases">Releases</h2>
 </div>
 
-<p class="spec-note"><strong>0.5.2</strong>: The @property fallback. A new lowest-sorting layer, <code>largen.fallback</code>, preserves the guaranteed-invalid mechanism in the two engine ranges that have everything largen needs except <code>@property</code>: Firefox 113–127 (including ESR 115) and Safari 16.2–16.3. First CSS change since 0.4.0; the build id moves off <code>5445bbba</code>.</p>
+<p class="spec-note"><strong>0.6.0</strong>: The token vocabulary becomes a document. <code>largen build</code> exports <code>dist/largen.tokens.json</code> (the defaults) and <code>dist/theme-dark.tokens.json</code> (the dark theme) as W3C Design Tokens Community Group JSON, and <code>largen theme</code> reads a document back the other way, validating it against the vocabulary before it emits a theme stylesheet. DTCG is largen's theme interchange format now, so a theme can travel to Figma, Tokens Studio, Style Dictionary or Penpot and back. No CSS change: the build id stays <code>0073498a</code>, as it has since 0.5.2.</p>
 
 <div class="doc">
 <p class="doc-p">Every entry in the log is checked against the bytes that version actually shipped. <a href="https://github.com/vikramrojo/largen/blob/main/RELEASES.md">The full log</a> · <a href="https://www.npmjs.com/package/largen">npm</a></p>
@@ -160,7 +160,7 @@ npm install largen</pre>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.2 · a property algebra for CSS. MIT.</span>
+  <span>largen 0.6.0 · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

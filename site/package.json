@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node test/run.mjs"
+    "test": "node test/run.mjs",
+    "test:tokens": "node test/tokens.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0"

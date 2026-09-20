@@ -1,0 +1,21 @@
+{
+  "$description": "A colour given as components with no hex. Import accepts it.",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "components-only",
+      "colorScheme": "light"
+    }
+  },
+  "canvas": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        0.0627,
+        0.0706,
+        0.0784
+      ]
+    }
+  }
+}

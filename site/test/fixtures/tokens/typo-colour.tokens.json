@@ -1,0 +1,14 @@
+{
+  "$description": "A colour $value that is not a colour. Import fails rather than passing the string through as CSS.",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "typo",
+      "colorScheme": "light"
+    }
+  },
+  "canvas": {
+    "$type": "color",
+    "$value": "#12345g"
+  }
+}

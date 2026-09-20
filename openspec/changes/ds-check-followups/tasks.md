@@ -1,6 +1,6 @@
 # Tasks
 
-## 1. Part 1 — coined-tag check as a warning (0.5.3)
+## 1. Part 1 — coined-tag check as a warning (0.6.1)
 
 - [ ] 1.1 Add the coined-tag classifier to `genai/lint.js`: a conservative
       leading-token list (`button`, `nav`, `dialog`, `input`, `select`,
@@ -51,52 +51,37 @@
       tools' answers name the documented cause. Verify: `node
       site/test/evals.mjs` runs green in CI beside the existing suite.
 
-## 3. Release 0.5.3
+## 3. Release 0.6.1
 
 - [ ] 3.1 Run `npx largen build` and confirm the build id is unchanged (no
-      CSS change shipped); update RELEASES.md with the 0.5.3 entry following
+      CSS change shipped); update RELEASES.md with the 0.6.1 entry following
       the house format. Verify: release check passes; RELEASES.md states "no
       CSS change" with the current build id.
-- [ ] 3.2 Publish 0.5.3 to npm and deploy the site (MCP validation and evals
-      go live). Verify: `curl https://largen.exe.xyz/health` reports 0.5.3,
-      and both CDNs resolve `largen@0.5.3`.
+- [ ] 3.2 Publish 0.6.1 to npm and deploy the site (MCP validation and evals
+      go live). Verify: `curl https://largen.exe.xyz/health` reports 0.6.1,
+      and both CDNs resolve `largen@0.6.1`.
 
-## 4. Part 2 — DTCG export (0.6.0)
+## 4. Part 2 — DTCG export (superseded)
 
-- [ ] 4.1 Write the token-source parser and DTCG emitter
-      (`skill/scripts/tokens.mjs`, wired as `largen tokens --dtcg`): names
-      from custom properties, `$type` inferred from value syntax, expression
-      values emitted as authored. Verify: output validates against a DTCG
-      shape check in tests; every token in `src/tokens.css` appears with
-      `$value` and `$type`.
-- [ ] 4.2 Support `--theme <file>`: emitted values are the theme's where the
-      theme sets them, library defaults elsewhere. Verify: exporting with
-      `themes/dark.css` (actual path per repo) flips exactly the tokens the
-      theme sets, asserted in a test.
-- [ ] 4.3 Prove derivation: a test adds a token to a fixture source and
-      asserts it appears in the export with no emitter edit. Verify: test in
-      the suite, green.
-- [ ] 4.4 Document the format promise: the DTCG draft snapshot targeted, the
-      expression-value caveat and its browser-resolution answer (`largen
-      probe`), and the rule that shape changes ride minors. Verify: docs
-      section exists and is linked from README's tooling list.
+Superseded by the `dtcg-token-layer` change (export via `largen build`, import via `largen theme`, drift guard in `largen verify`).
 
-## 5. Part 2 — lint promotion and release 0.6.0
+## 5. Part 2 — lint promotion and release 0.7.0
 
 - [ ] 5.1 Flip the severity constant to `error`; update the 1.1/1.2 test
       expectations. Verify: `npx largen verify` on the 1.2 fixture now fails,
       and `check_component_css` reports `error` severity.
 - [ ] 5.2 Add the MIGRATING.md entry for the promotion (what now fails, the
       two spellings that fix it). Verify: entry present and named from the
-      RELEASES.md 0.6.0 entry.
-- [ ] 5.3 Build, confirm the build id is still unchanged, write the 0.6.0
-      RELEASES.md entry, publish, deploy. Verify: `/health` reports 0.6.0;
-      `npx largen@0.6.0 tokens --dtcg` runs from a clean install.
+      RELEASES.md 0.7.0 entry.
+- [ ] 5.3 Build, confirm the build id is still unchanged, write the 0.7.0
+      RELEASES.md entry, publish, deploy. Verify: `/health` reports 0.7.0;
+      `npx largen@0.7.0 verify` reports the coined-tag check at error severity from a
+      clean install.
 
 ## 6. Verification
 
 - [ ] 6.1 Run the full suite (`site/test/run.mjs`, discovery, conformance,
-      evals) against the deployed 0.6.0 and check every scenario in this
-      change's four spec deltas against observed behaviour. Verify: all
+      evals) against the deployed 0.7.0 and check every scenario in this
+      change's three spec deltas against observed behaviour. Verify: all
       green; any deviation is fixed or the spec delta corrected before
       archive.

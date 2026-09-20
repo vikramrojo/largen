@@ -139,7 +139,8 @@ missing, so build before you copy.
 npx largen build          # dist/*.css
 npx largen contract       # SKILL.md, llms.txt, llms-compact.txt, the contract pages
 npx largen release        # freezes dist/ at site/public/v/<version>/
-cd site && node test/run.mjs && cd ..    # 40 assertions, locally, before shipping
+cd site && node test/tokens.mjs && cd ..  # the DTCG round trip; needs no server
+cd site && node test/run.mjs && cd ..     # 40 assertions, locally, before shipping
 ```
 
 ```sh

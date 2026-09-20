@@ -1,0 +1,18 @@
+{
+  "$description": "Two extras that reference each other. Import fails and names the cycle.",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "cycle",
+      "colorScheme": "light"
+    }
+  },
+  "a": {
+    "$type": "color",
+    "$value": "{b}"
+  },
+  "b": {
+    "$type": "color",
+    "$value": "{a}"
+  }
+}
