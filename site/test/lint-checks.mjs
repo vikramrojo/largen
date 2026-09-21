@@ -156,13 +156,13 @@ check('a size value inside a longer word is not a size suffix', () => {
 
 /* --- The coined tag (1.1, staged severity) -------------------------------- */
 
-check('a coined tag that impersonates a native element warns and names it', () => {
+check('a coined tag that impersonates a native element errors and names it', () => {
   const css = layered('  button-primary, .button-primary { --bg: var(--tone); }')
   const f = one(css, 'coined-tag')
   eq(f.message, '`<button-primary>` coins a tag where the native `<button>` exists',
     'the finding text moved')
   eq(f.severity, COINED_TAG_SEVERITY, 'the severity did not come from the constant')
-  assert(lint(css).ok, 'a warning must not make the result not ok while the rule is staged')
+  assert(!lint(css).ok, 'the rule is promoted, so the result must no longer be ok')
   return f.message
 })
 
@@ -238,32 +238,36 @@ check('`nativeElementFor` answers the same question for a manifest `element`', (
    site instead of read from the constant, the assertions below would fail.
    `genai/lint.js` imports nothing, so a copy of it runs standalone. */
 const SRC = readFileSync(root + 'genai/lint.js', 'utf8')
+/* The promotion has happened: the constant reads `error` now. The patch runs
+   backwards, to `warning`, which proves the same thing it proved before it
+   shipped — the severity is read from one place and nothing writes it at a call
+   site. Reverting is also the rollback, so this keeps that path exercised. */
 const PATCHED = SRC.replace(
-  "export const COINED_TAG_SEVERITY = 'warning'",
-  "export const COINED_TAG_SEVERITY = 'error'")
+  "export const COINED_TAG_SEVERITY = 'error'",
+  "export const COINED_TAG_SEVERITY = 'warning'")
 const dir = mkdtempSync(join(tmpdir(), 'largen-lint-severity-'))
 writeFileSync(join(dir, 'lint.js'), PATCHED)
 const flipped = await import(join(dir, 'lint.js'))
 rmSync(dir, { recursive: true, force: true })
 
-check('the severity is one constant, and flipping it is the whole promotion', () => {
+check('the severity is one constant, and moving it is the whole promotion', () => {
   assert(PATCHED !== SRC, 'the constant is not spelled as expected in genai/lint.js')
-  /* 'warning' → 'error' is exactly two characters shorter. If the patch moved
+  /* 'error' → 'warning' is exactly two characters longer. If the patch moved
      anything else, the constant is not the only place the severity is written. */
-  eq(PATCHED.length, SRC.length - 2, 'patching the constant changed more than the one word')
-  eq(flipped.COINED_TAG_SEVERITY, 'error', 'the constant did not flip')
+  eq(PATCHED.length, SRC.length + 2, 'patching the constant changed more than the one word')
+  eq(flipped.COINED_TAG_SEVERITY, 'warning', 'the constant did not move')
 
   const css = layered('  button-primary { --bg: var(--tone); }')
-  const before = lint(css)
-  const after = flipped.lintComponentCss(css, { slots })
-  const f = after.findings.filter((x) => x.rule === 'coined-tag')
+  const shipped = lint(css)
+  const staged = flipped.lintComponentCss(css, { slots })
+  const f = staged.findings.filter((x) => x.rule === 'coined-tag')
   eq(f.length, 1, 'the rule stopped firing when the constant moved')
-  eq(f[0].severity, 'error', 'the finding severity did not follow the constant')
-  eq(f[0].message, before.findings.find((x) => x.rule === 'coined-tag').message,
+  eq(f[0].severity, 'warning', 'the finding severity did not follow the constant')
+  eq(f[0].message, shipped.findings.find((x) => x.rule === 'coined-tag').message,
     'the message must not change with the severity — only the severity does')
-  assert(before.ok, 'at warning severity the result is still ok')
-  assert(!after.ok, 'at error severity the result must no longer be ok')
-  return 'warning → error, one constant, same text'
+  assert(!shipped.ok, 'at error severity the result must not be ok')
+  assert(staged.ok, 'at warning severity the result is ok again')
+  return 'error → warning, one constant, same text'
 })
 
 /* --- The regression that matters most ------------------------------------ */

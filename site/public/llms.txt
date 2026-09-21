@@ -30,4 +30,4 @@ anything else.
 ## Stylesheet
 
 - Current: https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css
-- Pinned:  https://cdn.jsdelivr.net/npm/largen@0.6.1/dist/largen.css (immutable)
+- Pinned:  https://cdn.jsdelivr.net/npm/largen@0.6.2/dist/largen.css (immutable)

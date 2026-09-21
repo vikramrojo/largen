@@ -9,6 +9,20 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.6.2 — 2026-09-20
+
+The coined-tag check becomes an error. Staged as a warning in 0.6.1 and promoted here, which is the whole release — one constant in `genai/lint.js`. Shipped as a patch rather than a minor because 0.6 has no users to protect; the break is real and is listed below rather than hidden by the version number. No CSS change — the build id stays `0073498a`.
+
+### Breaking
+
+- **A component that coins a tag impersonating a native element now fails `largen verify` and `check_component_css`.**
+  A coined tag is for a container with no role. A name whose leading token is a native interactive or sectioning element has an accessible name, focus behaviour and keyboard activation to lose, and a custom element gets none of them back. This was a warning in 0.6.1 so that false positives could surface while the rule was still harmless; the leading-token list is deliberately short and nothing in largen's own components trips it.
+  *To migrate:* Style the native element and keep your name as a class — `<button class="button-primary">` — which also restores focus, keyboard activation and the accessible name. If the element genuinely cannot be native, carry the role explicitly: `<my-thing role="button" tabindex="0">`. A role-less container such as `notification` or `card` was never caught and still is not.
+
+### Tooling
+
+- The severity is one exported constant, `COINED_TAG_SEVERITY`, and a test asserts that patching it moves the reported severity and changes nothing else — the message text is identical either way. That test now runs the patch backwards, from `error` to `warning`, so the rollback path stays exercised.
+
 ## 0.6.1 — 2026-09-20
 
 Three lint checks the contract already implied but nothing enforced, and an MCP server that refuses out-of-schema arguments instead of answering them. Grounded in an evaluation against an external design-systems corpus: the architecture held, the gaps were narrow and nameable. No CSS change — the build id stays `0073498a`.

@@ -408,16 +408,19 @@ npx largen manifest src/components.css --out largen.manifest.json
 twelve static checks passing while six components were visibly broken. Render
 every converted page in a browser, **in both themes**, and look at it.
 
-**Two things it rejects outright, and both are easy to write by accident on the
-way in from Tailwind.** A component that carries its own dark-mode rule, and a
-hand-written size variant. Both are errors from 0.6.1, and both are matched on
-structure rather than on the values you used — writing either one out of tokens
-instead of literals used to slip past, and no longer does.
+**Three things it rejects outright, and all are easy to write by accident on the
+way in from Tailwind.** A component that carries its own dark-mode rule, a
+hand-written size variant, and a coined tag that impersonates a native element.
+The first two are errors from 0.6.1, and both are matched on structure rather
+than on the values you used — writing either one out of tokens instead of
+literals used to slip past, and no longer does. The third was a warning in
+0.6.1 and is an error from 0.6.2.
 
 ```css
-/* Both of these are errors. */
+/* All three of these are errors. */
 @media (prefers-color-scheme: dark) { my-card { --bg: var(--canvas); } }
 .my-card--lg { --pad: var(--space-5); --font-size: var(--text-lg); }
+button-primary { --bg: var(--tone); }
 ```
 
 The fix for the first is to delete it: a component resolves colour through
@@ -429,6 +432,15 @@ The fix for the second is the size axis, as above: multiply by `var(--scale)`
 where you set a size, express the rest in `em`, and every size follows. A
 modifier that sets non-scale slots — a `--empty` state, say — is not a size
 variant and still passes.
+
+The third has two spellings, and either clears it. Style the native element and
+keep your name as a class, `<button class="button-primary">`, which is the one
+to reach for because it also gets you focus, keyboard activation and an
+accessible name. Or, if the element genuinely cannot be native, carry the role
+explicitly: `<my-thing role="button" tabindex="0">`. Only names whose leading
+token is a native interactive or sectioning element are caught — `button-*`,
+`nav-*`, `dialog-*`, `input-*`, `select-*`, `form-*`, `menu-*`, `a-*`,
+`label-*` — so a role-less container like `notification` or `card` is unaffected.
 
 ```sh
 # a serviceable screenshot pass, no dependencies

@@ -57,7 +57,7 @@
       CSS change shipped); update RELEASES.md with the 0.6.1 entry following
       the house format. Verify: release check passes; RELEASES.md states "no
       CSS change" with the current build id.
-- [ ] 3.2 Publish 0.6.1 to npm and deploy the site (MCP validation and evals
+- [x] 3.2 Publish 0.6.1 to npm and deploy the site (MCP validation and evals
       go live). Verify: `curl https://largen.exe.xyz/health` reports 0.6.1,
       and both CDNs resolve `largen@0.6.1`.
 
@@ -65,23 +65,23 @@
 
 Superseded by the `dtcg-token-layer` change (export via `largen build`, import via `largen theme`, drift guard in `largen verify`).
 
-## 5. Part 2 — lint promotion and release 0.7.0
+## 5. Part 2 — lint promotion and release 0.6.2
 
-- [ ] 5.1 Flip the severity constant to `error`; update the 1.1/1.2 test
+- [x] 5.1 Flip the severity constant to `error`; update the 1.1/1.2 test
       expectations. Verify: `npx largen verify` on the 1.2 fixture now fails,
       and `check_component_css` reports `error` severity.
-- [ ] 5.2 Add the MIGRATING.md entry for the promotion (what now fails, the
+- [x] 5.2 Add the MIGRATING.md entry for the promotion (what now fails, the
       two spellings that fix it). Verify: entry present and named from the
-      RELEASES.md 0.7.0 entry.
-- [ ] 5.3 Build, confirm the build id is still unchanged, write the 0.7.0
-      RELEASES.md entry, publish, deploy. Verify: `/health` reports 0.7.0;
-      `npx largen@0.7.0 verify` reports the coined-tag check at error severity from a
+      RELEASES.md 0.6.2 entry.
+- [ ] 5.3 Build, confirm the build id is still unchanged, write the 0.6.2
+      RELEASES.md entry, publish, deploy. Verify: `/health` reports 0.6.2;
+      `npx largen@0.6.2 verify` reports the coined-tag check at error severity from a
       clean install.
 
 ## 6. Verification
 
 - [ ] 6.1 Run the full suite (`site/test/run.mjs`, discovery, conformance,
-      evals) against the deployed 0.7.0 and check every scenario in this
+      evals) against the deployed 0.6.2 and check every scenario in this
       change's three spec deltas against observed behaviour. Verify: all
       green; any deviation is fixed or the spec delta corrected before
       archive.

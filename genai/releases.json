@@ -2,6 +2,32 @@
  "$comment": "The release log, as data rather than prose, for two reasons. RELEASES.md is generated from it by `largen contract`, so the published log cannot drift from this file. And every entry carries `signals` — strings that must be present in, or absent from, the frozen bytes at site/public/v/<version>/ — so a claim about a release is checked against the artifact that release actually shipped rather than believed. `largen releases --check` runs that. `signals` is also the machine-readable delta list a per-project upgrade check needs: given a project's CSS and the version it vendored, the `present` strings of every later release are exactly what to grep for.",
  "releases": [
   {
+   "version": "0.6.2",
+   "date": "2026-09-20",
+   "summary": "The coined-tag check becomes an error. Staged as a warning in 0.6.1 and promoted here, which is the whole release — one constant in `genai/lint.js`. Shipped as a patch rather than a minor because 0.6 has no users to protect; the break is real and is listed below rather than hidden by the version number. No CSS change — the build id stays `0073498a`.",
+   "breaking": [
+    {
+     "change": "A component that coins a tag impersonating a native element now fails `largen verify` and `check_component_css`.",
+     "why": "A coined tag is for a container with no role. A name whose leading token is a native interactive or sectioning element has an accessible name, focus behaviour and keyboard activation to lose, and a custom element gets none of them back. This was a warning in 0.6.1 so that false positives could surface while the rule was still harmless; the leading-token list is deliberately short and nothing in largen's own components trips it.",
+     "migration": "Style the native element and keep your name as a class — `<button class=\"button-primary\">` — which also restores focus, keyboard activation and the accessible name. If the element genuinely cannot be native, carry the role explicitly: `<my-thing role=\"button\" tabindex=\"0\">`. A role-less container such as `notification` or `card` was never caught and still is not."
+    }
+   ],
+   "added": [],
+   "fixed": [],
+   "tooling": [
+    "The severity is one exported constant, `COINED_TAG_SEVERITY`, and a test asserts that patching it moves the reported severity and changes nothing else — the message text is identical either way. That test now runs the patch backwards, from `error` to `warning`, so the rollback path stays exercised."
+   ],
+   "signals": {
+    "present": [
+     "largen.fallback",
+     "-moz-orient: inline",
+     "-webkit-hyphens: none"
+    ],
+    "absent": []
+   },
+   "package": "0065e18178844d14108fc7764c4f07058b543d949f0219703714c54b8848781b"
+  },
+  {
    "version": "0.6.1",
    "date": "2026-09-20",
    "summary": "Three lint checks the contract already implied but nothing enforced, and an MCP server that refuses out-of-schema arguments instead of answering them. Grounded in an evaluation against an external design-systems corpus: the architecture held, the gaps were narrow and nameable. No CSS change — the build id stays `0073498a`.",
