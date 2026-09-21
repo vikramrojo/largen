@@ -1,0 +1,28 @@
+{
+  "$description": "The light half of a split theme: it declares the project extra brand.paper and points --canvas at it. Converts clean; pair-dark.tokens.json is the half that references it from outside.",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "pair-light",
+      "colorScheme": "light"
+    }
+  },
+  "brand": {
+    "paper": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.9804,
+          0.9686,
+          0.949
+        ],
+        "hex": "#faf7f2"
+      }
+    }
+  },
+  "canvas": {
+    "$type": "color",
+    "$value": "{brand.paper}"
+  }
+}

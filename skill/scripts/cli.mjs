@@ -9,6 +9,7 @@
  *                   stylesheet works unbuilt.
  *   largen gen      regenerate the generative-UI artifacts from a manifest.
  *   largen theme    turn a DTCG token document into a theme stylesheet.
+ *   largen tokens   the other direction: a stylesheet into a token document.
  *   largen manifest derive a component manifest from a project's CSS.
  *
  * Three more exist only for developing largen itself — `contract`, `pages` and
@@ -26,6 +27,7 @@ const COMMANDS = {
   build: { load: () => import('./build.mjs'), blurb: 'bundle + minify to dist/ — optional, for CDN' },
   gen: { load: () => import('./gen.mjs'), blurb: 'regenerate genai artifacts from genai/manifest.json' },
   theme: { load: () => import('./theme.mjs'), blurb: 'validate a DTCG token document and emit a theme stylesheet' },
+  tokens: { load: () => import('./tokens.mjs'), blurb: "derive a DTCG token document from a project's stylesheet" },
   manifest: { load: () => import('./manifest.mjs'), blurb: "derive a manifest from a project's CSS" },
   probe: { load: () => import('./probe.mjs'), blurb: 'emit a browser harness for what static checks cannot see' },
   cascade: { load: () => import('./cascade.mjs'), blurb: 'which declaration wins for a property, and why' },

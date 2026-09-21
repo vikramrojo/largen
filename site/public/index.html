@@ -125,7 +125,7 @@
 <pre class="code">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@latest/dist/largen.css"&gt;
 
 # or pinned. A published version is immutable:
-&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.6.2/dist/largen.css"&gt;
+&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/largen@0.6.3/dist/largen.css"&gt;
 
 # or install it:
 npm install largen</pre>
@@ -152,7 +152,7 @@ npm install largen</pre>
 <h2 class="section-title" id="releases">Releases</h2>
 </div>
 
-<p class="spec-note"><strong>0.6.2</strong>: The coined-tag check becomes an error. Staged as a warning in 0.6.1 and promoted here, which is the whole release — one constant in <code>genai/lint.js</code>. Shipped as a patch rather than a minor because 0.6 has no users to protect; the break is real and is listed below rather than hidden by the version number. No CSS change — the build id stays <code>0073498a</code>.</p>
+<p class="spec-note"><strong>0.6.3</strong>: Five defects in the DTCG token layer, found by running 0.6.1 against a real consumer theme rather than against largen's own files. The headline: a theme whose dark half referenced extras its light half defined could not be imported at all — three errors, nothing written. Four of the five were invisible to the shipped tests because every fixture was shaped like largen. No CSS change — the build id stays <code>0073498a</code>.</p>
 
 <div class="doc">
 <p class="doc-p">Every entry in the log is checked against the bytes that version actually shipped. <a href="https://github.com/vikramrojo/largen/blob/main/RELEASES.md">The full log</a> · <a href="https://www.npmjs.com/package/largen">npm</a></p>
@@ -160,7 +160,7 @@ npm install largen</pre>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.6.2 · a property algebra for CSS. MIT.</span>
+  <span>largen 0.6.3 · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

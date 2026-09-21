@@ -1,9 +1,10 @@
 # Token document fixtures
 
 DTCG documents (draft 2025.10, `$`-prefixed keys) for `largen theme` and for
-`site/test/tokens.mjs`. Every file but the first two is one rule's witness: it
-produces exactly one diagnostic, so a check that stops working turns exactly
-one assertion red.
+`site/test/tokens.mjs`. Every file but the first two and `pair-light` is one
+rule's witness: it produces exactly one diagnostic, so a check that stops
+working turns exactly one assertion red. `pair-light` is the clean half of a
+pair whose other half is the witness, and produces none.
 
 | file | what it is for |
 |---|---|
@@ -17,6 +18,9 @@ one assertion red.
 | `hex-only.tokens.json` | a colour with `hex` and no `components`. Accepted. |
 | `components-only.tokens.json` | a colour with `components` and no `hex`. Accepted. |
 | `both-disagree.tokens.json` | `hex` `#ffffff` against components `[0, 0, 0]`. Rejected, by name. |
+| `pair-light.tokens.json` | the light half of a theme split across two documents: it declares the extra `brand.paper` and points `canvas` at it. Converts clean. The target half of the pair. |
+| `pair-dark.tokens.json` | the dark half. `canvas` references `{brand.paper}`, which only the light half declares. One warning, and `--canvas` still emits `var(--brand-paper)` — a reference largen cannot see the other end of is not a resolution failure. |
+| `ref-type-mismatch.tokens.json` | `canvas`, declared `color`, aliased to `{space.4}`, a `dimension`. One warning; the `var()` is emitted either way. |
 
 The values in `exe-like.tokens.json` are exe-shaped rather than exe's: the cases
 are real, the palette is not.

@@ -9,6 +9,38 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.6.3 — 2026-09-21
+
+Five defects in the DTCG token layer, found by running 0.6.1 against a real consumer theme rather than against largen's own files. The headline: a theme whose dark half referenced extras its light half defined could not be imported at all — three errors, nothing written. Four of the five were invisible to the shipped tests because every fixture was shaped like largen. No CSS change — the build id stays `0073498a`.
+
+### Breaking
+
+- **A reference to a project extra now emits `var(--name)` instead of the target's inlined value.**
+  A reference is exactly where the CSS declared a dependency, and largen already kept that dependency for its own tokens — `{shade}` has always imported back as `var(--shade)`, which is how a theme moves both shadows by moving one colour. Extras were the inconsistent case: they were flattened to a literal, which severed the indirection the author wrote. A consequence worth naming: a reference to a token carrying the raw-CSS escape no longer duplicates that `clamp()` into the referrer.
+  *To migrate:* Nothing to do unless you regenerate a theme and diff it. Where you previously got a literal you now get `var(--the-name)`, which resolves to the same colour as long as the property is declared somewhere in the cascade — the point of the change is that it no longer has to be declared in the same document.
+
+### Added
+
+- `largen tokens <file.css>` derives a DTCG token document from a project's stylesheet.
+  The export direction existed only inside `largen build`, which takes no arguments and reads largen's own two files, so a project converting a hand-written theme had to import the module and call it itself. This is the mirror of `largen theme` and follows `largen manifest`'s shape. It arrives in a patch rather than a minor deliberately: largen is pre-1.0, and the log is a better place to say so than the version number.
+
+### Fixed
+
+- A reference to a name the document does not define is a warning, not an error.
+  It was the reason a real theme could not be imported. A theme document cannot see the rest of the cascade, so a name it does not define may still be declared by the stylesheet it loads with — a light/dark pair splitting its extras across two documents is the ordinary case, not a mistake. A cycle stays an error, because a cycle is the one reference claim provable from the document alone: both properties are guaranteed-invalid in every browser.
+- An alias pointing at a different `$type` now warns.
+  A reference-valued token returned before the type checks ran, so a token declared `number` whose value pointed at a `dimension` produced no diagnostic at all. DTCG requires an alias to resolve to its declared type. It warns rather than errors and still emits, matching how a retyped vocabulary token is already handled.
+- The CSS parser finds the rule that declares tokens rather than the first rule in the file.
+  A stylesheet opening with `@font-face` — which is how a real theme opens — returned zero tokens and reported nothing. At-rules are now skipped whole, a rule qualifies only if it declares a custom property, and `color-scheme` is carried forward from a rule that was skipped.
+- Authored hex letter case survives the round trip. `#FAF7F2` exports and imports as `#FAF7F2`; only a hex largen builds itself, from `components` with no `hex` beside them, is lower case.
+
+### Tooling
+
+- `parseTokensCss` returns a fourth key, `warnings`, so the export direction stops being silently wrong: it says when no rule declares a custom property, when a second rule declares them and only the first was read, and when the only such rule sits inside a conditional at-rule. The key is additive and every existing caller is unaffected.
+- exe's real stylesheet is vendored at `openspec/assets/exe.theme.css` and four assertions run against it. Every defect this release fixes was invisible to the existing fixtures because all of them were written in largen's own idiom — one layered rule of vocabulary tokens, no extras, no cross-rule references, no webfonts. A real theme is none of those things, which is the whole reason it is now in the repo.
+- One rough edge left in deliberately.
+  A token that references a member of a reference cycle now emits `var()` pointing at a name whose own declaration was dropped, so it resolves to nothing. The cycle itself is still reported as an error and names the tokens involved. Making the referrer an error too would re-introduce exactly the failure class this release removes.
+
 ## 0.6.2 — 2026-09-20
 
 The coined-tag check becomes an error. Staged as a warning in 0.6.1 and promoted here, which is the whole release — one constant in `genai/lint.js`. Shipped as a patch rather than a minor because 0.6 has no users to protect; the break is real and is listed below rather than hidden by the version number. No CSS change — the build id stays `0073498a`.

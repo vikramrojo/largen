@@ -94,6 +94,83 @@ check('the parser reads the layer, the selector, color-scheme and the references
   return `${p.tokens.size} defaults, ${d.tokens.size} dark overrides`
 })
 
+/* --- Finding the rule that declares the tokens ---------------------------- */
+
+/* Four checks for one defect with four faces. Taking the first `{` in the sheet
+   is right only for a sheet shaped like largen's own, and every one of these is
+   an ordinary consumer stylesheet. */
+
+check('a sheet opening with @font-face is read past, not read as the token rule', () => {
+  const p = parseTokensCss([
+    '@font-face { font-family: "Inter"; src: url(inter.woff2) format("woff2"); }',
+    ':root { --canvas: #faf7f2; }',
+  ].join('\n'))
+  eq(p.selector, ':root', 'the parser stopped on the @font-face block')
+  eq(p.tokens.size, 1, 'wrong number of declarations')
+  eq(p.tokens.get('--canvas'), '#faf7f2', 'the token was lost')
+  eq(p.warnings.length, 0, `unexpected warnings: ${JSON.stringify(p.warnings)}`)
+  return ':root, 1 token'
+})
+
+check('leading at-rules and at-statements are skipped whole, and color-scheme carries', () => {
+  /* Skipped WHOLE rather than descended into: an at-rule's body is a different
+     kind of thing, and descending is what would make the --scheme-media output
+     below read its own duplicate. `html` is skipped for the other reason — it
+     declares no custom property — but its color-scheme is still the sheet's. */
+  const p = parseTokensCss([
+    '@charset "utf-8";',
+    '@import url("reset.css");',
+    '@media (min-width: 40rem) { .wide { --not-a-token: 1; } }',
+    '@supports (display: grid) { .grid { --also-not: 1; } }',
+    '@property --ring { syntax: "<color>"; inherits: false; initial-value: red; }',
+    '@keyframes spin { from { --turn: 0deg; } }',
+    'html { box-sizing: border-box; color-scheme: dark; }',
+    '[data-theme="dark"] { --canvas: #101214; }',
+  ].join('\n'))
+  eq(p.selector, '[data-theme="dark"]', 'the parser stopped short')
+  eq(p.colorScheme, 'dark', 'color-scheme was lost with the rule that carried it')
+  eq(JSON.stringify([...p.tokens]), '[["--canvas","#101214"]]', 'the wrong declarations')
+  eq(p.warnings.length, 0, `unexpected warnings: ${JSON.stringify(p.warnings)}`)
+  return '6 items skipped, color-scheme carried'
+})
+
+check('a sheet with no top-level custom property is explained, not returned empty', () => {
+  const silent = parseTokensCss('html { box-sizing: border-box; }\n.card { color: red; }')
+  eq(silent.tokens.size, 0, 'tokens appeared from nowhere')
+  eq(silent.warnings.length, 1, `expected one warning, got ${JSON.stringify(silent.warnings)}`)
+  assert(/declares a custom property/.test(silent.warnings[0].message),
+    `the warning does not say what is wrong: ${silent.warnings[0].message}`)
+
+  /* One level down, and only into CONDITIONAL group at-rules, and only because
+     the top level had nothing: a theme that wraps its only rule in @media is
+     read rather than refused, and told that its condition was dropped. */
+  const conditional = parseTokensCss(
+    '@media (prefers-color-scheme: dark) { :root { --canvas: #101214; color-scheme: dark; } }')
+  eq(conditional.selector, ':root', 'the conditional rule was not found')
+  eq(conditional.colorScheme, 'dark', 'color-scheme was lost')
+  eq(conditional.tokens.get('--canvas'), '#101214', 'the token was lost')
+  assert(/sits inside @media/.test(conditional.warnings[0].message),
+    `the warning does not name the at-rule: ${conditional.warnings[0].message}`)
+
+  /* @keyframes is not a conditional group: a custom property in a frame is an
+     animated value, not a token. */
+  const frames = parseTokensCss('@keyframes spin { from { --turn: 0deg; } }')
+  eq(frames.tokens.size, 0, '@keyframes was descended into')
+  return `${silent.warnings[0].message.slice(0, 44)}…`
+})
+
+check('a second rule that declares custom properties is named, not absorbed', () => {
+  /* Only the first is read — largen imports one rule as one theme — so the
+     second has to be said out loud rather than dropped. */
+  const p = parseTokensCss(':root { --canvas: #faf7f2; }\n[data-theme="dark"] { --canvas: #101214; }')
+  eq(p.selector, ':root', 'the wrong rule won')
+  eq(p.tokens.get('--canvas'), '#faf7f2', 'the second rule overwrote the first')
+  eq(p.warnings.length, 1, `expected one warning, got ${JSON.stringify(p.warnings)}`)
+  assert(/\[data-theme="dark"\] also declares custom properties/.test(p.warnings[0].message),
+    `the warning does not name the rule it skipped: ${p.warnings[0].message}`)
+  return p.warnings[0].message
+})
+
 /* --- The codecs, one value at a time -------------------------------------- */
 
 check('every value in src/tokens.css and themes/dark.css survives its codec', () => {
@@ -209,9 +286,15 @@ check('a name starting with $ is rejected', () =>
   only({ $weird: { $type: 'number', $value: 1 } },
     'errors', '$weird', /may not start with \$/).errors[0].message)
 
-check('a reference that does not resolve is rejected', () =>
-  only({ canvas: { $type: 'color', $value: '{nope}' } },
-    'errors', 'canvas', /\{nope\} does not resolve/).errors[0].message)
+check('a reference that does not resolve warns, and emits var() anyway', () => {
+  /* Not an error. The target may be declared in a sibling document — a consumer
+     splitting its palette across a light sheet and a dark one does exactly this
+     — or anywhere else in the cascade, and neither is largen's to see. */
+  const r = only({ canvas: { $type: 'color', $value: '{nope}' } },
+    'warnings', 'canvas', /\{nope\} is not a token .*emits var\(--nope\)/)
+  eq(r.tokens.get('--canvas'), 'var(--nope)', 'the reference was not emitted as var()')
+  return r.warnings[0].message
+})
 
 check('a reference cycle is rejected and named', () =>
   only(fixture('cycle'), 'errors', 'a', /cycle: a → b → a/).errors[0].message)
@@ -257,6 +340,41 @@ check('a retyped vocabulary token warns, names both types, and still emits', () 
   return r.warnings[0].message
 })
 
+check('a reference whose target is a different type warns, and still emits', () => {
+  /* `cssOf` returns on the reference before the codec ever runs, so this was
+     silent: the type checks below it were unreachable for an alias. */
+  const vocab = only(fixture('ref-type-mismatch'), 'warnings', 'canvas', /color.*\{space\.4\}.*dimension/)
+  eq(vocab.tokens.get('--canvas'), 'var(--space-4)', 'the alias stopped emitting')
+
+  /* The same against an in-document extra, whose type is the one it declared
+     rather than one the vocabulary knows. */
+  const extra = only({
+    rhythm: { $type: 'dimension', $value: { value: 1, unit: 'rem' } },
+    'line-height-base': { $value: '{rhythm}' },
+  }, 'warnings', 'line-height-base', /number.*\{rhythm\}.*dimension/)
+  eq(extra.tokens.get('--line-height-base'), 'var(--rhythm)', 'the alias stopped emitting')
+  return vocab.warnings[0].message
+})
+
+check('a theme split across two documents converts, and the halves meet', () => {
+  /* The case the whole reversal exists for: a consumer keeps its palette in the
+     light sheet and its dark overrides in another, so the dark document refers
+     to an extra it does not itself declare. That is not a resolution failure —
+     largen cannot see the other document — so it warns and emits the var(). */
+  const dark = only(fixture('pair-dark'), 'warnings', 'canvas', /\{brand\.paper\}.*var\(--brand-paper\)/)
+  eq(dark.tokens.get('--canvas'), 'var(--brand-paper)', 'the cross-document reference was not emitted')
+  eq(dark.tokens.get('--ink'), '#f2f4f6', 'the rest of the document stopped converting')
+
+  const light = load(fixture('pair-light'))
+  assert(light.errors.length === 0 && light.warnings.length === 0,
+    JSON.stringify(light.errors.concat(light.warnings)))
+  /* The joint assertion: the name dark points at is the name light declares. */
+  eq(light.tokens.get('--brand-paper'), '#faf7f2', 'the light half does not declare the target')
+  assert(dark.tokens.get('--canvas') === `var(${[...light.tokens.keys()].find((p) => p === '--brand-paper')})`,
+    'the two halves do not meet on --brand-paper')
+  return dark.warnings[0].message
+})
+
 /* --- Colour forms and the escape hatch ------------------------------------ */
 
 check('a colour given as hex alone is accepted', () => {
@@ -273,6 +391,25 @@ check('a colour given as components alone is accepted', () => {
      export carries both and emission prefers the hex. */
   eq(r.tokens.get('--canvas'), '#101214', 'components-only did not survive')
   return '#101214'
+})
+
+check('the letter case a person wrote survives the whole round trip', () => {
+  /* A codec test would have missed this: both directions lowercased, so hex in
+     and hex out agreed with each other and disagreed with the author's file. */
+  const p = parseTokensCss(':root { --canvas: #FAF7F2; --ink: #1A1A1A; }')
+  const doc = toDtcg(p.tokens, {})
+  eq(doc.canvas.$value.hex, '#FAF7F2', 'the export lowercased the hex')
+  const r = load(doc)
+  assert(r.errors.length === 0 && r.warnings.length === 0, JSON.stringify(r.errors.concat(r.warnings)))
+  eq(r.tokens.get('--canvas'), '#FAF7F2', 'the import lowercased the hex')
+  const back = parseTokensCss(toThemeCss(r.tokens, {}))
+  eq(back.tokens.get('--ink'), '#1A1A1A', 'the emitted stylesheet lowercased the hex')
+
+  /* And the one hex largen constructs itself stays lowercase: there was no
+     authored case to keep. */
+  const built = load({ canvas: { $type: 'color', $value: { colorSpace: 'srgb', components: [1, 0.6667, 0] } } })
+  eq(built.tokens.get('--canvas'), '#ffaa00', 'a constructed hex is not lowercase')
+  return '#FAF7F2 in, #FAF7F2 out'
 })
 
 check('alpha comes back as rgba(), and a zero length as a bare 0', () => {
@@ -320,16 +457,20 @@ check('a reference to a vocabulary token keeps the dependency as var()', () => {
   return '0 1px 2px var(--shade)'
 })
 
-check('a reference to a project extra resolves to its value', () => {
-  /* The other direction: nothing downstream knows an extra's name, so it is
-     flattened rather than pointed at. */
+check('a reference to a project extra keeps the dependency as var() too', () => {
+  /* The same rule in the other direction. An extra is flattened to the very
+     name it is declared under, so the reference can point AT that declaration
+     rather than copying the value out of it: a theme that moves --brand moves
+     --accent with it, exactly as it does for a vocabulary token. */
   const r = load({
     brand: { $type: 'color', $value: { hex: '#1c6fd6' } },
     accent: { $type: 'color', $value: '{brand}' },
   })
   assert(r.errors.length === 0, JSON.stringify(r.errors))
-  eq(r.tokens.get('--accent'), '#1c6fd6', 'an extra reference was not resolved')
-  return '--accent: #1c6fd6'
+  assert(r.warnings.length === 0, JSON.stringify(r.warnings))
+  eq(r.tokens.get('--brand'), '#1c6fd6', 'the target declaration was lost')
+  eq(r.tokens.get('--accent'), 'var(--brand)', 'an extra reference was inlined')
+  return '--accent: var(--brand)'
 })
 
 /* --- Emission ------------------------------------------------------------- */
@@ -393,6 +534,77 @@ check('the emitted stylesheet parses back', () => {
   eq(p.colorScheme, 'dark', 'the parser lost color-scheme')
   eq(JSON.stringify([...p.tokens]), JSON.stringify([...darkTokens]), 'the parser lost declarations')
   return `${p.tokens.size} declarations`
+})
+
+/* --- The real consumer theme ---------------------------------------------
+ *
+ * openspec/assets/exe.theme.css is exe's actual stylesheet, not a fixture
+ * shaped like one. It is here because every defect the 0.6.3 evaluation found
+ * was invisible to the fixtures above: they were all written in largen's own
+ * idiom, and largen's own idiom is a single layered rule of vocabulary tokens
+ * with no extras, no cross-rule references and no webfonts. This file is none
+ * of those things, and that is the point of keeping it.
+ *
+ * Four of the five defects are asserted below in the shape they actually
+ * arrived in. If a future change breaks one of them again, it breaks here. */
+const exe = readFileSync(root + 'openspec/assets/exe.theme.css', 'utf8')
+const exeBlock = (selector) => {
+  const at = exe.indexOf(selector)
+  assert(at !== -1, `${selector} is no longer in exe.theme.css`)
+  return exe.slice(at)
+}
+
+check('the real theme parses past six @font-face blocks to its token rule', () => {
+  /* It used to return selector "@font-face" and zero tokens, silently. */
+  const p = parseTokensCss(exe)
+  assert(p.selector.includes('[data-theme="light"]'), `read the wrong rule: ${p.selector}`)
+  eq(p.tokens.size, 63, 'the light rule lost declarations')
+  eq(p.colorScheme, 'light', 'lost color-scheme')
+  eq(p.warnings.length, 1, 'the unread dark rule was not reported')
+  assert(/\[data-theme="dark"\] also declares/.test(p.warnings[0].message),
+    `wrong warning: ${p.warnings[0].message}`)
+  return `${p.tokens.size} tokens, 1 warning`
+})
+
+check('the real dark theme imports, referencing extras its light half defines', () => {
+  /* The headline defect: three unresolved-reference errors and nothing
+     written. exe splits its code colours into scheme-independent pairs
+     declared in the light rule and re-points them per scheme. */
+  const p = parseTokensCss(exeBlock('[data-theme="dark"]'))
+  const r = fromDtcg(toDtcg(p.tokens, { theme: 'dark', colorScheme: p.colorScheme }), { slots })
+  eq(r.errors.length, 0, `it still refuses the document: ${JSON.stringify(r.errors)}`)
+  eq(r.warnings.length, 3, 'expected one warning per cross-rule reference')
+  eq(r.tokens.get('--code-ground'), 'var(--code-ground-dark)', 'the reference was not kept')
+  eq(r.tokens.get('--syntax-comment'), 'var(--syntax-comment-dark)', 'the reference was not kept')
+  return `${p.tokens.size} tokens, 0 errors, 3 warnings`
+})
+
+check('the real light theme round-trips exactly, hex case and all', () => {
+  /* 22 of these 63 declarations are uppercase hex, and four are references to
+     other extras. Before 0.6.3 the uppercase folded and the references
+     flattened to literals, so 26 of 63 came back changed. */
+  const p = parseTokensCss(exeBlock('[data-theme="light"]'))
+  const r = fromDtcg(toDtcg(p.tokens, { theme: 'light', colorScheme: p.colorScheme }), { slots })
+  eq(r.errors.length, 0, JSON.stringify(r.errors))
+  eq(r.tokens.get('--canvas'), '#F7F4EF', 'authored hex case was folded')
+  eq(r.tokens.get('--code-ground'), 'var(--code-ground-light)', 'an extra reference was inlined')
+  const back = parseTokensCss(toThemeCss(r.tokens, { theme: 'light', colorScheme: r.colorScheme }))
+  const moved = [...p.tokens.keys()].filter((k) => p.tokens.get(k) !== back.tokens.get(k))
+  eq(moved.length, 0, `${moved.length} declarations changed: ${moved.slice(0, 4).join(', ')}`)
+  return `${p.tokens.size} declarations, none moved`
+})
+
+check('the real theme retypes line-height-base through an alias, and is told', () => {
+  /* exe points a token largen types `number` at a rem line box. Valid CSS,
+     invalid DTCG, and silent before 0.6.3 because a reference-valued token
+     returned before the type checks ran. */
+  const p = parseTokensCss(exeBlock('[data-theme="light"]'))
+  const r = fromDtcg(toDtcg(p.tokens, { theme: 'light', colorScheme: p.colorScheme }), { slots })
+  const w = r.warnings.find((x) => x.path === 'line-height-base')
+  assert(w, `no warning for the retype: ${JSON.stringify(r.warnings)}`)
+  assert(/declared number and references \{leading-28\}, which is dimension/.test(w.message),
+    `wrong warning: ${w.message}`)
+  return w.message.slice(0, 62) + '…'
 })
 
 console.log(`\n  ${pass} passed, ${fail} failed\n`)

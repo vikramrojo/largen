@@ -23,20 +23,31 @@
  *   dimension. The guarantee inference gave — a token added to the CSS is never
  *   silently dropped — is kept by `verify` failing and naming it.
  *
- *   A reference becomes `var()`, not a value. `--tone: var(--neutral)` and
- *   `--lift-1: 0 1px 2px var(--shade)` are dependencies the CSS declares, and
- *   the dark theme moves its shadows by moving `--shade` alone. So a reference
- *   to a VOCABULARY token imports back as `var(--that-prop)` rather than as the
- *   referenced literal; only references to project extras are flattened, since
- *   nothing downstream knows those names. A reference exists in the JSON exactly
- *   where a `var()` exists in the CSS — `--neutral` matching `--ink` in both
- *   shipped themes is coincidence, not a claim, so it exports as a literal.
+ *   A reference becomes `var()`, not a value — whatever it points at.
+ *   `--tone: var(--neutral)` and `--lift-1: 0 1px 2px var(--shade)` are
+ *   dependencies the CSS declares, and the dark theme moves its shadows by
+ *   moving `--shade` alone. So a reference imports back as `var(--that-prop)`
+ *   rather than as the referenced literal: the table's property name for a
+ *   vocabulary token, the flattened name for a project extra, which is the same
+ *   name the extra would be DECLARED under, so the two lines meet. A reference
+ *   exists in the JSON exactly where a `var()` exists in the CSS — `--neutral`
+ *   matching `--ink` in both shipped themes is coincidence, not a claim, so it
+ *   exports as a literal.
+ *
+ *   It follows that a reference to a target this document does not define is a
+ *   WARNING and still emits. A theme split across a light sheet and a dark one
+ *   has each half referencing the other's extras, and the rest of the cascade is
+ *   not largen's to inspect. A cycle stays an error, because that is provable
+ *   from the document alone.
  *
  *   Hex is authoritative. The export writes both `components` and `hex` so every
  *   consumer can read one of them, but emission prefers `hex`, which makes the
  *   round trip byte-exact instead of dependent on float formatting. Import takes
  *   either; when both are present and disagree by more than rounding it is an
- *   error rather than a silent preference.
+ *   error rather than a silent preference. A hex a person wrote passes through
+ *   with the case they wrote it in, both directions; only a hex largen
+ *   CONSTRUCTS, from `components` with no `hex` beside them, is lowercase,
+ *   because there is no authored case to keep.
  *
  * Units are never normalised (`0.12s` stays seconds), and a zero length emits as
  * a bare `0` — round-trip exactness is the invariant, and normalising would cost
@@ -176,25 +187,45 @@ function block(s, open) {
 
 /* --- Parsing a token stylesheet ------------------------------------------- */
 
+/** Conditional group at-rules: the ones whose body is a list of rules that
+    apply under a condition. `@font-face`, `@property` and `@keyframes` are not
+    here on purpose — their bodies are declarations or frames, not rules, and a
+    custom property inside one is not a token. */
+const CONDITIONAL_AT = new Set(['media', 'supports', 'container', 'layer'])
+
 /**
- * Read the first rule inside `@layer largen.tokens` — or, when the sheet is
- * unlayered, the first rule in the sheet.
- *
- * @param {string} css
- * @returns {{ selector: string, colorScheme: string|undefined, tokens: Map<string,string> }}
+ * The top-level items of a stylesheet body, in source order: `{ selector, body }`
+ * for a rule or at-rule with a block, and `body: undefined` for an at-statement
+ * like `@import "x";` that has no block at all.
  */
-export function parseTokensCss(css) {
-  const clean = stripComments(css)
-  const layer = clean.match(/@layer\s+largen\.tokens\s*\{/)
-  const body = layer ? block(clean, layer.index + layer[0].length - 1) : clean
+function* topRules(css) {
+  let i = 0
+  while (i < css.length) {
+    let stop = -1, quote = null
+    for (let j = i; j < css.length; j++) {
+      const ch = css[j]
+      if (quote) { if (ch === quote) quote = null; continue }
+      if (ch === '"' || ch === "'") { quote = ch; continue }
+      if (ch === '{' || ch === ';') { stop = j; break }
+    }
+    if (stop === -1) return
+    const selector = ws(css.slice(i, stop))
+    if (css[stop] === ';') {
+      if (selector) yield { selector, body: undefined }
+      i = stop + 1
+      continue
+    }
+    const body = block(css, stop)
+    yield { selector, body }
+    i = stop + 1 + body.length + 1
+  }
+}
 
-  const open = body.indexOf('{')
+/** The declarations of one rule body, split into tokens and `color-scheme`. */
+function declsOf(body) {
   const tokens = new Map()
-  if (open === -1) return { selector: '', colorScheme: undefined, tokens }
-
-  const selector = ws(body.slice(0, open))
   let colorScheme
-  for (const decl of splitTop(block(body, open), ';')) {
+  for (const decl of splitTop(body, ';')) {
     const colon = decl.indexOf(':')
     if (colon === -1) continue
     const prop = decl.slice(0, colon).trim()
@@ -202,7 +233,90 @@ export function parseTokensCss(css) {
     if (prop === 'color-scheme') colorScheme = value
     else if (prop.startsWith('--')) tokens.set(prop, value)
   }
-  return { selector, colorScheme, tokens }
+  return { tokens, colorScheme }
+}
+
+/**
+ * Read the rule that DECLARES the tokens inside `@layer largen.tokens` — or,
+ * when the sheet is unlayered, inside the sheet.
+ *
+ * Not the first rule: a real consumer stylesheet opens with `@font-face`, or
+ * with `html { box-sizing: border-box }`, and taking the first `{` returned a
+ * selector of `@font-face` and an empty token map, silently. The walk skips
+ * at-rules WHOLE rather than descending into them, which is what keeps the
+ * `--scheme-media` output of `toThemeCss` reading correctly: the main rule wins
+ * on the first iteration and the identical `@media` duplicate is never examined.
+ *
+ * `warnings` is an array of `{ message }` and is additive — every caller
+ * destructures the keys it wants, so nothing breaks by its arrival. It exists
+ * because this function is public via `"./tokens"`, and a third party handed a
+ * stylesheet largen cannot read deserves to be told rather than handed silence.
+ *
+ * @param {string} css
+ * @returns {{ selector: string, colorScheme: string|undefined, tokens: Map<string,string>, warnings: {message: string}[] }}
+ */
+export function parseTokensCss(css) {
+  const clean = stripComments(css)
+  const layer = clean.match(/@layer\s+largen\.tokens\s*\{/)
+  const body = layer ? block(clean, layer.index + layer[0].length - 1) : clean
+
+  const warnings = []
+  const warn = (message) => warnings.push({ message })
+
+  /* A rule that declares no custom property is not the token rule, but it may
+     still carry the sheet's `color-scheme` — `html { color-scheme: dark }` ahead
+     of `:root { --canvas: … }` is ordinary. Without this the stronger predicate
+     would trade one silent loss for another. */
+  let carried
+  let won
+
+  for (const rule of topRules(body)) {
+    if (rule.body === undefined) continue
+    if (rule.selector.startsWith('@')) continue
+    const read = declsOf(rule.body)
+    if (!read.tokens.size) {
+      if (carried === undefined) carried = read.colorScheme
+      continue
+    }
+    if (!won) won = { selector: rule.selector, ...read }
+    else warn(`${rule.selector} also declares custom properties; only the first ` +
+              `such rule, ${won.selector}, was read`)
+  }
+
+  /* Second pass, and only when the first found nothing: the rule may sit inside
+     a conditional group at-rule. One level, conditional at-rules only. Because
+     this runs only on an otherwise empty result it cannot disturb the
+     `--scheme-media` case, where the unconditional rule always wins above. */
+  if (!won) {
+    for (const rule of topRules(body)) {
+      if (rule.body === undefined || !rule.selector.startsWith('@')) continue
+      if (!CONDITIONAL_AT.has(/^@([\w-]+)/.exec(rule.selector)?.[1] ?? '')) continue
+      for (const inner of topRules(rule.body)) {
+        if (inner.body === undefined || inner.selector.startsWith('@')) continue
+        const read = declsOf(inner.body)
+        if (!read.tokens.size) continue
+        won = { selector: inner.selector, ...read }
+        warn(`the only rule that declares custom properties, ${inner.selector}, ` +
+             `sits inside ${rule.selector}; it was read as though it applied ` +
+             `unconditionally`)
+        break
+      }
+      if (won) break
+    }
+  }
+
+  if (!won) {
+    warn('no rule in this stylesheet declares a custom property, so no tokens ' +
+         'were read; largen reads the first top-level rule that declares one')
+    return { selector: '', colorScheme: carried, tokens: new Map(), warnings }
+  }
+
+  return {
+    selector: won.selector,
+    colorScheme: won.colorScheme ?? carried,
+    tokens: won.tokens,
+    warnings,
+  }
 }
 
 /* --- Value codecs --------------------------------------------------------- */
@@ -229,7 +343,7 @@ const rgbToHex = (r, g, b) =>
 function decodeColor(raw) {
   if (HEX_RE.test(raw)) {
     const { r, g, b, a } = hexToRgb(raw)
-    const v = { colorSpace: 'srgb', components: [r, g, b].map((c) => round4(c / 255)), hex: raw.toLowerCase() }
+    const v = { colorSpace: 'srgb', components: [r, g, b].map((c) => round4(c / 255)), hex: raw }
     if (a !== undefined) v.alpha = round4(a)
     return v
   }
@@ -273,7 +387,7 @@ function encodeColor(v) {
 
   const a = alpha ?? fromHex?.a
   const hexCarriesAlpha = hex !== undefined && (hex.length === 5 || hex.length === 9)
-  if (hex !== undefined && (hexCarriesAlpha || a === undefined || a === 1)) return hex.toLowerCase()
+  if (hex !== undefined && (hexCarriesAlpha || a === undefined || a === 1)) return hex
 
   const [r, g, b] = fromHex
     ? [fromHex.r, fromHex.g, fromHex.b]
@@ -580,7 +694,20 @@ export function fromDtcg(doc, { slots = [] } = {}) {
   }
 
   /* 3. References: every edge that lands inside this document, so a cycle is
-     found before resolution walks into it. */
+     found before anything is emitted.
+
+     A cycle stays an ERROR while an unresolved reference only warns, and the
+     difference is what largen can see. A cycle is provable from the document
+     alone and is guaranteed-invalid in every browser — `--a: var(--b)` against
+     `--b: var(--a)` paints nothing — so error-and-drop is the honest answer. An
+     absent target is outside the document, and the rest of the cascade is not
+     largen's to inspect, so it warns and emits the `var()` anyway.
+
+     The consequence, which is accepted rather than fixed: now that a reference
+     may point out of the document, a cycle spread ACROSS two documents is
+     undetectable here. Do not "fix" this walk into following absent targets;
+     it has no way to know what they are, and it would manufacture false
+     positives on the split light/dark pair this change exists to support. */
   const edges = (t) => {
     const out = []
     const v = t.node.$value
@@ -608,7 +735,6 @@ export function fromDtcg(doc, { slots = [] } = {}) {
   for (const path of found.keys()) visit(path, [])
 
   /* 4. Turn each token into the CSS a person would have written. */
-  const resolving = new Set()
   const cssOf = (path) => {
     const t = found.get(path)
     const raw = rawCssOf(t.node)
@@ -617,7 +743,6 @@ export function fromDtcg(doc, { slots = [] } = {}) {
       return raw
     }
     if (!('$value' in t.node)) bad('no $value and no $extensions["dev.largen"].css')
-    if (resolving.has(path)) bad(`reference cycle through ${path}`)
 
     const ctx = {
       colourOut: (ref) => {
@@ -626,7 +751,7 @@ export function fromDtcg(doc, { slots = [] } = {}) {
       },
     }
     const v = t.node.$value
-    if (isRef(v)) return follow(refTarget(v), path)
+    if (isRef(v)) { checkRefType(t, refTarget(v)); return follow(refTarget(v), path) }
 
     const type = t.type ?? shapeType(v)
     if (!type) bad('no $type, and the value does not say what it is')
@@ -634,18 +759,79 @@ export function fromDtcg(doc, { slots = [] } = {}) {
     if (t.entry?.unit && type === 'dimension' && v?.unit !== t.entry.unit) {
       bad(`space stays in ${t.entry.unit} so a section gap does not grow under the size axis; got ${v?.unit}`)
     }
-    resolving.add(path)
-    try { return CODECS[type].encode(v, ctx) } finally { resolving.delete(path) }
+    return CODECS[type].encode(v, ctx)
   }
 
-  /* A reference to a VOCABULARY token becomes var(--prop) rather than the
-     referenced literal, so the CSS keeps the dependency the JSON declares. */
+  /* A reference becomes var(--prop), whatever it points at, so the CSS keeps the
+     dependency the JSON declares. A vocabulary target takes the table's property
+     name; anything else takes its flattened one, which is the same name the
+     target would be DECLARED under, so a document that defines it emits the
+     matching declaration.
+
+     That the target is absent from this document is a warning rather than an
+     error: a consumer splits its palette across a light sheet and a dark one,
+     and the dark document referencing an extra only the light one declares is
+     ordinary authoring, not a resolution failure. The rest of the cascade is
+     not largen's to see. */
   const follow = (target, from) => {
     const entry = BY_PATH.get(target)
     if (entry) return `var(${entry.prop})`
-    if (!found.has(target)) bad(`{${target}} does not resolve — no such token in this document or in largen's vocabulary`)
-    if (cyclic.has(target)) bad(`{${target}} is part of a reference cycle`)
-    return cssOf(target)
+    const prop = flatten(target)
+    if (!found.has(target)) warn(from, unknownRef(target, prop))
+    return `var(${prop})`
+  }
+
+  /* Four readings of the same absent target, chosen on what the flattened name
+     turns out to be. Each names the property that will be emitted, because that
+     is the line the consumer will go looking for. None is an error: the three
+     special names all EXIST as properties, so the reference resolves — it just
+     means something other than the author intended, which is the milder mirror
+     image of the collision checks above, where declaring AT such a name is what
+     the paint rule would read. */
+  const unknownRef = (target, prop) => {
+    const vocab = BY_PROP.get(prop)
+    if (vocab) {
+      return `{${target}} is not a path in largen's vocabulary, so it emits ` +
+        `var(${prop}) — which is the vocabulary token ${vocab.path}. Reference ` +
+        `it as {${vocab.path}} if that is what was meant.`
+    }
+    if (slots.includes(prop)) {
+      return `{${target}} is not a token in this document, so it emits ` +
+        `var(${prop}), a registered slot: this reads whatever the universal ` +
+        `paint rule set on the element, not a theme value.`
+    }
+    if (DERIVED_NAMES.includes(prop)) {
+      return `{${target}} is not a token in this document, so it emits ` +
+        `var(${prop}), which the algebra derives: this reads the derived value, ` +
+        `not a theme value.`
+    }
+    return `{${target}} is not a token in this document or in largen's ` +
+      `vocabulary, so it emits var(${prop}); that resolves only if something ` +
+      `else in the cascade declares ${prop}.`
+  }
+
+  /* An alias inherits its target's value, so the two `$type`s are a claim the
+     document makes about itself and can disagree. `cssOf` returns on the
+     reference before the codec ever sees a type, which is how a `number`
+     pointing at a `dimension` used to pass in silence.
+
+     Both types have to be KNOWN for the disagreement to mean anything: an
+     absent target has no type largen can read, and a token with no `$type` and
+     no group to inherit one from has made no claim to contradict.
+
+     Deliberate non-goal: a shadow's `color` sub-reference is not checked here.
+     It is a different check in kind — the sub-value's type is fixed by the
+     shadow shape rather than declared — and it belongs with the codec, not with
+     whole-token aliasing. */
+  const typeAt = (target) => BY_PATH.get(target)?.type ?? found.get(target)?.type
+
+  const checkRefType = (t, target) => {
+    const want = t.type
+    const got = typeAt(target)
+    if (!want || !got || want === got) return
+    warn(t.path, `${t.prop} is declared ${want} and references {${target}}, ` +
+      `which is ${got}; the reference is emitted either way, but one of the two ` +
+      '$types is wrong')
   }
 
   const byProp = new Map()

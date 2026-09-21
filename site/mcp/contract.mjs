@@ -647,6 +647,7 @@ export const COMMANDS = [
   { command: 'npx largen build', does: 'bundle and minify to dist/ for the CDN. Optional, with no dependencies' },
   { command: 'npx largen gen', does: 'regenerate genai artifacts from genai/manifest.json' },
   { command: 'npx largen theme <file.tokens.json>', does: 'validate a DTCG token document against the token vocabulary and emit a theme stylesheet' },
+  { command: 'npx largen tokens <file.css>', does: "derive a DTCG token document from a project's stylesheet" },
   { command: 'npx largen manifest <css...>', does: "derive a component manifest from a project's CSS" },
   { command: 'npx largen cascade --property P --at CHAIN <css...>', does: 'which declaration wins for a property on an element, and why, with no browser' },
   { command: 'npx largen slot --slot S --at CHAIN <css...>', does: 'whether the paint rule applies a slot, or it reverts, and to what' },
