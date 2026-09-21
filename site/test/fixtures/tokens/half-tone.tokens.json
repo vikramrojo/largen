@@ -1,0 +1,26 @@
+{
+  "$description": "A tone with one half. Import fails and names the missing `on`.",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "half",
+      "colorScheme": "light"
+    }
+  },
+  "tone": {
+    "$type": "color",
+    "primary": {
+      "$root": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1098,
+            0.4353,
+            0.8392
+          ],
+          "hex": "#1c6fd6"
+        }
+      }
+    }
+  }
+}

@@ -408,6 +408,28 @@ npx largen manifest src/components.css --out largen.manifest.json
 twelve static checks passing while six components were visibly broken. Render
 every converted page in a browser, **in both themes**, and look at it.
 
+**Two things it rejects outright, and both are easy to write by accident on the
+way in from Tailwind.** A component that carries its own dark-mode rule, and a
+hand-written size variant. Both are errors from 0.6.1, and both are matched on
+structure rather than on the values you used — writing either one out of tokens
+instead of literals used to slip past, and no longer does.
+
+```css
+/* Both of these are errors. */
+@media (prefers-color-scheme: dark) { my-card { --bg: var(--canvas); } }
+.my-card--lg { --pad: var(--space-5); --font-size: var(--text-lg); }
+```
+
+The fix for the first is to delete it: a component resolves colour through
+`--tone*` and the material tokens, and those already flip with the theme, which
+is why nothing in largen ships a dark rule. If deleting it visibly breaks the
+component, that is a gap in the algebra rather than something to work around.
+
+The fix for the second is the size axis, as above: multiply by `var(--scale)`
+where you set a size, express the rest in `em`, and every size follows. A
+modifier that sets non-scale slots — a `--empty` state, say — is not a size
+variant and still passes.
+
 ```sh
 # a serviceable screenshot pass, no dependencies
 for page in / /blog /about; do

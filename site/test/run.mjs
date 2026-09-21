@@ -11,7 +11,7 @@
 import { readFileSync } from 'node:fs'
 import { connect, callTool } from './mcp-client.mjs'
 import { safeValidateNode } from '../../genai/validate.js'
-import { registeredSlots } from '../../genai/lint.js'
+import { registeredSlots, lintComponentCss, COINED_TAG_SEVERITY } from '../../genai/lint.js'
 
 let pass = 0, fail = 0
 const results = []
@@ -156,6 +156,88 @@ for (const [label, css, expected] of FIXTURES) {
   })
 }
 
+/* --- 1.2 / 1.2b one lint, two surfaces ------------------------------------ *
+ *
+ * `largen verify` and the MCP's check_component_css are supposed to be one
+ * implementation behind two doors. The way that claim fails is not a crash: it
+ * is a rule added to one caller's path, or a message reworded on one side, and
+ * then a component passes locally and fails hosted with nobody able to say
+ * which is right. The two surfaces disagreed once already, over what counts as
+ * a component file.
+ *
+ * So these do not assert "both report something". They compare the full finding
+ * lists — rule, severity, message and line — between the module `largen verify`
+ * calls and the answer the server returns for the same CSS. A second
+ * implementation cannot survive that, and neither can a reworded message.
+ *
+ * The messages are pinned verbatim because they are the product: a finding that
+ * says "size variant" without naming `.plan-capacity--lg` and the slots it
+ * re-sets leaves the reader to find it. */
+
+const LINT_SLOTS = registeredSlots(
+  readFileSync(new URL('../../src/properties.css', import.meta.url), 'utf8'))
+const shape = (findings) =>
+  findings.map((f) => ({ rule: f.rule, severity: f.severity, line: f.line, message: f.message }))
+
+const CROSS_SURFACE = [
+  ['1.2 coined-tag warns and names the native element',
+    '@layer largen.components { button-primary { --bg: var(--tone); --pad: 1em } }',
+    { rule: 'coined-tag', severity: COINED_TAG_SEVERITY,
+      message: '`<button-primary>` coins a tag where the native `<button>` exists' }],
+  ['1.2 a coined tag with no role implied stays silent',
+    '@layer largen.components { notification { --bg: var(--tone-soft); --pad: 1em } }', null],
+  ['1.2b size-variant errors and names the slots it re-sets',
+    '@layer largen.components { .plan-capacity--lg { --pad: var(--pad-5); --font-size: var(--text-lg); } }',
+    { rule: 'size-variant', severity: 'error',
+      message: '`.plan-capacity--lg` is a hand-written size variant — it re-sets `--pad`, `--font-size`' }],
+  ['1.2b a modifier that sets non-scale slots stays silent',
+    '@layer largen.components { .plan-capacity--empty { --bg: var(--surface); --fg: var(--ink-muted) } }', null],
+]
+
+for (const [label, css, expected] of CROSS_SURFACE) {
+  const hosted = await call('check_component_css', { css })
+  check(label, () => {
+    const local = shape(lintComponentCss(css, { slots: LINT_SLOTS }).findings)
+    eq(shape(hosted.data.findings), local, 'hosted and local findings differ — there are two lints')
+
+    if (expected === null) {
+      const noise = local.filter((f) => ['coined-tag', 'size-variant', 'dark-rule'].includes(f.rule))
+      assert(!noise.length, `fired on correct code: ${noise.map((f) => f.rule).join(', ')}`)
+      return 'silent on both surfaces — a rule that never clears is not a rule'
+    }
+
+    const hit = local.find((f) => f.rule === expected.rule)
+    assert(hit, `no ${expected.rule} finding: ${local.map((f) => f.rule).join(', ') || 'none'}`)
+    eq(hit.severity, expected.severity, `${expected.rule} severity`)
+    eq(hit.message, expected.message, `${expected.rule} message text`)
+    return `${hit.severity}: ${hit.message}`
+  })
+}
+
+check('1.2b the lint gate is given the slot list, or both error checks vanish', async () => {
+  /* The hazard, measured: classifySheet decides whether a snippet is a
+     component at all, and it recognises an UNLAYERED one by the slots it sets.
+     Called without the registered slot list, both evasions below classify as
+     `not-component`, the dark-rule and size-variant checks never run, and what
+     comes back instead is `unregistered-slot` — noise that looks like a
+     finding. Both surfaces pass the list today. This is here so that a future
+     caller which stops passing it fails the suite, rather than silently losing
+     two error checks on exactly the input they were written for. */
+  const r = await call('check_component_css', { files: [
+    { name: 'dark.css', css: '@media (prefers-color-scheme: dark) { .plan-capacity { --bg: var(--surface); } }' },
+    { name: 'size.css', css: '.plan-capacity--lg { --pad: var(--pad-5); --font-size: var(--text-lg); }' },
+  ] })
+  const by = Object.fromEntries(r.data.results.map((x) => [x.name, x]))
+  for (const name of ['dark.css', 'size.css']) {
+    eq(by[name].kind, 'component', `${name}: an unlayered component was classified away`)
+    assert(!by[name].findings.some((f) => f.rule === 'unregistered-slot'),
+      `${name}: reported unregistered slots, which is what a missing slot list looks like`)
+  }
+  assert(by['dark.css'].findings.some((f) => f.rule === 'dark-rule'), 'the dark-mode rule was not reported')
+  assert(by['size.css'].findings.some((f) => f.rule === 'size-variant'), 'the size variant was not reported')
+  return 'both evasions caught on unlayered input'
+}, true)
+
 /* --- 7.4 a supplied manifest displaces the reference set ------------------ */
 
 const project = JSON.parse(
@@ -206,11 +288,75 @@ for (const [label, bad] of MALFORMED) {
   const r = await call('list_components', { components: bad })
   check(`4.2 malformed manifest rejected: ${label}`, () => {
     assert(r.isError, 'should be an error')
-    assert(/invalid manifest/.test(r.data.error), `unhelpful error: ${r.data.error}`)
+    /* Two rejections, one requirement. A manifest that is not an object fails
+       the declared schema (`components` is typed) and is refused before any
+       handler runs, naming the argument; one that is an object of the wrong
+       shape reaches validateManifest and is refused there. What matters either
+       way is that it is refused loudly and the message says what is wrong —
+       never the silent fallback to the reference set asserted below. */
+    assert(/invalid manifest|\bcomponents\b/.test(r.data.error), `unhelpful error: ${r.data.error}`)
     assert(!JSON.stringify(r.data).includes('"alert"'), 'silently fell back to the reference set')
     return r.data.error.slice(0, 60)
   })
 }
+
+/* --- 2.2 out-of-schema arguments are refused, by name --------------------- *
+ *
+ * The full measurement is test/mcp-arguments.mjs — 23 malformed calls across
+ * ten tools, with the outcomes sorted into SDK-rejected, handler-error and
+ * answered-normally. These three are the shapes it measures, kept here so the
+ * property is part of the suite that gates a deploy rather than only of the
+ * script that established it.
+ *
+ * The measured baseline, before the validator existed: the SDK rejected none of
+ * the 23, and ten came back as ordinary answers — `render_spec` previewing a
+ * theme called "chartreuse", `emit_probe` building a harness from a `pages`
+ * string. That is the silent degradation the ds-check findings recorded on the
+ * comparison server, on our endpoint. */
+
+const OUT_OF_SCHEMA = [
+  ['a value outside a declared enum', 'render_spec',
+    { spec: { component: 'card' }, theme: 'chartreuse' }, 'theme'],
+  ['a wrong-typed argument', 'emit_probe',
+    { pages: '/', selectors: ['.x'], properties: ['color'] }, 'pages'],
+  ['a missing required argument', 'resolve_cascade',
+    { files: [{ name: 'a.css', css: '@layer a { .t { --gap: 1px } }' }], path: [{ tag: 'div', classes: ['t'] }] },
+    'property'],
+]
+
+for (const [label, tool, args, argument] of OUT_OF_SCHEMA) {
+  const r = await call(tool, args)
+  check(`2.2 ${tool} refuses ${label}`, () => {
+    assert(r.isError, 'answered normally — a call the schema calls invalid')
+    assert(new RegExp(`\\b${argument}\\b`).test(r.data.error),
+      `the error does not name \`${argument}\`: ${r.data.error}`)
+    return r.data.error
+  })
+}
+
+check('2.2 the validator reads the schema the server advertises', async () => {
+  /* One object, not two. If the advertised schema and the enforced one were
+     copies, this is where they would already have diverged. */
+  const { TOOL_DEFINITIONS, checkArgs } = await import('../mcp/tools/index.mjs')
+  const advertised = tools.find((t) => t.name === 'render_spec').inputSchema
+  const local = TOOL_DEFINITIONS.find((t) => t.name === 'render_spec').inputSchema
+  eq(advertised.properties.theme.enum, local.properties.theme.enum, 'advertised vs enforced enum')
+  assert(checkArgs(local, { spec: {}, theme: 'chartreuse' }), 'the enforced schema accepts an out-of-enum theme')
+  assert(!checkArgs(local, { spec: {}, theme: 'dark' }), 'the enforced schema rejects a valid call')
+  return `theme: ${local.properties.theme.enum.join(', ')}`
+}, true)
+
+check('2.2 a well-formed call is still answered', async () => {
+  /* The failure this guards against is a validator tight enough to refuse the
+     calls the tools exist for, which would be a worse regression than the one
+     it fixes. */
+  const r = await call('emit_probe', {
+    kind: 'computed', pages: ['/'], selectors: ['.badge'], properties: ['line-height'],
+    themes: ['light', 'dark'], viewport: { width: 900 }, timeout: 5000,
+  })
+  assert(!r.isError, `refused a valid call: ${JSON.stringify(r.data).slice(0, 120)}`)
+  return 'every declared argument, correctly typed, accepted'
+}, true)
 
 /* --- render_spec ---------------------------------------------------------- */
 

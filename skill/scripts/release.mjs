@@ -57,8 +57,17 @@ export async function release(args = []) {
   /* build.json travels with the snapshot, so a frozen path can state its own
      hashes. The already-published 0.1.0 and 0.2.0 do not get one retrofitted:
      adding a file to a frozen directory is the thing this guard exists to
-     prevent, and a version that gained a file would not be the same release. */
-  const files = readdirSync(at('dist')).filter((f) => f.endsWith('.css') || f === 'build.json')
+     prevent, and a version that gained a file would not be the same release.
+
+     The .tokens.json documents are frozen for the same reason the stylesheets
+     are. Their shape is a promised surface that downstream pipelines read, and a
+     promise with no immutable path is not one — /v/<version>/largen.tokens.json
+     has to keep returning the bytes that version shipped. They were omitted from
+     the first 0.6.0 freeze because this filter predates them, and that was caught
+     before 0.6.0 was published; every earlier version genuinely had no such file,
+     so nothing is being retrofitted. */
+  const files = readdirSync(at('dist'))
+    .filter((f) => f.endsWith('.css') || f.endsWith('.tokens.json') || f === 'build.json')
   for (const f of files) copyFileSync(at('dist', f), at('site/public/v', pkg.version, f))
 
   console.log(`\n  frozen ${files.length} file(s) at /v/${pkg.version}/\n`)

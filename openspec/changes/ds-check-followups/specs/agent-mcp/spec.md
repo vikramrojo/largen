@@ -8,19 +8,19 @@ finding when authored CSS or a validated spec coins an element name that
 implies an interactive or landmark role — a name whose leading token matches a
 native interactive or sectioning element, such as `button-*`, `nav-*`,
 `dialog-*`, `input-*` or `select-*`. The finding SHALL name the native element
-the pattern already has. The finding's severity SHALL be `warning` in the 0.5.x
-release line and `error` from 0.6.0, so that no 0.5.x patch turns a previously
+the pattern already has. The finding's severity SHALL be `warning` in the 0.6.x
+release line and `error` from 0.7.0, so that no 0.6.x patch turns a previously
 clean `verify` run into a failing one.
 
-#### Scenario: A component coins a role-implying tag (0.5.x)
-- **WHEN** a stylesheet authored against a 0.5.x release declares a component
+#### Scenario: A component coins a role-implying tag (0.6.x)
+- **WHEN** a stylesheet authored against a 0.6.x release declares a component
   selector such as `button-primary` as an element name
 - **THEN** the lint SHALL report a warning naming `<button>` as the element the
   pattern already has
 - **AND** the overall verdict SHALL remain clean if no errors exist
 
-#### Scenario: A component coins a role-implying tag (0.6.0)
-- **WHEN** the same stylesheet is linted against a 0.6.0 or later release
+#### Scenario: A component coins a role-implying tag (0.7.0)
+- **WHEN** the same stylesheet is linted against a 0.7.0 or later release
 - **THEN** the same finding SHALL be reported as an error and the verdict SHALL
   be failing
 

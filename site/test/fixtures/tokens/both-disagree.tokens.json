@@ -1,0 +1,22 @@
+{
+  "$description": "A colour whose hex and components disagree. Import fails and names the token.",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "disagree",
+      "colorScheme": "light"
+    }
+  },
+  "canvas": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        0,
+        0,
+        0
+      ],
+      "hex": "#ffffff"
+    }
+  }
+}

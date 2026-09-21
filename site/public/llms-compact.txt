@@ -1,4 +1,4 @@
-# largen 0.5.2: the complete authoring contract
+# largen 0.6.1: the complete authoring contract
 
 A property algebra for CSS. Plain CSS, with no build step, no preprocessor and no plugin.
 
@@ -181,6 +181,10 @@ conforming engine it matches nothing and the registrations are authoritative.
 
 ## Rules
 
+Project-architecture rules — "Two token tiers", "Density and direction are not
+axes" — are in `get_contract` section "rules" and at
+https://largen.dev/docs/contract.
+
 1. Author inside `@layer largen.components`. Override from outside it.
    Unlayered CSS beats every layer. That is what makes overriding largen work
    without `!important`. It is also exactly what breaks an unlayered
@@ -220,7 +224,14 @@ conforming engine it matches nothing and the registrations are authoritative.
    by `largen.elements`. Reimplementing focus trapping or open-state management
    in CSS and JS buys nothing the platform has not already shipped and tested.
 
-6. Never add an `initial-value` to a slot.
+6. A coined tag is for a container with no role. Otherwise use the element.
+   `<notification>` is fine; `<button-primary>` is not: it claims a role it
+   lacks. A coined tag has no role and no accessible name, so assistive
+   technology sees a span. largen paints from slots, so `<button
+   class="button-primary">` styles identically and keeps the role, focus ring
+   and keyboard behaviour. Use the native element, or set `role=`.
+
+7. Never add an `initial-value` to a slot.
    With universal syntax, omitting `initial-value` makes an unset slot the
    *guaranteed-invalid* value, so `var(--pad, revert-layer)` falls back and
    hands the property back to the UA stylesheet untouched. Add an initial value
@@ -430,6 +441,7 @@ npx largen verify [css...] [--entry main.css]   # check your components against 
 npx largen eval <dir> [dir2] [--entry main.css] [--json]   # score a directory of authored components against the contract, offline and deterministic, with no model
 npx largen build   # bundle and minify to dist/ for the CDN. Optional, with no dependencies
 npx largen gen   # regenerate genai artifacts from genai/manifest.json
+npx largen theme <file.tokens.json>   # validate a DTCG token document against the token vocabulary and emit a theme stylesheet
 npx largen manifest <css...>   # derive a component manifest from a project's CSS
 npx largen cascade --property P --at CHAIN <css...>   # which declaration wins for a property on an element, and why, with no browser
 npx largen slot --slot S --at CHAIN <css...>   # whether the paint rule applies a slot, or it reverts, and to what

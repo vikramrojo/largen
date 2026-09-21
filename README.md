@@ -211,10 +211,11 @@ layer this project argues is convenience without insight.
 ## Tooling — all optional
 
 ```
-npx largen verify [css...]     # check your components against the contract
-npx largen build               # bundle + minify to dist/, for CDN
-npx largen gen                 # regenerate genai artifacts
-npx largen manifest <css...>   # derive a component manifest from your CSS
+npx largen verify [css...]            # check your components against the contract
+npx largen build                      # bundle + minify to dist/, for CDN
+npx largen gen                        # regenerate genai artifacts
+npx largen theme <file.tokens.json>   # a DTCG token document in, a theme stylesheet out
+npx largen manifest <css...>          # derive a component manifest from your CSS
 
 npx largen cascade --property --weight --at "html body p.prose kbd" <css...>
                                # which declaration wins, and which cascade step decided it
@@ -231,6 +232,49 @@ quietly dropped. `probe` settles those.
 
 `verify` is static only. It has passed clean on visibly broken components before;
 render the demo pages in a browser too.
+
+### Themes as token documents
+
+A theme is the one file a project writes that largen cannot check for it, so it
+travels as data too. `largen theme` takes a [W3C Design Tokens Community
+Group](https://www.designtokens.org/tr/drafts/format/) document — what Figma,
+Tokens Studio, Style Dictionary and Penpot read and write — and emits a theme
+stylesheet, having first checked it against largen's vocabulary.
+
+```json
+{
+  "$extensions": { "dev.largen": { "theme": "dark", "colorScheme": "dark" } },
+
+  "canvas": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.0627, 0.0706, 0.0784], "hex": "#101214" } },
+  "ink":    { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.949, 0.9569, 0.9647],  "hex": "#f2f4f6" } },
+  "tone": {
+    "$type": "color",
+    "primary": {
+      "$root": { "$value": { "colorSpace": "srgb", "components": [0.3529, 0.6627, 0.9412], "hex": "#5aa9f0" } },
+      "on":    { "$value": { "colorSpace": "srgb", "components": [0.0392, 0.0863, 0.1333], "hex": "#0a1622" } }
+    }
+  }
+}
+```
+
+```
+npx largen theme dark.tokens.json --scheme-media --out themes/dark.css
+```
+
+A document may be partial — a theme sets what it changes and inherits the rest —
+but it is checked as a subset: a tone that sets `$root` without `on` is an
+error, because a solid variant is impossible without the pair, as is a
+`space.*` that is not in rem, a reference that does not resolve, and an extra
+whose name flattens onto a registered slot like `--pad`. On any error nothing is
+written. `--scheme-media` emits the `prefers-color-scheme` block from the same
+document rather than having you write those declarations twice.
+
+The CSS is the source of truth, not the JSON. `largen build` exports the
+defaults as `dist/largen.tokens.json` and the dark theme as
+`dist/theme-dark.tokens.json`, and `largen verify` fails if either drifts from
+the stylesheet it came from. The shape of those documents is a promised surface,
+pinned to DTCG draft 2025.10 and named in every document: a change to it rides a
+minor release, like a change to the CSS.
 
 ### Bringing your own minifier
 

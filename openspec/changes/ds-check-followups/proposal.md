@@ -16,7 +16,7 @@ fix in the smallest release that can carry it.
 
 ## What Changes
 
-**Part 1 — patch (0.5.3).** Nothing here changes `src/*.css`; the build id does
+**Part 1 — patch (0.6.1).** Nothing here changes `src/*.css`; the build id does
 not move.
 
 - Extend the native-element-first rule from the library to authored components:
@@ -48,12 +48,12 @@ not move.
   that an agent using only the MCP tools reaches the documented fix for each
   known failure mode.
 
-**Part 2 — minor (0.6.0).** New promised surface.
+**Part 2 — minor (0.7.0).** New promised surface.
 
-- `largen tokens --dtcg`: export the token set (optionally composed with a
-  theme) as W3C Design Tokens Community Group JSON. The output format is a
-  promise — Style Dictionary and Figma pipelines may depend on it — which is
-  what makes this a minor, not the CLI mechanics.
+- DTCG interop: superseded by the `dtcg-token-layer` change, which exports the
+  token documents from `largen build` and imports them with `largen theme`
+  instead of adding `largen tokens --dtcg`. That surface shipped in 0.6.0; what
+  remains here is the lint promotion below.
 - **BREAKING** (within the pre-1.0 minor convention): the coined-tag lint
   warning from Part 1 is promoted to an error. A component that coins a
   role-implying tag now fails `largen verify` and `check_component_css`.
@@ -76,8 +76,9 @@ None. Every change lands in an existing capability.
   tags; (2) the lint errors on dark-mode rules and hand-written size variants
   in component CSS, token-valued or not; (3) out-of-schema tool arguments
   SHALL produce an error result rather than a degraded answer.
-- `design-tokens`: the token set SHALL be exportable as DTCG JSON with a stable,
-  promised format (Part 2).
+
+`design-tokens` was modified here too, for the DTCG export; that delta now lives
+in the `dtcg-token-layer` change.
 
 ## Impact
 
@@ -89,8 +90,7 @@ None. Every change lands in an existing capability.
 - `site/test/` — new eval harness alongside the existing ~200-assertion suite.
 - Contract source and its generated surfaces (`llms-compact.txt`, SKILL.md,
   docs site) — three new contract statements.
-- New CLI subcommand `skill/scripts/tokens.mjs` (or equivalent) for
-  `largen tokens --dtcg`; `package.json` files list gains nothing outside
-  already-shipped directories.
-- Release sequencing: Part 1 ships as 0.5.3; Part 2 as 0.6.0. Part 2's lint
+- The DTCG surface (a new CLI subcommand and the `package.json` files it adds)
+  moved to the `dtcg-token-layer` change.
+- Release sequencing: Part 1 ships as 0.6.1; Part 2 as 0.7.0. Part 2's lint
   promotion depends on Part 1's warning having shipped.

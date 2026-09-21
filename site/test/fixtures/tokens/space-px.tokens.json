@@ -1,0 +1,19 @@
+{
+  "$description": "A space token in px. Import fails: space stays in rem.",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "pixels",
+      "colorScheme": "light"
+    }
+  },
+  "space": {
+    "$type": "dimension",
+    "4": {
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    }
+  }
+}

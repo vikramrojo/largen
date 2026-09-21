@@ -57,6 +57,93 @@ const guard = (fn) => (args) => {
   }
 }
 
+/* --- The other half of the guard: arguments against the declared schema ----
+ *
+ * Measured before it was written, because the design says to close a gap that
+ * is there rather than one that might be. `site/test/mcp-arguments.mjs` fires
+ * 23 out-of-schema calls — wrong type, outside a declared enum, required
+ * argument missing — at ten tools. The SDK rejected NONE of them: every one
+ * reached a handler. Thirteen were caught by the handlers' own checks and came
+ * back as error results; ten were answered normally, which is the failure the
+ * ds-check findings recorded on a comparison server — `limit: "five"` coming
+ * back as "no chunks found", a confident answer to a call that was never valid.
+ * `render_spec` rendered a preview in a theme called "chartreuse"; `emit_probe`
+ * built a harness from a `pages` string it should have refused.
+ *
+ * So nothing here duplicates the SDK: there was nothing to duplicate. It
+ * duplicates the handlers a little — `files` is still checked for emptiness
+ * inside `resolve_cascade` — and that division is on purpose. The schema is
+ * about shape and this enforces it; the handlers are about meaning (a slot that
+ * is registered, a non-empty file list, a name that exists) and JSON Schema
+ * cannot say those things.
+ *
+ * It reads each tool's own `inputSchema`, the same object the server advertises
+ * in `tools/list`, so the schema a caller reads and the schema a call is judged
+ * by cannot drift — there is one object, not two. The subset understood is the
+ * subset these tools declare: `type`, `enum`, `required`, `properties`, and
+ * `items` for arrays, nested.
+ *
+ * Unknown properties pass. The schemas do not say `additionalProperties:
+ * false`, so rejecting them would enforce a rule nobody wrote and break the
+ * caller who sends a field we have not shipped yet. One error is reported, not
+ * all of them, matching how the handlers already answer.
+ */
+const typeOf = (v) => (Array.isArray(v) ? 'array' : v === null ? 'null' : typeof v)
+const article = (t) => (/^[aeiou]/.test(t) ? `an ${t}` : `a ${t}`)
+
+function checkValue(path, schema, value) {
+  if (!schema || typeof schema !== 'object') return null
+  /* A property with no declared type is deliberately open — emit_probe's step
+     `to` is "end", "start" or a pixel offset — and is left alone. */
+  if (schema.type) {
+    if (typeOf(value) !== schema.type) return `${path} must be ${article(schema.type)}`
+    if (schema.type === 'number' && !Number.isFinite(value)) return `${path} must be a finite number`
+  }
+  if (schema.enum && !schema.enum.includes(value)) {
+    return `${path} must be one of ${schema.enum.join(', ')}`
+  }
+  if (schema.type === 'array' && schema.items) {
+    for (const [i, item] of value.entries()) {
+      const bad = checkValue(`${path}[${i}]`, schema.items, item)
+      if (bad) return bad
+    }
+  }
+  if (schema.type === 'object' && (schema.properties || schema.required)) {
+    return checkObject(`${path}.`, schema, value)
+  }
+  return null
+}
+
+function checkObject(prefix, schema, value) {
+  /* null is absent, not present-and-wrong: resolveManifest already treats a
+     null manifest as "not supplied", and a caller spelling an omission that way
+     should get the same answer from both. */
+  for (const name of schema.required ?? []) {
+    if (value[name] === undefined || value[name] === null) return `${prefix}${name} is required`
+  }
+  for (const [name, sub] of Object.entries(schema.properties ?? {})) {
+    if (value[name] === undefined || value[name] === null) continue
+    const bad = checkValue(`${prefix}${name}`, sub, value[name])
+    if (bad) return bad
+  }
+  return null
+}
+
+/** The offending argument, named, or null. Exported so a test can drive it
+ *  directly as well as over the wire. */
+export function checkArgs(schema, args) {
+  if (!schema || schema.type !== 'object') return null
+  if (typeOf(args) !== 'object') return 'arguments must be an object'
+  return checkObject('', schema, args)
+}
+
+/** Wrap a handler so an out-of-schema call errors, naming the argument, before
+ *  any handler runs. Applied at registration, where the advertised schema is. */
+const checkedAgainst = (inputSchema, handler) => (args) => {
+  const bad = checkArgs(inputSchema, args ?? {})
+  return bad ? fail(bad) : handler(args)
+}
+
 /* --- 1. get_contract ------------------------------------------------------ */
 
 /* Re-read when dist/build.json changes, like the server does. A deploy rebuilds
@@ -503,7 +590,7 @@ const componentsParam = {
     'not a silent fallback.',
 }
 
-export const TOOL_DEFINITIONS = [
+const DEFINITIONS = [
   {
     name: 'get_contract',
     title: 'Get the largen authoring contract',
@@ -804,5 +891,15 @@ export const TOOL_DEFINITIONS = [
     handler: () => explain_slot,
   },
 ]
+
+/* Each tool's arguments are judged by its own `inputSchema` — the same object
+   spread into the advertised definition below, not a copy of it. The wrapping
+   happens here rather than at each `guard()` call because this is the only
+   place a tool and its schema are in scope together, and a second list pairing
+   them up is exactly the drift this avoids. */
+export const TOOL_DEFINITIONS = DEFINITIONS.map((t) => ({
+  ...t,
+  handler: (ctx) => checkedAgainst(t.inputSchema, t.handler(ctx)),
+}))
 
 export { SOURCE, SLOTS }

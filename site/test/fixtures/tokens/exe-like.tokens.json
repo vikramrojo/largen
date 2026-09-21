@@ -1,0 +1,406 @@
+{
+  "$description": "A consumer theme shaped like exe's exe.theme.css: the largen vocabulary plus project extras. Not a real exe export.",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "exe",
+      "colorScheme": "light"
+    }
+  },
+  "canvas": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        0.9804,
+        0.9686,
+        0.949
+      ],
+      "hex": "#faf7f2"
+    }
+  },
+  "ink": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        0.1569,
+        0.149,
+        0.1412
+      ],
+      "hex": "#282624"
+    },
+    "$description": "brand-black on light-tan, 13.1:1"
+  },
+  "ink-muted": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        0.4196,
+        0.4,
+        0.3765
+      ],
+      "hex": "#6b6660"
+    }
+  },
+  "surface": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        0.9451,
+        0.9255,
+        0.8941
+      ],
+      "hex": "#f1ece4"
+    }
+  },
+  "line": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        0.8706,
+        0.8431,
+        0.8
+      ],
+      "hex": "#ded7cc"
+    }
+  },
+  "tone": {
+    "$type": "color",
+    "$description": "Semantic tones. Each pairs with the colour text takes when sitting ON it.",
+    "primary": {
+      "$root": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1569,
+            0.149,
+            0.1412
+          ],
+          "hex": "#282624"
+        }
+      },
+      "on": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9804,
+            0.9686,
+            0.949
+          ],
+          "hex": "#faf7f2"
+        }
+      }
+    },
+    "secondary": {
+      "$root": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4196,
+            0.4,
+            0.3765
+          ],
+          "hex": "#6b6660"
+        }
+      },
+      "on": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9804,
+            0.9686,
+            0.949
+          ],
+          "hex": "#faf7f2"
+        }
+      }
+    },
+    "success": {
+      "$root": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1843,
+            0.4784,
+            0.3098
+          ],
+          "hex": "#2f7a4f"
+        }
+      },
+      "on": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      }
+    },
+    "info": {
+      "$root": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1686,
+            0.4235,
+            0.5608
+          ],
+          "hex": "#2b6c8f"
+        }
+      },
+      "on": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      }
+    },
+    "warning": {
+      "$root": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6039,
+            0.4196,
+            0.1176
+          ],
+          "hex": "#9a6b1e"
+        }
+      },
+      "on": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      }
+    },
+    "danger": {
+      "$root": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.6588,
+            0.2314,
+            0.1961
+          ],
+          "hex": "#a83b32"
+        }
+      },
+      "on": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      }
+    },
+    "neutral": {
+      "$root": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.1569,
+            0.149,
+            0.1412
+          ],
+          "hex": "#282624"
+        }
+      },
+      "on": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.9804,
+            0.9686,
+            0.949
+          ],
+          "hex": "#faf7f2"
+        }
+      }
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "sm": {
+      "$value": {
+        "value": 0,
+        "unit": "rem"
+      },
+      "$description": "square corners; emitted as a bare 0"
+    },
+    "md": {
+      "$value": {
+        "value": 0.125,
+        "unit": "rem"
+      }
+    },
+    "lg": {
+      "$value": {
+        "value": 0.25,
+        "unit": "rem"
+      }
+    }
+  },
+  "space": {
+    "$type": "dimension",
+    "4": {
+      "$value": {
+        "value": 1,
+        "unit": "rem"
+      }
+    },
+    "6": {
+      "$value": {
+        "value": 1.5,
+        "unit": "rem"
+      }
+    }
+  },
+  "speed": {
+    "$type": "duration",
+    "$value": {
+      "value": 0.15,
+      "unit": "s"
+    }
+  },
+  "text-base": {
+    "$type": "dimension",
+    "$value": {
+      "value": 1,
+      "unit": "rem"
+    }
+  },
+  "line-height-base": {
+    "$type": "dimension",
+    "$value": {
+      "value": 1.75,
+      "unit": "rem"
+    },
+    "$description": "exe overrides largen's 1.55 ratio with an absolute line box. largen types this number, so import warns and emits it."
+  },
+  "font": {
+    "$type": "fontFamily",
+    "$description": "sanctioned exe extras; largen's own font.ui / font.mono are left alone",
+    "tw": {
+      "$value": [
+        "Soehne",
+        "system-ui",
+        "sans-serif"
+      ]
+    },
+    "control": {
+      "$value": [
+        "Inter",
+        "system-ui",
+        "sans-serif"
+      ]
+    }
+  },
+  "text": {
+    "$type": "dimension",
+    "$description": "sanctioned exe extras: the project type ladder",
+    "2xs": {
+      "$value": {
+        "value": 0.6875,
+        "unit": "rem"
+      }
+    },
+    "xs": {
+      "$value": {
+        "value": 0.75,
+        "unit": "rem"
+      }
+    },
+    "display": {
+      "$value": {
+        "value": 5,
+        "unit": "rem"
+      },
+      "$description": "page title; fluid in CSS, the fallback is the clamp ceiling",
+      "$extensions": {
+        "dev.largen": {
+          "css": "clamp(2.5rem, 8vw, 5rem)"
+        }
+      }
+    }
+  },
+  "leading": {
+    "$type": "dimension",
+    "28": {
+      "$value": {
+        "value": 1.75,
+        "unit": "rem"
+      }
+    },
+    "40": {
+      "$value": {
+        "value": 2.5,
+        "unit": "rem"
+      }
+    }
+  },
+  "control": {
+    "$type": "dimension",
+    "sm": {
+      "$value": {
+        "value": 2,
+        "unit": "rem"
+      }
+    },
+    "md": {
+      "$value": {
+        "value": 2.5,
+        "unit": "rem"
+      }
+    },
+    "lg": {
+      "$value": {
+        "value": 3,
+        "unit": "rem"
+      }
+    }
+  },
+  "tracking": {
+    "$type": "dimension",
+    "tight": {
+      "$value": {
+        "value": -0.01,
+        "unit": "em"
+      }
+    },
+    "wide": {
+      "$value": {
+        "value": 0.04,
+        "unit": "em"
+      }
+    }
+  },
+  "measure-page": {
+    "$type": "dimension",
+    "$value": {
+      "value": 72,
+      "unit": "rem"
+    }
+  }
+}

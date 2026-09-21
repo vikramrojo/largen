@@ -191,7 +191,10 @@ export function checkReleases(releases = load()) {
 
   const frozenDir = at('site/public/v', current)
   if (existsSync(at('dist')) && existsSync(frozenDir)) {
-    for (const f of readdirSync(at('dist')).filter((x) => x.endsWith('.css'))) {
+    /* The .tokens.json documents are pinned alongside the stylesheets and get the
+       same comparison. Versions before 0.6.0 have none, and the existsSync guard
+       below is what lets them pass rather than a filter that forgets them later. */
+    for (const f of readdirSync(at('dist')).filter((x) => x.endsWith('.css') || x.endsWith('.tokens.json'))) {
       const pinned = at('site/public/v', current, f)
       if (!existsSync(pinned)) continue
       if (!readFileSync(at('dist', f)).equals(readFileSync(pinned))) {

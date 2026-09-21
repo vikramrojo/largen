@@ -32,7 +32,7 @@
 <div class="doc">
 <h1 class="page-title" id="authoring-a-component">Authoring a component</h1>
 
-<p class="doc-p">The six rules, the ten ways it goes wrong when you break them, and the MCP server that checks what you wrote.</p>
+<p class="doc-p">The nine rules, the ten ways it goes wrong when you break them, and the MCP server that checks what you wrote.</p>
 
 <h2 class="section-title" id="a-complete-component">A complete component</h2>
 </div>
@@ -82,9 +82,25 @@
 <p class="rule-why"><span class="tok">&lt;dialog&gt;</span> is the modal, <span class="tok">&lt;details&gt;</span> is the collapse. Both are already themed by <span class="tok">largen.elements</span>. Reimplementing focus trapping or open-state management in CSS and JS buys nothing the platform has not already shipped and tested.</p>
 </div>
 <div class="rule">
-  <span class="rule-title">6. Never add an <span class="tok">initial-value</span> to a slot.</span>
+  <span class="rule-title">6. A coined tag is for a container with no role. Otherwise use the element.</span>
+<p class="rule-why"><span class="tok">&lt;notification&gt;</span> is fine; <span class="tok">&lt;button-primary&gt;</span> is not: it claims a role it lacks. A coined tag has no role and no accessible name, so assistive technology sees a span. largen paints from slots, so <span class="tok">&lt;button class="button-primary"&gt;</span> styles identically and keeps the role, focus ring and keyboard behaviour. Use the native element, or set <span class="tok">role=</span>.</p>
+</div>
+<div class="rule">
+  <span class="rule-title">7. Never add an <span class="tok">initial-value</span> to a slot.</span>
 <p class="rule-why">With universal syntax, omitting <span class="tok">initial-value</span> makes an unset slot the <em>guaranteed-invalid</em> value, so <span class="tok">var(--pad, revert-layer)</span> falls back and hands the property back to the UA stylesheet untouched. Add an initial value and the slot is never unset, the fallback never fires, and the universal paint rule resets every element's UA defaults. Every <span class="tok">&lt;ul&gt;</span> loses its indent and every <span class="tok">&lt;h1&gt;</span> its size. This descriptor is the reason largen needs no build step.</p>
 <p class="rule-why">One registered property does carry an initial value, deliberately: <span class="tok">--scale</span> is declared <span class="tok">initial-value: 1</span>. It is not a paint slot, since nothing reads it through <span class="tok">var(--scale, revert-layer)</span>. It is a multiplier that every size calculation depends on, so it must always resolve to a number. <span class="tok">largen verify</span> exempts it by name for exactly this reason. The rule holds for the paint slots without exception.</p>
+</div>
+<div class="rule">
+  <span class="rule-title">8. Two token tiers. A palette, if you need one, goes in your theme.</span>
+<p class="rule-why">Larger systems have three tiers: reference (a raw palette, <span class="tok">blue-500</span>), system (roles, <span class="tok">--primary</span>), component. largen has two — tokens, which are roles, and slots, which a component fills — and a theme writes values straight into the semantic tokens with no palette between. At this size that is one less indirection to hold in your head, not an omission.</p>
+<p class="rule-why">A project outgrows it predictably: when one brand palette feeds several themes and the same hex appears in three files. Do not wait for largen to ship a reference tier — put the palette in your own theme, above largen's tokens, and point the roles at it: <span class="tok">--brand-blue-60: #1c6fd6; --primary: var(--brand-blue-60)</span>. largen needs to know nothing about it, because a theme sets largen's token names and where it got them is its own business.</p>
+<p class="rule-why">The placement that does not work is a palette in a component: naming <span class="tok">--brand-blue-60</span> there pins it to one colour and drops it out of the tone axis, the same mistake as naming <span class="tok">--danger</span> directly.</p>
+</div>
+<div class="rule">
+  <span class="rule-title">9. Density and direction are not axes. Query for them inside the component.</span>
+<p class="rule-why">The axes are tone, variant, size and state. Some systems add a context dimension — density, form factor, writing direction — and largen does not, now or planned. Said out loud so nobody waits for it: there will be no <span class="tok">data-density</span>.</p>
+<p class="rule-why">The escape hatch is ordinary CSS and it is normal. A media or container query INSIDE a component is allowed by every rule here: <span class="tok">@container (inline-size &lt; 30em) { .toolbar { --pad: .5em .75em } }</span>, beside the component it tightens. That queries the container rather than adding a variant, so it composes with tone, size and state instead of multiplying against them. What it must not become is a size variant: <span class="tok">data-size</span> already sets <span class="tok">--scale</span>, and a rule re-setting <span class="tok">--pad</span> keyed off a size-axis value is what <span class="tok">largen verify</span> reports.</p>
+<p class="rule-why">Direction needs nothing. largen is written in logical properties throughout — <span class="tok">padding-inline</span>, <span class="tok">margin-block</span>, <span class="tok">inset-inline-start</span> — so a component built the same way follows <span class="tok">dir="rtl"</span> with no rule of its own. Reaching for <span class="tok">padding-left</span> is what breaks it.</p>
 </div>
 
 <div class="doc">
@@ -214,12 +230,12 @@
 
 <h2 class="section-title" id="without-mcp">Without MCP</h2>
 
-<p class="doc-p">Fetch <a href="/llms-compact.txt">/llms-compact.txt</a>: the whole contract inline, roughly 5,900 tokens, enough to author a correct component without another request.</p>
+<p class="doc-p">Fetch <a href="/llms-compact.txt">/llms-compact.txt</a>: the whole contract inline, roughly 6,100 tokens, enough to author a correct component without another request.</p>
 </div>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.2 · a property algebra for CSS. MIT.</span>
+  <span>largen 0.6.1 · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

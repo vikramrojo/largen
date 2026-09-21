@@ -317,6 +317,16 @@ npx largen manifest src/components.css --out largen.manifest.json</pre>
 
 <p class="doc-p"><span class="tok">verify</span> is static and <strong>it is not sufficient</strong>. This library's own history is twelve static checks passing while six components were visibly broken. Render every converted page in a browser, <strong>in both themes</strong>, and look at it.</p>
 
+<p class="doc-p"><strong>Two things it rejects outright, and both are easy to write by accident on the way in from Tailwind.</strong> A component that carries its own dark-mode rule, and a hand-written size variant. Both are errors from 0.6.1, and both are matched on structure rather than on the values you used — writing either one out of tokens instead of literals used to slip past, and no longer does.</p>
+
+<pre class="code" data-lang="css">/* Both of these are errors. */
+@media (prefers-color-scheme: dark) { my-card { --bg: var(--canvas); } }
+.my-card--lg { --pad: var(--space-5); --font-size: var(--text-lg); }</pre>
+
+<p class="doc-p">The fix for the first is to delete it: a component resolves colour through <span class="tok">--tone*</span> and the material tokens, and those already flip with the theme, which is why nothing in largen ships a dark rule. If deleting it visibly breaks the component, that is a gap in the algebra rather than something to work around.</p>
+
+<p class="doc-p">The fix for the second is the size axis, as above: multiply by <span class="tok">var(--scale)</span> where you set a size, express the rest in <span class="tok">em</span>, and every size follows. A modifier that sets non-scale slots — a <span class="tok">--empty</span> state, say — is not a size variant and still passes.</p>
+
 <pre class="code" data-lang="sh"># a serviceable screenshot pass, no dependencies
 for page in / /blog /about; do
   for theme in light dark; do
@@ -403,7 +413,7 @@ rm tailwind.config.* postcss.config.*</pre>
 </main>
 
 <footer class="site-footer">
-  <span>largen 0.5.2 · a property algebra for CSS. MIT.</span>
+  <span>largen 0.6.1 · a property algebra for CSS. MIT.</span>
   <span class="cluster" style="--gap:.75rem">
     <a class="nav-link" href="/llms.txt">llms.txt</a>
     <a class="nav-link" href="/llms-compact.txt">llms-compact.txt</a>

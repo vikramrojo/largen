@@ -1,0 +1,29 @@
+{
+  "$description": "Extras that flatten onto registered slots. Import fails: the universal paint rule would read them.",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "collide",
+      "colorScheme": "light"
+    }
+  },
+  "pad": {
+    "$type": "dimension",
+    "$value": {
+      "value": 1,
+      "unit": "rem"
+    }
+  },
+  "bg": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        1,
+        1,
+        1
+      ],
+      "hex": "#ffffff"
+    }
+  }
+}
