@@ -9,7 +9,7 @@ implies an interactive or landmark role — a name whose leading token matches a
 native interactive or sectioning element, such as `button-*`, `nav-*`,
 `dialog-*`, `input-*` or `select-*`. The finding SHALL name the native element
 the pattern already has. The finding's severity SHALL be `warning` in the 0.6.x
-release line and `error` from 0.7.0, so that no 0.6.x patch turns a previously
+release line and `error` from 0.6.2, so that no 0.6.x patch turns a previously
 clean `verify` run into a failing one.
 
 #### Scenario: A component coins a role-implying tag (0.6.x)
@@ -19,8 +19,8 @@ clean `verify` run into a failing one.
   pattern already has
 - **AND** the overall verdict SHALL remain clean if no errors exist
 
-#### Scenario: A component coins a role-implying tag (0.7.0)
-- **WHEN** the same stylesheet is linted against a 0.7.0 or later release
+#### Scenario: A component coins a role-implying tag (0.6.2)
+- **WHEN** the same stylesheet is linted against a 0.6.2 or later release
 - **THEN** the same finding SHALL be reported as an error and the verdict SHALL
   be failing
 

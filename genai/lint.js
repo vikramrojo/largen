@@ -41,7 +41,7 @@ const NON_SLOT_ALLOWED = new Set([
  * announced in MIGRATING.md — and the promotion is this constant and nothing
  * else, which is the reason the value is not written at the call site.
  */
-export const COINED_TAG_SEVERITY = 'warning'
+export const COINED_TAG_SEVERITY = 'error'
 
 /* Leading tokens that name a role, and the element that already has it.
  *

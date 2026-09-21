@@ -21,7 +21,7 @@ See proposal.md for motivation. Constraints that shape the approach:
 
 **Goals:**
 - One coined-tag rule, implemented once, surfaced by both lint surfaces, with
-  severity staged warning (0.6.1) → error (0.7.0).
+  severity staged warning (0.6.1) → error (0.6.2).
 - MCP tool calls that fail loudly on out-of-schema arguments, enforced from
   the same `inputSchema` objects the tools already declare.
 - Contract additions generated from the single contract source, never written
@@ -44,7 +44,7 @@ ARIA-role inference table — rejected as false-positive-prone; the warning
 naming the native element is the value, and a short list covers the real
 mistakes.
 
-**2. Severity is a constant in `lint.js`, flipped in the 0.7.0 commit.**
+**2. Severity is a constant in `lint.js`, flipped in the 0.6.2 commit.**
 Alternative: key severity off `package.json` version at runtime — rejected;
 the published version *is* the release line, so a constant changed in the
 release commit is the same information without a runtime version parse that
@@ -60,7 +60,7 @@ The existing `classifySheet` step already separates themes from components, so
 a theme setting tokens under `[data-theme="dark"]` is never in scope — the
 false-positive risk that would otherwise force warning-first staging. Severity
 differs from the coined-tag check deliberately: coined-tag is a new rule
-(warning until 0.7.0), these enforce SHALL NOTs the contract has carried since
+(warning until 0.6.2), these enforce SHALL NOTs the contract has carried since
 `component-authoring` was written, so a flagged component was always
 non-conformant and the fix is a linter defect correction (the 0.3.4
 precedent). Alternative considered: warning-first for symmetry — rejected;
@@ -95,7 +95,7 @@ other rule.
 ## Risks / Trade-offs
 
 - [Coined-tag false positives make the lint noisy] → warning-first staging is
-  the mitigation by design; the 0.6.1→0.7.0 gap is the feedback window, and
+  the mitigation by design; the 0.6.1→0.6.2 gap is the feedback window, and
   the leading-token list is deliberately short.
 - [The new error-severity checks fail a project that passed 0.6.1 clean] →
   intended: the component was already violating a SHALL NOT, and the RELEASES
@@ -107,7 +107,7 @@ other rule.
   → measure first (task-ordered); the added validator runs only where the SDK
   is confirmed permissive, and reads the same schema object.
 - [Part 2 promotes the warning before anyone saw it] → sequencing: 0.6.1
-  ships and deploys before 0.7.0 work begins; MIGRATING.md carries the
+  ships and deploys before 0.6.2 work begins; MIGRATING.md carries the
   promotion notice.
 
 ## Migration Plan
@@ -115,10 +115,10 @@ other rule.
 1. Part 1 lands → `largen build` (no CSS change; build id must not move — a
    moved id fails the release check), publish 0.6.1, deploy the site (MCP
    validation + evals go live with the deploy).
-2. Part 2 lands → flip the severity constant, publish 0.7.0 with a
+2. Part 2 lands → flip the severity constant, publish 0.6.2 with a
    MIGRATING.md entry for the lint promotion, alongside the `dtcg-token-layer`
    change's surface.
-3. Rollback: each part is a normal npm release; a bad 0.7.0 is superseded, not
+3. Rollback: each part is a normal npm release; a bad 0.6.2 is superseded, not
    unpublished, per the repo's immutable-version stance.
 
 ## Open Questions

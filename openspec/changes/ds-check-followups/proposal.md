@@ -48,13 +48,14 @@ not move.
   that an agent using only the MCP tools reaches the documented fix for each
   known failure mode.
 
-**Part 2 — minor (0.7.0).** New promised surface.
+**Part 2 — patch (0.6.2).** No new surface, and no CSS change.
 
 - DTCG interop: superseded by the `dtcg-token-layer` change, which exports the
   token documents from `largen build` and imports them with `largen theme`
   instead of adding `largen tokens --dtcg`. That surface shipped in 0.6.0; what
   remains here is the lint promotion below.
-- **BREAKING** (within the pre-1.0 minor convention): the coined-tag lint
+- **BREAKING**, shipped as a patch because 0.6 has no users to protect and the
+  release log carries the warning in its `breaking` list: the coined-tag lint
   warning from Part 1 is promoted to an error. A component that coins a
   role-implying tag now fails `largen verify` and `check_component_css`.
 
@@ -92,5 +93,5 @@ in the `dtcg-token-layer` change.
   docs site) — three new contract statements.
 - The DTCG surface (a new CLI subcommand and the `package.json` files it adds)
   moved to the `dtcg-token-layer` change.
-- Release sequencing: Part 1 ships as 0.6.1; Part 2 as 0.7.0. Part 2's lint
+- Release sequencing: Part 1 ships as 0.6.1; Part 2 as 0.6.2. Part 2's lint
   promotion depends on Part 1's warning having shipped.

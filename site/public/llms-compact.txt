@@ -1,4 +1,4 @@
-# largen 0.6.1: the complete authoring contract
+# largen 0.6.2: the complete authoring contract
 
 A property algebra for CSS. Plain CSS, with no build step, no preprocessor and no plugin.
 
