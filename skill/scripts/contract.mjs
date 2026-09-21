@@ -177,8 +177,30 @@ function llmsCompact(c) {
 
   L.push('## Layer order', '', c.layers.order.join(' < '), '', wrap(c.layers.why), '')
 
+  /* Authoring rules only.
+   *
+   * Same test as the failure-modes section below: this file's job is to be enough
+   * to AUTHOR a component without fetching anything else. A rule that changes
+   * which element you write belongs inline. A rule about where a project puts its
+   * palette, or whether density is an axis, is architecture — you read it once
+   * when setting the project up, not while writing a component, and carrying it
+   * here pushed the file past its budget.
+   *
+   * Nothing is deleted: both are in SKILL.md, llms.txt, the docs site and
+   * `get_contract` in full, all generated from the same source, and the pointer
+   * below names them. The flag is opt-OUT for exactly one reason — a rule added
+   * with no flag stays in this file, so the next one cannot be dropped by
+   * forgetting something. */
+  const inline = c.rules.filter((r) => r.compact !== false)
+  const elsewhere = c.rules.filter((r) => r.compact === false)
+
   L.push('## Rules', '')
-  c.rules.forEach((r, i) => L.push(`${i + 1}. ${r.title}`, wrap(r.why, 80, '   '), ''))
+  if (elsewhere.length) {
+    L.push(wrap('Project-architecture rules — ' +
+      elsewhere.map((r) => `"${r.title.split('. ')[0]}"`).join(', ') +
+      ' — are in `get_contract` section "rules" and at https://largen.dev/docs/contract.'), '')
+  }
+  inline.forEach((r, i) => L.push(`${i + 1}. ${r.title}`, wrap(r.why, 80, '   '), ''))
 
   /* Symptom and fix only.
    *

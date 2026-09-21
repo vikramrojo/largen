@@ -9,6 +9,37 @@ Versioned paths are immutable. The unversioned `/largen.css` is not — it track
 newest build, so pin by version, by `sha256`, or by the `integrity` string in
 `build.json` if you need bytes that cannot change under you.
 
+## 0.6.1 — 2026-09-20
+
+Three lint checks the contract already implied but nothing enforced, and an MCP server that refuses out-of-schema arguments instead of answering them. Grounded in an evaluation against an external design-systems corpus: the architecture held, the gaps were narrow and nameable. No CSS change — the build id stays `0073498a`.
+
+### Breaking
+
+- **A component carrying its own dark-mode rule is now an error, however the rule is written.**
+  The check has existed since 0.4.0 but keyed on colour literals, so the same rule written with tokens passed. It now matches on structure and ignores values: any `prefers-color-scheme` query, or any rule scoped to a theme selector, inside a stylesheet classified as a component. A theme stylesheet setting tokens under `[data-theme="dark"]` is not a component and is untouched. This can turn a `verify` run that was clean on 0.6.0 into a failing one — the component was already violating the contract, and was evading detection rather than complying.
+  *To migrate:* Delete the rule. A component resolves its colours through `--tone*` and the material tokens, and those already flip with the theme, which is why no component in largen has a dark rule. If deleting it visibly breaks the component, that is a gap in the algebra and worth reporting rather than working around.
+- **A hand-written size variant is now an error, however it is written.**
+  Same evasion, same fix: the old check looked for literal lengths, so a variant built from tokens passed. It now matches a size-suffixed modifier, or a rule scoped to `data-size`, that re-sets `--pad`, `--font-size` or `--gap`. A modifier that sets non-scale slots is not caught, so a legitimately named state like `--empty` still passes.
+  *To migrate:* Delete the variant and let the size axis do it: multiply by `var(--scale)` wherever you set a size and express the rest in `em`. The axis then covers every size for free. Only the size-suffixed and `data-size` spellings are recognised, so `.card-lg` is not caught — that is deliberate, to avoid faulting a half-migrated Tailwind class like `.text-sm`.
+
+### Added
+
+- The contract states three things it was silent on: the coined-tag rule, what to do when a project outgrows two token tiers, and that density and direction are not axes.
+  The first is an authoring rule and is carried inline in `llms-compact.txt`. The other two are project architecture rather than per-component authoring, so the compact file names them and points at `get_contract` and the docs site, which is the same split the failure modes already use. That file exists to be enough to author a component without fetching anything else, and it was at 98% of its prompt budget before this release.
+
+### Fixed
+
+- The MCP server validated no arguments at all. Every out-of-schema call reached a handler, and ten of them returned a normal answer rather than an error.
+  Measured before anything was written: 23 malformed calls across ten tools, none rejected by the SDK. A theme outside the declared enum rendered a preview; a viewport given as a string was silently ignored; a missing required `spec` produced a verdict. Each now returns an error naming the argument by path, including nested ones like `selectors[0]` and `viewport.width`. The validator reads the same `inputSchema` object the server advertises — one object, not a copy — so what is advertised and what is enforced cannot drift.
+
+### Tooling
+
+- `largen verify` and `check_component_css` gain a coined-tag check, reported as a **warning**.
+  A coined tag is for a container with no role; a name whose leading token is a native interactive or sectioning element (`button-*`, `nav-*`, `dialog-*`, …) has an accessible name and keyboard behaviour to lose. A warning, not an error, on purpose: a project that passed `verify` clean on 0.6.0 still passes on 0.6.1, and the gap before it becomes an error is the window for false positives to surface. The leading-token list is deliberately short.
+- Two checks that were evadable are now structural errors: a component carrying its own dark-mode rule, and a hand-written size variant.
+  Both previously keyed on colour literals, so writing the same rule with tokens slipped through — which is exactly how the evaluation got a dark-mode block past the linter. They now match on structure and ignore values: any `prefers-color-scheme` query or theme-scoped rule inside a stylesheet classified as a component, and any size-suffixed or `data-size`-scoped rule that re-sets `--pad`, `--font-size` or `--gap`. A theme stylesheet setting tokens under a theme selector is not a component and never reaches them. These enforce SHALL NOTs the contract has carried since 0.4.0.
+- Both surfaces are asserted to return identical findings for the same CSS — rule, severity, line and message — so a component cannot pass locally and fail hosted. An outcome-eval harness scores whether the tools' answers name the documented cause for four known failure modes, rather than whether they merely answer.
+
 ## 0.6.0 — 2026-09-20
 
 The token vocabulary becomes a document. `largen build` exports `dist/largen.tokens.json` (the defaults) and `dist/theme-dark.tokens.json` (the dark theme) as W3C Design Tokens Community Group JSON, and `largen theme` reads a document back the other way, validating it against the vocabulary before it emits a theme stylesheet. DTCG is largen's theme interchange format now, so a theme can travel to Figma, Tokens Studio, Style Dictionary or Penpot and back. No CSS change: the build id stays `0073498a`, as it has since 0.5.2.

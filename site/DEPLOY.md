@@ -140,8 +140,18 @@ npx largen build          # dist/*.css
 npx largen contract       # SKILL.md, llms.txt, llms-compact.txt, the contract pages
 npx largen release        # freezes dist/ at site/public/v/<version>/
 cd site && node test/tokens.mjs && cd ..  # the DTCG round trip; needs no server
-cd site && node test/run.mjs && cd ..     # 40 assertions, locally, before shipping
+cd site && node test/run.mjs && cd ..     # the suite, locally, before shipping
+cd site && node test/mcp-arguments.mjs && cd ..   # out-of-schema calls error, naming the argument
+cd site && node test/evals.mjs && cd ..           # the answers still name the documented cause
 ```
+
+The last three need the server running (`cd site && node server.mjs`), or
+`LARGEN_BASE_URL` pointing at one. `test/mcp-arguments.mjs` is the measurement
+the argument validator was built from and the guard that it stays closed: it
+fires wrong-typed, out-of-enum and missing-required calls at ten tools and fails
+if any of them is answered normally. `test/evals.mjs` scores whether the tools'
+answers name the cause the contract documents, rather than merely returning a
+finding.
 
 ```sh
 ssh largen.exe.xyz 'sudo mkdir -p /srv/largen && sudo chown -R $(id -un) /srv/largen'

@@ -97,7 +97,14 @@ stays at 12.8px. That is a unit choice inside one component, not a size variant.
 `largen.elements`. Reimplementing focus trapping or open-state management in CSS
 and JS buys nothing the platform has not already shipped and tested.
 
-**6. Never add an `initial-value` to a slot.**
+**6. A coined tag is for a container with no role. Otherwise use the element.**
+`<notification>` is fine; `<button-primary>` is not: it claims a role it lacks.
+A coined tag has no role and no accessible name, so assistive technology sees a
+span. largen paints from slots, so `<button class="button-primary">` styles
+identically and keeps the role, focus ring and keyboard behaviour. Use the
+native element, or set `role=`.
+
+**7. Never add an `initial-value` to a slot.**
 With universal syntax, omitting `initial-value` makes an unset slot the
 *guaranteed-invalid* value, so `var(--pad, revert-layer)` falls back and hands
 the property back to the UA stylesheet untouched. Add an initial value and the
@@ -111,6 +118,42 @@ through `var(--scale, revert-layer)`. It is a multiplier that every size
 calculation depends on, so it must always resolve to a number. `largen verify`
 exempts it by name for exactly this reason. The rule holds for the paint slots
 without exception.
+
+**8. Two token tiers. A palette, if you need one, goes in your theme.**
+Larger systems have three tiers: reference (a raw palette, `blue-500`), system
+(roles, `--primary`), component. largen has two — tokens, which are roles, and
+slots, which a component fills — and a theme writes values straight into the
+semantic tokens with no palette between. At this size that is one less
+indirection to hold in your head, not an omission.
+
+A project outgrows it predictably: when one brand palette feeds several themes
+and the same hex appears in three files. Do not wait for largen to ship a
+reference tier — put the palette in your own theme, above largen's tokens, and
+point the roles at it: `--brand-blue-60: #1c6fd6; --primary:
+var(--brand-blue-60)`. largen needs to know nothing about it, because a theme
+sets largen's token names and where it got them is its own business.
+
+The placement that does not work is a palette in a component: naming
+`--brand-blue-60` there pins it to one colour and drops it out of the tone axis,
+the same mistake as naming `--danger` directly.
+
+**9. Density and direction are not axes. Query for them inside the component.**
+The axes are tone, variant, size and state. Some systems add a context dimension
+— density, form factor, writing direction — and largen does not, now or planned.
+Said out loud so nobody waits for it: there will be no `data-density`.
+
+The escape hatch is ordinary CSS and it is normal. A media or container query
+INSIDE a component is allowed by every rule here: `@container (inline-size <
+30em) { .toolbar { --pad: .5em .75em } }`, beside the component it tightens.
+That queries the container rather than adding a variant, so it composes with
+tone, size and state instead of multiplying against them. What it must not
+become is a size variant: `data-size` already sets `--scale`, and a rule
+re-setting `--pad` keyed off a size-axis value is what `largen verify` reports.
+
+Direction needs nothing. largen is written in logical properties throughout —
+`padding-inline`, `margin-block`, `inset-inline-start` — so a component built
+the same way follows `dir="rtl"` with no rule of its own. Reaching for
+`padding-left` is what breaks it.
 
 ## The slots
 

@@ -34,6 +34,64 @@ const NON_SLOT_ALLOWED = new Set([
 ])
 
 /**
+ * The severity of the coined-tag rule, in one place because it is staged.
+ *
+ * It ships as a warning: the rule is new, and a project that passed `verify`
+ * clean yesterday has to pass today. It becomes an error in the next minor,
+ * announced in MIGRATING.md — and the promotion is this constant and nothing
+ * else, which is the reason the value is not written at the call site.
+ */
+export const COINED_TAG_SEVERITY = 'warning'
+
+/* Leading tokens that name a role, and the element that already has it.
+ *
+ * Deliberately short. The tempting version of this rule is an ARIA-role
+ * inference table, which is exactly the version that fires on `entry-link`,
+ * `facet-label` and `field-row` — three real selectors in this repository, none
+ * of them a mistake. Matching only the LEADING token keeps those silent, and a
+ * nine-entry list covers the mistakes that actually get made. False positives
+ * are the known risk here and the short list is half the mitigation; shipping
+ * at warning severity first is the other half. */
+const ROLE_TAGS = {
+  button: 'button', nav: 'nav', dialog: 'dialog', input: 'input', select: 'select',
+  form: 'form', menu: 'menu', a: 'a', label: 'label',
+}
+
+/**
+ * The native element a coined tag name is impersonating, or null.
+ *
+ * Exported because the same question is asked of a manifest component's
+ * `element` field, and a second copy of the list is how two surfaces come to
+ * disagree. A name with no hyphen is not a coined tag at all — `button` IS the
+ * native button — so it returns null.
+ *
+ * @param {string} name  an element name, e.g. `button-primary`
+ * @returns {string|null} the native element name, e.g. `button`
+ */
+export function nativeElementFor(name) {
+  const m = /^([a-z][a-z0-9]*)-[a-z0-9-]+$/.exec(String(name ?? '').trim().toLowerCase())
+  return m ? (ROLE_TAGS[m[1]] ?? null) : null
+}
+
+/* The size axis, and the slots a size variant re-sets. Both are the shapes the
+   check looks for; neither is a list of values it invents. */
+const SIZE_VALUES = ['xs', 'sm', 'md', 'lg', 'xl']
+const SCALE_SLOTS = ['--pad', '--font-size', '--gap']
+
+/** Innermost rules: the selector text and the declaration block it opens.
+ *
+ *  At-rule preambles are skipped — `@media (…) {` never reaches here as a
+ *  selector because the pattern only completes on a block with no nested
+ *  braces, but `@font-face { … }` does, and it is not a selector either. */
+function eachRule(css, fn) {
+  for (const m of css.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+    const selector = m[1].trim()
+    if (!selector || selector.startsWith('@')) continue
+    fn(selector, m[2], m.index)
+  }
+}
+
+/**
  * Lint a component CSS snippet.
  *
  * @param {string} css      the snippet
@@ -377,6 +435,127 @@ export function lintComponentCss(css, { slots = [] } = {}) {
         'Every largen selector is `:where()`-wrapped and every rule is layered, so ' +
         'consumer CSS already wins. `!important` here will instead defeat the ' +
         'overrides someone else is relying on.')
+    }
+  })
+
+  /* --- 7 and 8. Two SHALL NOTs that had no check behind them ---------------
+   *
+   * The contract has forbidden dark-mode rules and hand-written size variants
+   * since `component-authoring` was written, and until now nothing enforced
+   * either. The existing checks are value-based — a dark block was only caught
+   * when a colour literal happened to sit inside it — so a component written
+   * entirely with tokens passed clean:
+   *
+   *     @media (prefers-color-scheme: dark) { .x { --bg: var(--surface) } }
+   *     .x--lg { --pad: var(--pad-5); --font-size: var(--text-lg) }
+   *
+   * Zero findings, both of them non-conformant. These two checks look at
+   * STRUCTURE instead, so the values are irrelevant and the token-written
+   * spelling is caught for the same reason the literal one is.
+   *
+   * Errors from the first release that carries them, not warnings: they enforce
+   * rules that already existed, so a component they flag was always
+   * non-conformant and the fix is a linter defect correction rather than a new
+   * demand. Staging them would re-open the gap the bake-off measured — that
+   * guidance without a check does not change what an agent writes.
+   *
+   * WHY THESE TWO READ THE WHOLE SHEET and the other content rules read only the
+   * component region: a dark block written AFTER the components layer closes is
+   * the commonest spelling of the mistake, and the region ends at that closing
+   * brace. The protection the region gave — not judging a theme by component
+   * rules — is supplied here by classifySheet instead, which is a better test
+   * anyway: a theme setting tokens under `[data-theme="dark"]` is not a
+   * component and never reaches these checks at all. */
+  if (classifySheet(css, slots).kind === 'component') {
+    const lineAt = (index) => clean.slice(0, index).split('\n').length
+
+    const WHY_DARK =
+      'Dark mode in largen is a token swap, not a component concern: `--tone-soft` ' +
+      'and `--tone-ink` resolve against `--canvas` and `--ink`, so eleven token ' +
+      'overrides in a theme carry every component with them. A component that ' +
+      'writes its own dark rule stops following the theme — it will not respond to ' +
+      '`data-theme` on a subtree, and it will fight the theme that does. If a ' +
+      'component seems to need one, the algebra has failed to cover something and ' +
+      'that failure is the bug; the dark rule would only hide it. Put the values in ' +
+      'a theme, under `[data-theme="…"]`, in a stylesheet that sets tokens and ' +
+      'nothing else.\n\n' +
+      'This is a structural check: it does not look at the values, so writing the ' +
+      'block entirely with tokens does not clear it.'
+
+    for (const m of clean.matchAll(/@media[^{}]*\(\s*prefers-color-scheme\s*:\s*([\w-]+)\s*\)[^{}]*\{/g)) {
+      add('dark-rule', 'error', lineAt(m.index),
+        `a component must not carry its own dark-mode rule: \`@media (prefers-color-scheme: ${m[1]})\``,
+        WHY_DARK)
+    }
+    eachRule(clean, (selector, block, index) => {
+      const scope = selector.match(/\[data-theme[^\]]*\]/)
+      if (!scope) return
+      add('dark-rule', 'error', lineAt(index),
+        `a component must not scope itself to a theme: \`${scope[0]}\``,
+        WHY_DARK)
+    })
+
+    /* The heuristic is deliberately narrow: a size-axis suffix in the BEM
+       modifier spelling, or a `data-size` scope, AND the rule re-setting a slot
+       the size axis already drives. Both halves are required, so a legitimately
+       named modifier that sets non-scale slots — `.card--empty` setting `--bg`
+       and `--fg` — is not caught, which is the false positive this rule cannot
+       afford at error severity. */
+    eachRule(clean, (selector, block, index) => {
+      const sized = new RegExp(`--(?:${SIZE_VALUES.join('|')})(?![\\w-])`).test(selector) ||
+        /\[data-size[^\]]*\]/.test(selector)
+      if (!sized) return
+      const reset = SCALE_SLOTS.filter((s) => new RegExp(`(^|[;{\\s])${s}\\s*:`).test(block))
+      if (!reset.length) return
+      add('size-variant', 'error', lineAt(index),
+        `\`${selector}\` is a hand-written size variant — it re-sets ` +
+        reset.map((s) => `\`${s}\``).join(', '),
+        'The size axis is one `--scale` multiplier, not a set of per-size rules. ' +
+        'Multiply by `var(--scale)` where you set a size, express the rest in `em`, ' +
+        'and padding and gap follow type for free at every size — which is why a ' +
+        'component never needs a size variant of its own. Five hand-written ones per ' +
+        'component is exactly the cost the axis exists to remove, and they do not ' +
+        'compose: `data-size` on an ancestor still sets `--scale`, so the two ' +
+        'mechanisms now disagree about how big this component is.\n\n' +
+        'This is a structural check and does not read the values: re-setting `--pad` ' +
+        'from a spacing token is the same variant as re-setting it from a literal. ' +
+        'A unit choice inside ONE rule is a different thing and is not this — see ' +
+        'the `pad-in-rem` note for that.')
+    })
+  }
+
+  /* --- 9. A coined tag that impersonates a native element ------------------
+   *
+   * `<notification>` renders styled and inert: no role, no accessible name, and
+   * `display: inline` from the UA until the component says otherwise. For a
+   * container that is merely a name, and largen's own examples use it. For
+   * anything with an interactive or landmark role it is a real accessibility
+   * defect, and nothing in the mechanism asks for it — a class on a native
+   * element works identically, through the same slots.
+   *
+   * So: a coined tag is for containers with no interactive or landmark role;
+   * otherwise use the native element, or say the role out loud.
+   *
+   * Reported once per name rather than once per rule. The advice does not vary
+   * by line, and a component with `button-primary`, `button-primary:hover` and
+   * `button-primary[data-variant]` should not say it three times. */
+  const coined = new Set()
+  eachRule(region, (selector, block, index) => {
+    for (const m of selector.matchAll(/(?:^|[\s,>+~(])([a-z][a-z0-9]*(?:-[a-z0-9]+)+)(?![\w-])/g)) {
+      const native = nativeElementFor(m[1])
+      if (!native || coined.has(m[1])) continue
+      coined.add(m[1])
+      add('coined-tag', COINED_TAG_SEVERITY, region.slice(0, index).split('\n').length,
+        `\`<${m[1]}>\` coins a tag where the native \`<${native}>\` exists`,
+        `A coined tag carries no semantics: \`<${m[1]}>\` has no role, no accessible ` +
+        'name, and is `display: inline` until something sets otherwise — assistive ' +
+        `technology sees a span. The name says this is a \`<${native}>\`, so make it ` +
+        `one: \`<${native} class="${m[1]}">\` styles identically, because largen ` +
+        'paints from slots and a class fills them exactly as a tag does. If it must ' +
+        'be a custom element, say the role out loud with `role=` and add the focus ' +
+        'and keyboard behaviour the native element would have brought. A coined tag ' +
+        'is for a container with no interactive or landmark role — `<notification>` ' +
+        'is fine; this is not.')
     }
   })
 
