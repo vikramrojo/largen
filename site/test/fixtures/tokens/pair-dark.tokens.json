@@ -1,0 +1,26 @@
+{
+  "$description": "The dark half of a split theme. It references brand.paper, which only pair-light.tokens.json declares: one warning, and --canvas still emits var(--brand-paper).",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "pair-dark",
+      "colorScheme": "dark"
+    }
+  },
+  "canvas": {
+    "$type": "color",
+    "$value": "{brand.paper}"
+  },
+  "ink": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        0.949,
+        0.9569,
+        0.9647
+      ],
+      "hex": "#f2f4f6"
+    }
+  }
+}

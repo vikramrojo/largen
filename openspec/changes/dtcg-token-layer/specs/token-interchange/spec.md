@@ -98,6 +98,42 @@ documents SHALL be derived from the CSS at build time and never hand-edited.
 - **WHEN** a token document differs from what the CSS would generate
 - **THEN** the drift guard SHALL fail and name the differing token
 
+### Requirement: A stylesheet exports as a token document
+The tokens command SHALL take a path to any stylesheet and emit the DTCG
+document for the custom properties it declares — to a file with `--out`, to
+stdout otherwise — with every human-readable line on stderr, so the document
+can be redirected even when the read has something to report.
+
+It SHALL find the rule that declares the tokens rather than assume the sheet
+opens with it: a top-level at-rule SHALL be skipped whole rather than descended
+into, a rule declaring no custom property SHALL be passed over, and a
+`color-scheme` on a rule so skipped SHALL be carried forward. It SHALL report
+what it could not read — a sheet declaring no custom property anywhere, a
+second rule that declares some and was not read, a declaring rule inside a
+conditional at-rule read as though unconditional — rather than return a short
+document with no comment. A sheet yielding no token SHALL write nothing and
+SHALL exit non-zero, an empty document being of no use to anyone.
+
+#### Scenario: The sheet opens with something other than its tokens
+- **WHEN** a stylesheet begins with `@font-face`, or with an `html { … }` reset,
+  and declares its tokens in a `:root` after it
+- **THEN** the export SHALL read `:root` and every token in it, not the first
+  rule in the file
+
+#### Scenario: A sheet declares tokens in more than one rule
+- **WHEN** a second top-level rule also declares custom properties
+- **THEN** the export SHALL read the first and SHALL warn, naming the rule it
+  did not read, so the short document is accounted for
+
+#### Scenario: A sheet declares no tokens at all
+- **WHEN** no rule in the stylesheet declares a custom property
+- **THEN** the export SHALL warn, write nothing, and exit non-zero
+
+#### Scenario: A theme stylesheet is exported
+- **WHEN** the declaring rule's selector is `[data-theme="brand"]`
+- **THEN** the document's theme name SHALL be `brand` unless `--theme`
+  overrides it, and the sheet's colour scheme SHALL be the document's
+
 ### Requirement: A token document imports as a theme stylesheet
 The theme command SHALL accept a DTCG document and emit a stylesheet that sets
 tokens only, inside `@layer largen.tokens` by default, under the selector named
@@ -138,16 +174,27 @@ output is layered.
 - **THEN** the emitted declarations SHALL equal those in `src/tokens.css`,
   name for name and value for value
 
+#### Scenario: A hex is authored in upper case
+- **WHEN** `--ink: #16181C` is exported and that document imported again
+- **THEN** the emitted declaration SHALL be `#16181C`, because the letter case
+  a person authored is theirs and neither direction SHALL normalise it
+- **AND** only a hex largen constructs from `components` alone SHALL be lower
+  case, there being no authored case to keep
+
 ### Requirement: Import validates before it emits
 The theme command SHALL validate the document and SHALL emit nothing on an
-error. Errors: a reference that does not resolve or resolves in a cycle; a
-token with neither `$value` nor a raw-CSS extension; a `$value` that does not
-parse for its `$type`; a name containing `{`, `}` or `.` or starting with `$`;
-a `space.*` dimension whose unit is not `rem`; a tone with one half; and an
-extra token whose flattened name collides with a registered slot or a derived
-tone name. Warnings: a vocabulary token whose `$type` differs from the
-vocabulary's. Under `--strict`, warnings SHALL be errors. Every message SHALL
-name the token path.
+error. Errors: a reference that resolves in a cycle; a token with neither
+`$value` nor a raw-CSS extension; a `$value` that does not parse for its
+`$type`; a name containing `{`, `}` or `.` or starting with `$`; a `space.*`
+dimension whose unit is not `rem`; a tone with one half; and an extra token
+whose flattened name collides with a registered slot or a derived tone name.
+Warnings: a vocabulary token whose `$type` differs from the vocabulary's; a
+reference to a name the document does not define; and a reference whose
+target's type differs from the referring token's own. A cycle SHALL stay an
+error and an absent target SHALL be a warning, because a cycle is provable from
+the document alone and resolves in no browser, while the rest of the cascade
+lies outside the document and largen cannot see it. Under `--strict`, warnings
+SHALL be errors. Every message SHALL name the token path.
 
 #### Scenario: A space token is not in rem
 - **WHEN** `space.4` is `{ "value": 16, "unit": "px" }`
@@ -157,6 +204,21 @@ name the token path.
 #### Scenario: A reference cycle
 - **WHEN** `a` references `{b}` and `b` references `{a}`
 - **THEN** import SHALL fail and name the cycle
+
+#### Scenario: A reference to a name nothing defines
+- **WHEN** a token's `$value` is `{brand.paper}` and no token in the document
+  sits at that path
+- **THEN** import SHALL warn, name the property it is about to emit, and emit
+  `var(--brand-paper)`
+- **AND** under `--strict` it SHALL fail instead
+
+#### Scenario: An alias points at a different type
+- **WHEN** a token declared `number` references a token whose type is
+  `dimension`
+- **THEN** import SHALL warn, name the token and both types, and still emit the
+  reference
+- **AND** when either type is unknown — an absent target has none — it SHALL
+  say nothing, rather than guess
 
 #### Scenario: A consumer retypes a vocabulary token
 - **WHEN** `line-height-base` is given as a `dimension` where the vocabulary
@@ -179,10 +241,30 @@ with `-`. A token whose CSS value has no DTCG type MAY carry it verbatim in
 `$extensions["dev.largen"].css`; the theme command SHALL emit that string and
 other tools SHALL see the `$value` fallback if one is given.
 
+A reference SHALL be emitted as `var()` on its target's flattened name, whether
+the target is a vocabulary token, a project extra, or a name this document does
+not define, and SHALL NOT be replaced by the target's value. The indirection is
+what the document declared: a theme that moves one token moves everything
+pointing at it, and a light and dark pair MAY therefore split its extras across
+two documents, each referring to what the other defines.
+
 #### Scenario: A project extra is imported
 - **WHEN** a document contains `text.display` with a `dimension` value
 - **THEN** the output SHALL contain `--text-display` with that value, and the
   vocabulary check SHALL ignore it
+
+#### Scenario: A project extra is referenced
+- **WHEN** a token's `$value` references `{brand.paper}` and the document
+  defines it
+- **THEN** the output SHALL contain `var(--brand-paper)`, not the value that
+  token holds
+
+#### Scenario: A reference points at a slot or a derived name
+- **WHEN** a reference flattens to a registered slot like `--pad`, or to a name
+  the algebra derives
+- **THEN** import SHALL warn and SHALL still emit the reference, because those
+  properties exist and the reference merely means something other than
+  intended; it is declaring at such a name that is the error
 
 #### Scenario: A fluid or mixed value
 - **WHEN** a token carries `$extensions["dev.largen"].css: "clamp(2.5rem, 8vw, 5rem)"`

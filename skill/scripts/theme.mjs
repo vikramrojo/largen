@@ -45,11 +45,17 @@ const USAGE = `
   The document names its theme and colour scheme in
   \`$extensions["dev.largen"]\`; --theme overrides the name. Errors are
   structural — a tone with one half, a space token that is not in rem, a
-  reference that does not resolve, an extra that flattens onto a registered
+  reference that resolves in a cycle, an extra that flattens onto a registered
   slot — and on any of them nothing is written.
 
+  A reference to a name this document does not define warns and is emitted as
+  \`var(--name)\`. The target may be declared by another stylesheet, which is
+  how a light/dark pair splits its extras across two documents; largen cannot
+  see the rest of the cascade, so it says so rather than deciding for you.
+
   CSS is the source of truth for largen's own tokens; this reads the other
-  direction, for a project that authors in a token tool.
+  direction, for a project that authors in a token tool. \`largen tokens\`
+  reads back the way you came.
 `
 
 export async function theme(args = []) {

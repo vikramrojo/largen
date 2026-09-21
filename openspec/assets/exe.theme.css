@@ -1,0 +1,249 @@
+/* exe.theme.css — the exe brand as largen theme tokens. Loaded after largen.css, before page CSS; sets largen
+   token names only (plus the exe extras --font-control, --text-*, --leading-*, --control-*, --tracking-*,
+   --measure-page), never --color-*. Requires largen 0.5.2+0073498a (webstatic/static/largen.css).
+
+   Spacing: --pad and --gap draw from largen's rem --space-* ladder; there is no exe pad ladder.
+   --leading-* are absolute rem line boxes (not ratios); --control-* are absolute rem control heights.
+   All three assume the root font size stays at the 16px default (nothing in the stack sets one).
+   Every token's value, provenance, and contrast note lives in ONE place: the "Token traceability" section of
+   openspec/changes/exe-design-system-website/design.md. Change a value there and here together. */
+
+/* Webfaces — self-hosted under /static/assets/fonts/ (design.md Decision 2); no external font host.
+   NOT IN THE REPO: the GT files are evaluation ("Trial") cuts, so the woff2s are kept on disk and
+   .gitignore'd rather than committed (user decision 2026-09-19). //go:embed reads the filesystem, so a
+   local checkout with the files present serves real brand type; without them these rules 404 and the
+   fallback stacks below render instead. Committing them awaits a licensed set plus the bin/t binary
+   opt-in. Inter is SIL OFL 1.1. Role-to-face mapping: the traceability "Faces" table in design.md. */
+
+@font-face {
+  /* body prose + display */
+  font-family: "GT Alpina";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/static/assets/fonts/gt-alpina-light.woff2") format("woff2");
+}
+
+@font-face {
+  /* subheads, page tags, nav links */
+  font-family: "GT Alpina Typewriter";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/static/assets/fonts/gt-alpina-tw-light.woff2") format("woff2");
+}
+
+@font-face {
+  /* captions + attributions, via font-style: italic */
+  font-family: "GT Alpina Typewriter";
+  font-style: italic;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/static/assets/fonts/gt-alpina-tw-light-italic.woff2") format("woff2");
+}
+
+@font-face {
+  /* code/terminal, and the interim face for the eyebrow/tag/figure-number/label roles until a Medium (500)
+     file lands — those roles carry --weight-normal meanwhile, never a synthesized 500. See the slot below. */
+  font-family: "Antarctican Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/assets/fonts/antarctican-mono-book.woff2") format("woff2");
+}
+
+/* ONE-EDIT SLOT — Antarctican Mono Medium (500). When AntarcticanMono-Medium.woff2 is uploaded to
+   /static/assets/fonts/, uncomment this block and switch the eyebrow/tag/figure-number/label roles in
+   exe.components.css from var(--weight-normal) back to var(--weight-medium). No other change is required.
+@font-face {
+  font-family: "Antarctican Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/static/assets/fonts/antarctican-mono-medium.woff2") format("woff2");
+}
+*/
+
+@font-face {
+  /* controls only */
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("/static/assets/fonts/inter-latin-var.woff2") format("woff2");
+}
+
+/* Light scheme — the default, and what an explicit [data-theme="light"] pins. */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Neutrals */
+  --canvas:        #F7F4EF;
+  --ink:           #282624;
+  --ink-muted:     #6E6860;
+  --surface:       #FFFFFF;
+  --line:          #EAE5DF;
+
+  /* Tone pairs */
+  --primary:       #282624;
+  --primary-on:    #F7F4EF;
+  --secondary:     #6E6860;
+  --secondary-on:  #FFFFFF;
+  --success:       #0AAF44;
+  --success-on:    #FFFFFF;
+  --info:          #29B1DE;
+  --info-on:       #282624;
+  --warning:       #F48E00;
+  --warning-on:    #282624;
+  --danger:        #E94646;
+  --danger-on:     #FFFFFF;
+  --neutral:       #282624;
+  --neutral-on:    #F7F4EF;
+
+  /* Code & syntax — iconography-and-terminal design.md Decision 3 has the CodeBlock mapping.
+     Two layers: the *-light/*-dark pairs below are scheme-INDEPENDENT (so a terminal can be pinned to
+     either treatment on any page) and must never reference --line/--canvas; the three scheme-RESOLVED
+     defaults after them follow the page scheme and are re-pointed in the dark blocks. The five hues are
+     scheme-independent marks; comment carries the legibility load and is the one resolved hue. */
+  --syntax-keyword: #29B1DE;
+  --syntax-declare: #F48E00;
+  --syntax-string:  #D6B119;
+  --syntax-punct:   #0AAF44;
+  --syntax-number:  #E94646;
+
+  --code-ground-light:    #EAE5DF;  /* medium-tan  — CodeBlock light ground */
+  --code-ground-dark:     #282624;  /* brand-black — CodeBlock dark ground  */
+  --code-ink-light:       #282624;  /* brand-black — CodeBlock light ink    */
+  --code-ink-dark:        #F7F4EF;  /* light-tan   — CodeBlock dark ink      */
+  --syntax-comment-light: #6E6860;  /* dark-tan    — comment on light ground */
+  --syntax-comment-dark:  color-mix(in oklab, #EAE5DF 70%, #282624);  /* medium-tan @~0.7 over dark ground */
+
+  /* scheme-resolved defaults — follow the page scheme (light values here) */
+  --code-ground:    var(--code-ground-light);
+  --code-ink:       var(--code-ink-light);
+  --syntax-comment: var(--syntax-comment-light);
+
+  /* Type — brand faces by role. --font-tw and --font-control are sanctioned exe extras (no largen token). */
+  --font-ui:       "GT Alpina", Georgia, serif;
+  --font-tw:       "GT Alpina Typewriter", "Courier New", monospace;
+  --font-mono:     "Antarctican Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-control:  Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Brand body cut is Light: override largen's 400. GT Alpina ships a single 300 cut, so nothing synthesizes a
+     bolder face. --weight-medium/--weight-bold keep largen's values (they land on Inter controls). */
+  --weight-normal: 300;
+
+  /* Type scale — rem ladder; --text-base overrides largen 1rem so body prose = 18px. */
+  --text-2xs:      0.75rem;                   /* 12px — labels, tags, captions, code */
+  --text-xs:       0.875rem;                  /* 14px */
+  --text-sm:       1rem;                       /* 16px */
+  --text-base:     1.125rem;                  /* 18px  — overrides largen 1rem */
+  --text-lg:       1.5rem;                     /* 24px */
+  --text-xl:       2.25rem;                    /* 36px */
+  --text-display:  clamp(2.5rem, 8vw, 5rem);  /* page title */
+
+  /* Control heights — absolute rem on the 8px grid. Controls declare min-block-size from these and take
+     inline-only padding, so border-box absorbs the hairline and height is independent of the type rung. */
+  --control-sm:    2rem;                       /* 32px */
+  --control-md:    2.5rem;                     /* 40px */
+  --control-lg:    3rem;                       /* 48px */
+
+  /* Leading — absolute rem line boxes, named for the pixel box they produce; every value is a 4px multiple.
+     A rem box is a value, not a ratio, so a component cannot inherit a box authored for another type rung.
+     Depends on the 16px root above: a future html font-size would move every box (and every --space-* pad). */
+  --leading-16:    1rem;                        /* 16px */
+  --leading-20:    1.25rem;                     /* 20px */
+  --leading-24:    1.5rem;                      /* 24px */
+  --leading-28:    1.75rem;                     /* 28px */
+  --leading-32:    2rem;                        /* 32px */
+  --leading-36:    2.25rem;                     /* 36px */
+  --leading-40:    2.5rem;                      /* 40px */
+  --line-height-base:   var(--leading-28);      /* overrides largen 1.55 -> body prose = 28px */
+
+  /* Tracking — the three non-zero letter-spacings; everything else folds to 0. */
+  --tracking-tight:  -0.02em;
+  --tracking-wide:   0.08em;
+  --tracking-caps:   0.14em;
+
+  /* Geometry — the design system is square: every exe component draws --radius from --radius-sm, which is 0.
+     --radius-md/-lg stay non-zero for the legacy surfaces that still read them (terminal-common.css, demo.css);
+     zeroing them flattened those pages, which was never the intent of "default to all straight edges". The one
+     design system consumer of --radius-md is .panel. */
+  --radius-sm:     0;
+  --radius-md:     2px;
+  --radius-lg:     6px;
+
+  /* No token here: the brand's 0.5px hairline is faked with COLOUR, not width — Chromium snaps a half-px rect to
+     whole px and it disappears at fractional offsets. Components use largen's 1px --hairline mixed ~50% toward the
+     ground; see .section-mark in exe.components.css. */
+
+  --measure-page:  62.5rem;  /* 1000px — the reading column full-bleed regions inset to */
+}
+
+/* Dark scheme — explicit toggle. Every value is an interpretation (see traceability). */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas:        #282624;
+  --ink:           #F7F4EF;
+  --ink-muted:     #A29D96;
+  --surface:       #363432;
+  --line:          #484644;
+
+  --primary:       #F7F4EF;
+  --primary-on:    #282624;
+  --secondary:     #A29D96;
+  --secondary-on:  #282624;
+  --success:       #0AAF44;
+  --success-on:    #FFFFFF;
+  --info:          #29B1DE;
+  --info-on:       #282624;
+  --warning:       #F48E00;
+  --warning-on:    #282624;
+  --danger:        #E94646;
+  --danger-on:     #FFFFFF;
+  --neutral:       #F7F4EF;
+  --neutral-on:    #282624;
+
+  /* re-point the resolved defaults; paired + hue tokens inherit from :root */
+  --code-ground:    var(--code-ground-dark);
+  --code-ink:       var(--code-ink-dark);
+  --syntax-comment: var(--syntax-comment-dark);
+}
+
+/* Dark scheme — OS preference, only when no explicit light choice is set (mirrors common.css). */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --canvas:        #282624;
+    --ink:           #F7F4EF;
+    --ink-muted:     #A29D96;
+    --surface:       #363432;
+    --line:          #484644;
+
+    --primary:       #F7F4EF;
+    --primary-on:    #282624;
+    --secondary:     #A29D96;
+    --secondary-on:  #282624;
+    --success:       #0AAF44;
+    --success-on:    #FFFFFF;
+    --info:          #29B1DE;
+    --info-on:       #282624;
+    --warning:       #F48E00;
+    --warning-on:    #282624;
+    --danger:        #E94646;
+    --danger-on:     #FFFFFF;
+    --neutral:       #F7F4EF;
+    --neutral-on:    #282624;
+
+    /* re-point the resolved defaults; paired + hue tokens inherit from :root */
+    --code-ground:    var(--code-ground-dark);
+    --code-ink:       var(--code-ink-dark);
+    --syntax-comment: var(--syntax-comment-dark);
+  }
+}

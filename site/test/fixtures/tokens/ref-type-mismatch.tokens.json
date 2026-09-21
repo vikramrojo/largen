@@ -1,0 +1,14 @@
+{
+  "$description": "A colour token aliased to a dimension: canvas references {space.4}. One warning, and the var() is emitted either way.",
+  "$extensions": {
+    "dev.largen": {
+      "dtcg": "2025.10",
+      "theme": "mismatch",
+      "colorScheme": "light"
+    }
+  },
+  "canvas": {
+    "$type": "color",
+    "$value": "{space.4}"
+  }
+}

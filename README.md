@@ -215,6 +215,7 @@ npx largen verify [css...]            # check your components against the contra
 npx largen build                      # bundle + minify to dist/, for CDN
 npx largen gen                        # regenerate genai artifacts
 npx largen theme <file.tokens.json>   # a DTCG token document in, a theme stylesheet out
+npx largen tokens <file.css>          # the other direction: a stylesheet in, a token document out
 npx largen manifest <css...>          # derive a component manifest from your CSS
 
 npx largen cascade --property --weight --at "html body p.prose kbd" <css...>
@@ -239,7 +240,9 @@ A theme is the one file a project writes that largen cannot check for it, so it
 travels as data too. `largen theme` takes a [W3C Design Tokens Community
 Group](https://www.designtokens.org/tr/drafts/format/) document — what Figma,
 Tokens Studio, Style Dictionary and Penpot read and write — and emits a theme
-stylesheet, having first checked it against largen's vocabulary.
+stylesheet, having first checked it against largen's vocabulary. `largen
+tokens` reads the other way, deriving a document from a stylesheet you already
+have, so the pair is a round trip rather than a one-way import.
 
 ```json
 {
@@ -259,15 +262,32 @@ stylesheet, having first checked it against largen's vocabulary.
 
 ```
 npx largen theme dark.tokens.json --scheme-media --out themes/dark.css
+npx largen tokens themes/brand.css --out brand.tokens.json
 ```
 
 A document may be partial — a theme sets what it changes and inherits the rest —
 but it is checked as a subset: a tone that sets `$root` without `on` is an
 error, because a solid variant is impossible without the pair, as is a
-`space.*` that is not in rem, a reference that does not resolve, and an extra
+`space.*` that is not in rem, a reference that resolves in a cycle, and an extra
 whose name flattens onto a registered slot like `--pad`. On any error nothing is
 written. `--scheme-media` emits the `prefers-color-scheme` block from the same
 document rather than having you write those declarations twice.
+
+A reference keeps its indirection: `{brand.paper}` is emitted as
+`var(--brand-paper)` rather than flattened to whatever that token holds. So a
+reference may point at a property some other stylesheet declares — a light and
+dark pair can split its extras across two documents, each referring to the
+other's — and a theme that moves one token moves everything pointing at it.
+largen cannot see the rest of the cascade, so a name the document does not
+define is a warning rather than an error, and the file is still written. A
+cycle stays an error: that one is provable from the document alone, and no
+browser resolves it.
+
+`largen tokens` goes the other way. It finds the rule that declares custom
+properties — not merely the first rule, which in a real stylesheet is as likely
+to be `@font-face` — maps what it finds onto the vocabulary, keeps the rest as
+project extras, and warns when a sheet declares no tokens or declares them in
+more than one place, rather than handing back a short document with no comment.
 
 The CSS is the source of truth, not the JSON. `largen build` exports the
 defaults as `dist/largen.tokens.json` and the dark theme as
